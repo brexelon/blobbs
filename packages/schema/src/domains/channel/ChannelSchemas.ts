@@ -9,6 +9,22 @@ import {PermissionStringType} from '@fluxer/schema/src/primitives/PermissionVali
 import {createStringType, Int32Type, SnowflakeStringType} from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {z} from 'zod';
 
+export const ThreadMetadataResponse = z.object({
+	name: z.string().describe('The display name of the thread'),
+	state: Int32Type.describe('The thread lifecycle state (0=open, 1=closed, 2=archived)'),
+	creator_id: SnowflakeStringType.nullish().describe('The ID of the user who created the thread'),
+	creator_name: z.string().nullish().describe('The username of the creator at the time the thread was created'),
+	auto_close_duration_seconds: Int32Type.describe(
+		'Inactivity window in seconds after the last message before the thread auto-closes',
+	),
+	auto_close_at: z.iso
+		.datetime()
+		.nullish()
+		.describe('ISO 8601 timestamp when the thread will auto-close if no new messages are sent'),
+});
+
+export type ThreadMetadata = z.infer<typeof ThreadMetadataResponse>;
+
 export const ChannelOverwriteResponse = z.object({
 	id: SnowflakeStringType.describe('The unique identifier for the role or user this overwrite applies to'),
 	type: ChannelOverwriteTypeSchema.describe('The type of entity the overwrite applies to'),
@@ -142,6 +158,13 @@ export const ChannelResponse = z.object({
 		.record(z.string(), createStringType(1, 32))
 		.optional()
 		.describe('Custom nicknames for users in this channel (for group DMs)'),
+	thread_metadata: ThreadMetadataResponse.optional().describe(
+		'Thread-specific metadata. Present only for thread channels.',
+	),
+	joined: z
+		.boolean()
+		.optional()
+		.describe('Whether the current user is a member of this thread. Present only for thread channels.'),
 });
 
 export type ChannelResponse = z.infer<typeof ChannelResponse>;

@@ -81,6 +81,7 @@ const LANE_CONFIG = {
 			'syncUrlBlocklists',
 			'syncFileShaBlocklists',
 			'flushUserActivityBuffer',
+			'closeExpiredThreads',
 		] as const,
 		concurrency: 12,
 		maxAckPending: 100,

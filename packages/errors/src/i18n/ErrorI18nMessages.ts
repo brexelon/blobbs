@@ -644,6 +644,12 @@ export const ERROR_I18N_MESSAGES = {
 	'entrance_sounds.name_length_invalid': 'Entrance sound names must be between 1 and {max, number} characters.',
 	'entrance_sounds.not_found': 'Entrance sound not found.',
 	'entrance_sounds.invalid_scope': 'Invalid entrance sound scope.',
+	'threads.not_supported_in_channel': "Threads can't be created in this channel.",
+	'threads.already_exists_on_message': 'This message already has a thread.',
+	'threads.not_found': "Thread wasn't found.",
+	'threads.archived': "This thread is archived and can't be modified.",
+	'threads.invalid_state_transition': "This thread state change isn't allowed.",
+	'threads.invalid_auto_close_duration': 'Invalid thread auto-close duration.',
 } as const;
 
 export type ErrorI18nCatalog = typeof ERROR_I18N_MESSAGES;

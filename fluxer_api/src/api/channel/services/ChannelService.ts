@@ -26,6 +26,7 @@ import type {VoiceAvailabilityService} from '../../voice/VoiceAvailabilityServic
 import type {IWebhookRepository} from '../../webhook/IWebhookRepository';
 import type {IChannelRepository} from '../IChannelRepository';
 import type {AttachmentUploadTraceRepository} from '../repositories/message/AttachmentUploadTraceRepository';
+import {ThreadRepository} from '../repositories/thread/ThreadRepository';
 import {AttachmentUploadService} from './AttachmentUploadService';
 import {CallService} from './CallService';
 import {ChannelDataService} from './ChannelDataService';
@@ -34,6 +35,7 @@ import {MessageInteractionService} from './MessageInteractionService';
 import {MessageService} from './MessageService';
 import {MessagePersistenceService} from './message/MessagePersistenceService';
 import {UserMessageDeletionService} from './message/UserMessageDeletionService';
+import {ThreadOperationsService} from './thread/ThreadOperationsService';
 
 interface SlowmodeState {
 	rateLimitPerUser: number;
@@ -49,6 +51,7 @@ export class ChannelService {
 	public readonly attachments: AttachmentUploadService;
 	public readonly groupDms: GroupDmOperationsService;
 	public readonly calls: CallService;
+	public readonly threads: ThreadOperationsService;
 	public readonly userMessageDeletion: UserMessageDeletionService;
 	private readonly rateLimitService: IRateLimitService;
 
@@ -185,6 +188,14 @@ export class ChannelService {
 			readStateService,
 			voiceAvailabilityService,
 			voiceRoomStore,
+		);
+		this.threads = new ThreadOperationsService(
+			channelRepository,
+			new ThreadRepository(),
+			this.channelData.auth,
+			gatewayService,
+			snowflakeService,
+			userCacheService,
 		);
 	}
 

@@ -31,6 +31,14 @@ export class Channel {
 	readonly lastPinTimestamp: Date | null;
 	readonly permissionOverwrites: Map<RoleID | UserID, ChannelPermissionOverwrite>;
 	readonly nicknames: Map<string, string>;
+	readonly threadId: ChannelID | null;
+	readonly threadName: string | null;
+	readonly threadCreatorId: UserID | null;
+	readonly threadCreatorName: string | null;
+	readonly threadState: number | null;
+	readonly threadAutoCloseDurationSeconds: number | null;
+	readonly threadAutoCloseAt: Date | null;
+	readonly threadOriginMessageId: MessageID | null;
 	readonly isSoftDeleted: boolean;
 	readonly indexedAt: Date | null;
 	readonly version: number;
@@ -67,6 +75,14 @@ export class Channel {
 			}
 		}
 		this.nicknames = row.nicks ?? new Map();
+		this.threadId = row.thread_id ?? null;
+		this.threadName = row.thread_name ?? null;
+		this.threadCreatorId = row.thread_creator_id ?? null;
+		this.threadCreatorName = row.thread_creator_name ?? null;
+		this.threadState = row.thread_state ?? null;
+		this.threadAutoCloseDurationSeconds = row.thread_auto_close_duration_seconds ?? null;
+		this.threadAutoCloseAt = row.thread_auto_close_at ?? null;
+		this.threadOriginMessageId = row.thread_origin_message_id ?? null;
 		this.isSoftDeleted = row.soft_deleted;
 		this.indexedAt = row.indexed_at ?? null;
 		this.version = row.version;
@@ -106,6 +122,14 @@ export class Channel {
 			last_pin_timestamp: this.lastPinTimestamp,
 			permission_overwrites: permOverwritesMap,
 			nicks: this.nicknames.size > 0 ? this.nicknames : null,
+			thread_id: this.threadId,
+			thread_name: this.threadName,
+			thread_creator_id: this.threadCreatorId,
+			thread_creator_name: this.threadCreatorName,
+			thread_state: this.threadState,
+			thread_auto_close_duration_seconds: this.threadAutoCloseDurationSeconds,
+			thread_auto_close_at: this.threadAutoCloseAt,
+			thread_origin_message_id: this.threadOriginMessageId,
 			soft_deleted: this.isSoftDeleted,
 			indexed_at: this.indexedAt,
 			version: this.version,
