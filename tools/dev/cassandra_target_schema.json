@@ -3531,9 +3531,129 @@
 				{
 					"name": "content_warning_text",
 					"type": "text"
+				},
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "thread_name",
+					"type": "text"
+				},
+				{
+					"name": "thread_creator_id",
+					"type": "bigint"
+				},
+				{
+					"name": "thread_creator_name",
+					"type": "text"
+				},
+				{
+					"name": "thread_state",
+					"type": "int"
+				},
+				{
+					"name": "thread_auto_close_duration_seconds",
+					"type": "int"
+				},
+				{
+					"name": "thread_auto_close_at",
+					"type": "timestamp"
 				}
 			],
 			"primary_key": "((channel_id, soft_deleted))",
+			"options": ""
+		},
+		{
+			"name": "thread_members",
+			"columns": [
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "user_id",
+					"type": "bigint"
+				},
+				{
+					"name": "joined_at",
+					"type": "timestamp"
+				}
+			],
+			"primary_key": "((thread_id), user_id)",
+			"options": ""
+		},
+		{
+			"name": "thread_members_by_user",
+			"columns": [
+				{
+					"name": "user_id",
+					"type": "bigint"
+				},
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "guild_id",
+					"type": "bigint"
+				},
+				{
+					"name": "parent_id",
+					"type": "bigint"
+				},
+				{
+					"name": "joined_at",
+					"type": "timestamp"
+				}
+			],
+			"primary_key": "((user_id), thread_id)",
+			"options": ""
+		},
+		{
+			"name": "threads_by_parent",
+			"columns": [
+				{
+					"name": "parent_id",
+					"type": "bigint"
+				},
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "guild_id",
+					"type": "bigint"
+				}
+			],
+			"primary_key": "((parent_id), thread_id)",
+			"options": ""
+		},
+		{
+			"name": "threads_by_auto_close_at",
+			"columns": [
+				{
+					"name": "close_bucket",
+					"type": "int"
+				},
+				{
+					"name": "auto_close_at",
+					"type": "timestamp"
+				},
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "parent_id",
+					"type": "bigint"
+				},
+				{
+					"name": "guild_id",
+					"type": "bigint"
+				}
+			],
+			"primary_key": "((close_bucket), auto_close_at, thread_id)",
 			"options": ""
 		},
 		{
@@ -6576,6 +6696,14 @@
 				{
 					"name": "nsfw_emojis",
 					"type": "set<bigint>"
+				},
+				{
+					"name": "thread_id",
+					"type": "bigint"
+				},
+				{
+					"name": "thread_name",
+					"type": "text"
 				}
 			],
 			"primary_key": "((channel_id, bucket), message_id)",

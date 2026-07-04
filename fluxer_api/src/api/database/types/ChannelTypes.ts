@@ -43,6 +43,13 @@ export interface ChannelRow {
 	last_pin_timestamp: Nullish<Date>;
 	permission_overwrites: Nullish<Map<RoleID | UserID, PermissionOverwrite>>;
 	nicks: Nullish<Map<string, string>>;
+	thread_id?: Nullish<ChannelID>;
+	thread_name?: Nullish<string>;
+	thread_creator_id?: Nullish<UserID>;
+	thread_creator_name?: Nullish<string>;
+	thread_state?: Nullish<number>;
+	thread_auto_close_duration_seconds?: Nullish<number>;
+	thread_auto_close_at?: Nullish<Date>;
 	soft_deleted: boolean;
 	indexed_at: Nullish<Date>;
 	version: number;
@@ -130,6 +137,13 @@ export const CHANNEL_COLUMNS = [
 	'last_pin_timestamp',
 	'permission_overwrites',
 	'nicks',
+	'thread_id',
+	'thread_name',
+	'thread_creator_id',
+	'thread_creator_name',
+	'thread_state',
+	'thread_auto_close_duration_seconds',
+	'thread_auto_close_at',
 	'soft_deleted',
 	'indexed_at',
 	'version',
@@ -143,6 +157,58 @@ export interface ChannelsByGuildRow {
 export const CHANNELS_BY_GUILD_COLUMNS = ['guild_id', 'channel_id'] as const satisfies ReadonlyArray<
 	keyof ChannelsByGuildRow
 >;
+
+export interface ThreadMemberRow {
+	thread_id: ChannelID;
+	user_id: UserID;
+	joined_at: Date;
+}
+
+export const THREAD_MEMBER_COLUMNS = ['thread_id', 'user_id', 'joined_at'] as const satisfies ReadonlyArray<
+	keyof ThreadMemberRow
+>;
+
+export interface ThreadMemberByUserRow {
+	user_id: UserID;
+	thread_id: ChannelID;
+	guild_id: Nullish<GuildID>;
+	parent_id: Nullish<ChannelID>;
+	joined_at: Date;
+}
+
+export const THREAD_MEMBER_BY_USER_COLUMNS = [
+	'user_id',
+	'thread_id',
+	'guild_id',
+	'parent_id',
+	'joined_at',
+] as const satisfies ReadonlyArray<keyof ThreadMemberByUserRow>;
+
+export interface ThreadByParentRow {
+	parent_id: ChannelID;
+	thread_id: ChannelID;
+	guild_id: Nullish<GuildID>;
+}
+
+export const THREAD_BY_PARENT_COLUMNS = ['parent_id', 'thread_id', 'guild_id'] as const satisfies ReadonlyArray<
+	keyof ThreadByParentRow
+>;
+
+export interface ThreadByAutoCloseRow {
+	close_bucket: number;
+	auto_close_at: Date;
+	thread_id: ChannelID;
+	parent_id: Nullish<ChannelID>;
+	guild_id: Nullish<GuildID>;
+}
+
+export const THREAD_BY_AUTO_CLOSE_COLUMNS = [
+	'close_bucket',
+	'auto_close_at',
+	'thread_id',
+	'parent_id',
+	'guild_id',
+] as const satisfies ReadonlyArray<keyof ThreadByAutoCloseRow>;
 export const INVITE_COLUMNS = [
 	'code',
 	'type',
