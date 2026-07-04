@@ -41,7 +41,8 @@ thread_name          text        -- thread display name, null for non-thread cha
 thread_creator_id    bigint      -- snapshot of the creating user's ID
 thread_creator_name  text        -- snapshot of the creating user's username at creation time
 thread_state         tinyint     -- 0 = open, 1 = closed, 2 = archived
-thread_auto_close_at timestamp   -- creation_time + "how long should this thread remain open" duration
+thread_auto_close_duration_seconds int  -- one of 3600 / 86400 / 259200 / 604800 (1h / 24h / 3d / 7d), chosen at creation
+thread_auto_close_at timestamp   -- last_message_time + thread_auto_close_duration_seconds; recomputed on every new message (see §3.1)
 thread_last_message_id bigint    -- convenience denorm, mirrors last_message_id but avoids ambiguity in UI code that lists threads by last activity
 ```
 
@@ -108,20 +109,29 @@ Add a description entry in `PermissionsDescriptions`, and a client-facing label/
 New/changed endpoints, mirroring the existing channel-controller conventions (`GuildChannelController.ts`, `MessageController.ts`):
 
 - `POST /channels/:channelId/threads` — create a thread.
-  - Body: `{ name, auto_archive_duration_seconds (default 7d = 604800), message_id? }`. If `message_id` is present the thread is rooted on that message (writes `messages.thread_id`/`thread_name` on it); if absent (the `/thread` slash-command path with no message context) the thread has no origin message.
+  - Body: `{ name, auto_close_duration_seconds, message_id? }`, where `auto_close_duration_seconds` is one of four fixed presets — `3600` (1h), `86400` (24h), `259200` (3d), `604800` (7d, the default) — matching Discord's reference points; the server rejects any other value with a 400 rather than accepting an arbitrary duration. If `message_id` is present the thread is rooted on that message (writes `messages.thread_id`/`thread_name` on it); if absent (the `/thread` slash-command path with no message context) the thread has no origin message.
   - Validates `CREATE_THREADS` permission on the parent channel.
   - Validates "already a thread root on this message" → **join instead of duplicate-create** (spec: "if the message is already the start of a thread... they should not be able to start a secondary thread" — this is enforced server-side too, not just hidden client-side, since the UI affordance alone isn't a security boundary).
-  - Mints `thread_id` via `SnowflakeService.generateForChannel(parentChannelId)`, inserts the `channels` row (type `GUILD_THREAD`), inserts a `thread_members` row for the creator, dispatches `THREAD_CREATE` (see §4).
+  - Mints `thread_id` via `SnowflakeService.generateForChannel(parentChannelId)`, inserts the `channels` row (type `GUILD_THREAD`, `thread_auto_close_duration_seconds` from the request, `thread_auto_close_at = now() + duration`), inserts a `thread_members` row for the creator, dispatches `THREAD_CREATE` (see §4).
 - `GET /channels/:channelId/threads` — list all threads (open, closed, archived) under a channel, ordered by last-message-timestamp descending, for the "thread list" topbar dropdown. Response includes `last_message` preview + author, matching the pinned-messages dropdown's existing response shape for UI reuse.
 - `POST /threads/:threadId/join` — insert into `thread_members` (+ reverse index), dispatch `THREAD_MEMBER_ADD`.
 - `POST /threads/:threadId/leave` — delete from `thread_members`, dispatch `THREAD_MEMBER_REMOVE`. Rejected (400) if `thread_state == ARCHIVED` (spec: no leave option on archived threads).
-- `PATCH /threads/:threadId` — state transitions (`open`, `close`, `archive`, `unarchive`) and rename. Each transition checked against §2.3's permission rules. `unarchive` re-inserts `thread_members` rows for everyone previously recorded (they were never deleted on archive, only "deactivated" from a delivery standpoint — see §4.3) and dispatches `THREAD_MEMBER_ADD` for each, satisfying "all members are automatically rejoined."
+- `PATCH /threads/:threadId` — state transitions (`open`, `close`, `archive`, `unarchive`) and rename. Each transition checked against §2.3's permission rules. `unarchive` re-inserts `thread_members` rows for everyone previously recorded (they were never deleted on archive, only "deactivated" from a delivery standpoint — see §4.3) and dispatches `THREAD_MEMBER_ADD` for each, satisfying "all members are automatically rejoined." `unarchive` and any manual `open` also recompute `thread_auto_close_at = now() + thread_auto_close_duration_seconds` so the thread doesn't immediately re-expire on the next sweep.
 - `DELETE /threads/:threadId` — soft-delete like normal channel delete, `MANAGE_CHANNELS` required.
-- Sending a message in a thread reuses the **existing** `POST /channels/:channelId/messages` endpoint unchanged (a thread is just a channel) — this is also what auto-transitions a closed thread back to `open` and auto-joins the sender (a `MessageSendService` hook: after a successful send, if `channel.type === GUILD_THREAD`, upsert `thread_members` for the author and flip `thread_state` to `open` if it was `closed`).
+- Sending a message in a thread reuses the **existing** `POST /channels/:channelId/messages` endpoint unchanged (a thread is just a channel) — this is also what auto-transitions a closed thread back to `open`, auto-joins the sender, and resets the auto-close timer (a `MessageSendService` hook: after a successful send, if `channel.type === GUILD_THREAD`, upsert `thread_members` for the author, flip `thread_state` to `open` if it was `closed`, and set `thread_auto_close_at = now() + thread_auto_close_duration_seconds`). This is what makes the auto-close measure "time since last message" rather than a fixed deadline from creation — every new message pushes the deadline back out.
 - Slash command `/thread`: no new endpoint — the client-side `/thread` command just opens the same create-thread modal client-side (see §5.4), which then calls the same `POST /channels/:channelId/threads` with no `message_id`.
 - Permission-gated visibility of the affordances themselves (buttons, `/thread` autocomplete) is a client-side check against the same cached permission state already used everywhere else (`fluxer_app/src/features/permissions/utils/PermissionUtils.ts`'s `computePermissions()`), no new endpoint needed.
 
-Response DTO mapping (`mapChannelToResponse`) needs a thread-aware branch to include `thread_id`, `thread_name`, `parent_id`, `thread_state`, `thread_auto_close_at`, membership flag for the requesting user, and last-message preview.
+Response DTO mapping (`mapChannelToResponse`) needs a thread-aware branch to include `thread_id`, `thread_name`, `parent_id`, `thread_state`, `thread_auto_close_duration_seconds`, `thread_auto_close_at`, membership flag for the requesting user, and last-message preview.
+
+### 3.1 Auto-close scheduler
+
+Cassandra has no native TTL-triggered callback, so auto-closing on inactivity needs an active sweep rather than a passive expiry. Add a new periodic worker to `fluxer_svc` (the existing Rust service tier that already hosts background/infrastructure workers) that:
+
+- Runs on a fixed interval (e.g. every 60s — frequent enough that a 1h-duration thread doesn't stay open noticeably past its deadline, cheap enough not to matter at any realistic thread volume).
+- Queries for threads with `thread_state == OPEN and thread_auto_close_at < now()` (a secondary index or a materialized view keyed by `thread_auto_close_at` is required for this query pattern, since Cassandra can't efficiently range-scan a non-partition-key column across all threads — add a `threads_by_auto_close_at` lookup table analogous to the existing `thread_members_by_user` reverse-index pattern, repopulated/updated whenever `thread_auto_close_at` changes).
+- For each match, flips `thread_state` to `CLOSED` (not `ARCHIVED` — auto-close only ever produces the "closed" state per spec; archiving remains a manual moderator action) via the same `PATCH`-equivalent internal service call used by the manual "close" action, and dispatches `THREAD_UPDATE`.
+- This worker is purely a timer — it never touches `thread_members`, so closing has no effect on membership/visibility, consistent with §4.3's "closed just blocks nothing, it's a flag" model.
 
 ---
 
@@ -168,7 +178,7 @@ All file paths below are existing files to extend, found via codebase research; 
 - **Right-click / hamburger context menu**: `fluxer_app/src/features/channel/components/MessageActionMenu.tsx`, sharing the click-handler + permission logic with the hover bar via `fluxer_app/src/features/channel/components/MessageActionUtils.tsx` (`createMessageActionHandlers`, `useMessagePermissions`) — add a `canStartThread`/`hasThread` computed flag there so both surfaces stay in sync.
 - **Permission gating**: both the hover icon and context-menu entry are simply omitted (not disabled) when `useMessagePermissions()` reports no `CREATE_THREADS` on the channel — matches spec ("will not see any of the buttons").
 - **`/thread` slash command**: register in `fluxer_app/src/features/devtools/hooks/useCommands.ts` as a new `ActionCommand` (alongside `/nick`, `/kick` etc.), gated by the same `CREATE_THREADS` permission check so it's excluded from autocomplete entirely when the user lacks it (mirrors how other permission-gated commands like `/kick` are filtered in `useTextareaAutocomplete.ts`'s `canUseCommand`). No new regex needed in `SlashCommandUtils.ts` since `/thread` takes no inline arguments — it just opens the modal.
-- **Create-thread modal (new)**: `fluxer_app/src/features/channel/components/modals/ThreadCreateModal.tsx`, modeled directly on `ChannelCreateModal.tsx` (name `Input` + `RadioGroup`/duration selector, same `Modal.Root`/`Modal.Footer` shell, `useFormSubmit`) with the first-message preview block borrowed from `ForwardModal.tsx`'s message-preview rendering (omitted entirely when opened via `/thread`, which has no message context). Fields: Thread Name, duration-open selector (default 7 days; likely a `RadioGroup` of common presets — 1h/24h/3d/7d — matching Discord's convention, since the spec doesn't enumerate exact options beyond the default), message preview, Confirm/Cancel. Supporting utils in a new `ThreadCreateModalUtils.ts` (mirrors `ChannelCreateModalUtils.ts`).
+- **Create-thread modal (new)**: `fluxer_app/src/features/channel/components/modals/ThreadCreateModal.tsx`, modeled directly on `ChannelCreateModal.tsx` (name `Input` + `RadioGroup`/duration selector, same `Modal.Root`/`Modal.Footer` shell, `useFormSubmit`) with the first-message preview block borrowed from `ForwardModal.tsx`'s message-preview rendering (omitted entirely when opened via `/thread`, which has no message context). Fields: Thread Name, a `RadioGroup` of exactly four auto-close duration presets — 1 hour / 24 hours / 3 days / 7 days — with 7 days pre-selected as the default (matching Discord's reference points, per §3), message preview, Confirm/Cancel. The field posts as `auto_close_duration_seconds` to `POST /channels/:channelId/threads` (§3). Supporting utils in a new `ThreadCreateModalUtils.ts` (mirrors `ChannelCreateModalUtils.ts`).
 - **Thread preview box under the origin message**: **(new)** `ThreadPreviewCard.tsx`, rendered inline in the message list whenever a message has `thread_id` set (read directly off the message object, no extra fetch — this is exactly why `messages.thread_id`/`thread_name` are denormalized per §1.3). Styled with a `primary-accent`-colored outline, showing thread name, last-message timestamp, last message text, last-message author name + avatar. The connecting line reuses the same visual language as the existing reply-connector affordance (`ArrowBendUpLeftIcon`-based indicator already used in `ReplyPreview.tsx`/`ChannelTextarea.tsx`) rotated/positioned to come out of the message's left edge into the box.
 
 ### 5.2 Thread UX (topbar + sidebar)
@@ -222,7 +232,7 @@ Already covered in §2.3/§5.1 — no bespoke UI, relies on the existing generic
 ## 8. Suggested implementation phases
 
 1. **Schema & permissions** — `cassandra_target_schema.json` + `Tables.ts` additions (§1), new `Permissions.CREATE_THREADS` bit + label wiring (§2), permission backfill script.
-2. **Backend core** — thread CRUD endpoints, join/leave, state transitions, origin-message annotation, snowflake minting (§3).
+2. **Backend core** — thread CRUD endpoints, join/leave, state transitions, origin-message annotation, snowflake minting, and the `fluxer_svc` auto-close sweep worker + `threads_by_auto_close_at` lookup table (§3).
 3. **Gateway** — new event atoms, dispatch-filter wiring, virtual-access-based visibility model for joined/preview/archived states, preview subscribe/unsubscribe op (§4).
 4. **Frontend initiation** — hover icon, context-menu entry, `/thread` command, create-thread modal, thread-preview card under origin messages (§5.1).
 5. **Frontend thread UX** — topbar icon swap + threads-list dropdown, sidebar nesting with joined/preview state, MobX `Threads` store (§5.2).
@@ -235,9 +245,10 @@ Each phase is independently testable and mostly independently shippable behind t
 
 ---
 
-## 9. Open questions / risks worth confirming before implementation
+## 9. Resolved decisions
 
-- **Auto-close duration options**: spec gives a default (7d) but not the selectable range/presets — needs a product decision (Discord uses 1h/24h/3d/7d as reference points).
-- **What "how long should the thread remain open" actually measures**: time since creation vs. time since last message (Discord's "auto-archive" is inactivity-based, not a fixed creation-relative deadline). This plan assumes inactivity-based (reset on each new message) since that matches user expectation of "thread remains open while people are talking in it," but the spec doesn't fully disambiguate — confirm before building the auto-close scheduler.
-- **Auto-close scheduler mechanism**: Cassandra has no native TTL-triggered callback; needs a periodic sweep job (candidate: a new `fluxer_svc` worker querying threads with `thread_auto_close_at < now()`), or reuse whatever existing background-job infra the repo already has for scheduled/expiring content (worth a follow-up look before implementation).
-- **Duration selector granularity in the create-thread modal** is a design decision, not purely engineering — flagged for design sign-off alongside phase 4.
+The following were previously open questions and are now settled:
+
+- **Auto-close duration options**: fixed presets of 1h / 24h / 3d / 7d, matching Discord's reference points (§3, §5.1).
+- **What the duration measures**: time since the thread's *last message*, not time since creation — every new message resets `thread_auto_close_at` (§1.2, §3).
+- **Auto-close scheduler mechanism**: a new periodic `fluxer_svc` worker sweeping for `thread_state == OPEN and thread_auto_close_at < now()`, backed by a new `threads_by_auto_close_at` lookup table since Cassandra can't range-scan a non-partition-key column directly (§3.1).
