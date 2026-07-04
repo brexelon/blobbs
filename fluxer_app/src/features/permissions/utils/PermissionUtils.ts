@@ -317,6 +317,7 @@ function generateGuildTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.USE_EXTERNAL_STICKERS),
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE),
+			makePermissionEntry(i18n, Permissions.CREATE_THREADS),
 		],
 	};
 }
@@ -392,6 +393,7 @@ export function generateChannelTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.USE_EXTERNAL_STICKERS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE, {scope: 'channel'}),
+			makePermissionEntry(i18n, Permissions.CREATE_THREADS, {scope: 'channel'}),
 		],
 	};
 }
