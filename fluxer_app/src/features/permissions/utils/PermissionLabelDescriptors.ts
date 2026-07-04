@@ -91,7 +91,7 @@ const BYPASS_SLOWMODE_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 		'Permission description in the role/permission editor for the Bypass Slowmode permission. Slowmode is the per-channel cooldown between messages.',
 });
 const CREATE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
-	message: 'Start new threads on messages in a channel.',
+	message: 'Create threads that everyone in a channel can view.',
 	comment:
 		'Permission description in the role/permission editor for the Create Threads permission. A thread is a sub-conversation rooted on a message in a channel.',
 });

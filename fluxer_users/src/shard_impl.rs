@@ -294,8 +294,8 @@ impl UsersShard {
             }
             match self.cache.get(&user_id).await {
                 Some(Some(user)) => partials.push(user.to_partial()),
-                Some(None) => {}
-                None => misses.push(user_id),
+                // Re-verify negative cache entries instead of treating them as permanently missing.
+                Some(None) | None => misses.push(user_id),
             }
         }
         if misses.is_empty() {
@@ -310,14 +310,23 @@ impl UsersShard {
             .buffer_unordered(USER_BATCH_CONCURRENCY)
             .collect::<Vec<_>>()
             .await;
+        let mut fetched_user_ids = std::collections::HashSet::new();
         for fetched in fetched_batches {
             match fetched {
                 Ok(batch_users) => {
+                    for user in &batch_users {
+                        fetched_user_ids.insert(user.user_id);
+                    }
                     partials.extend(batch_users.into_iter().map(|user| user.to_partial()));
                 }
                 Err(error) => {
                     warn!(error = %error, "failed to fetch user batch; continuing with partial results");
                 }
+            }
+        }
+        for user_id in misses {
+            if !fetched_user_ids.contains(&user_id) {
+                self.cache.insert(user_id, None).await;
             }
         }
         Ok(partials)
@@ -435,11 +444,15 @@ impl PostgresUsersStorage {
             .collect::<anyhow::Result<Vec<_>>>()?;
         let rows = self.kv.get_rows("users", &keys).await?;
         let mut users = Vec::with_capacity(rows.len());
-        for (_, row) in rows {
+        for (row_key, row) in rows {
             match decode_postgres_user(row) {
                 Ok(user) => users.push(user),
                 Err(error) => {
-                    warn!(error = %error, "failed to decode user row during postgres batch fetch");
+                    warn!(
+                        row_key = %row_key,
+                        error = %error,
+                        "failed to decode user row during postgres batch fetch"
+                    );
                 }
             }
         }
