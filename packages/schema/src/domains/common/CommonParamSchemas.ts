@@ -15,6 +15,12 @@ export const ChannelIdParam = z.object({
 
 export type ChannelIdParam = z.infer<typeof ChannelIdParam>;
 
+export const ThreadIdParam = z.object({
+	thread_id: SnowflakeType.describe('The ID of the thread'),
+});
+
+export type ThreadIdParam = z.infer<typeof ThreadIdParam>;
+
 export const UserIdParam = z.object({
 	user_id: SnowflakeType.describe('The ID of the user'),
 });

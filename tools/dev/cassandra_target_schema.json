@@ -3559,6 +3559,10 @@
 				{
 					"name": "thread_auto_close_at",
 					"type": "timestamp"
+				},
+				{
+					"name": "thread_origin_message_id",
+					"type": "bigint"
 				}
 			],
 			"primary_key": "((channel_id, soft_deleted))",

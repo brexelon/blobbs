@@ -112,6 +112,10 @@ export class MessageRequestService {
 			data: params.data,
 			requestCache: params.requestCache,
 		});
+		await this.channelService.threads.handleThreadMessageActivity({
+			channelId: params.channelId,
+			userId: params.user.id,
+		});
 		const access = await this.channelService.messages.retrieval.getResponseAccessContext({
 			userId: params.user.id,
 			channelId: params.channelId,

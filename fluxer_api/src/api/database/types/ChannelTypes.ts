@@ -50,6 +50,7 @@ export interface ChannelRow {
 	thread_state?: Nullish<number>;
 	thread_auto_close_duration_seconds?: Nullish<number>;
 	thread_auto_close_at?: Nullish<Date>;
+	thread_origin_message_id?: Nullish<MessageID>;
 	soft_deleted: boolean;
 	indexed_at: Nullish<Date>;
 	version: number;
@@ -144,6 +145,7 @@ export const CHANNEL_COLUMNS = [
 	'thread_state',
 	'thread_auto_close_duration_seconds',
 	'thread_auto_close_at',
+	'thread_origin_message_id',
 	'soft_deleted',
 	'indexed_at',
 	'version',

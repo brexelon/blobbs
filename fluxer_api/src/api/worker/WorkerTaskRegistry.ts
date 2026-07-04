@@ -12,6 +12,7 @@ import batchGuildAuditLogMessageDeletes from './tasks/BatchGuildAuditLogMessageD
 import bulkDeleteSelfMessagesImmediate from './tasks/BulkDeleteSelfMessagesImmediate';
 import bulkDeleteUserMessages from './tasks/BulkDeleteUserMessages';
 import bulkDeleteUserMessagesScoped from './tasks/BulkDeleteUserMessagesScoped';
+import closeExpiredThreads from './tasks/CloseExpiredThreads';
 import deleteUserMessagesInGuildByTime from './tasks/DeleteUserMessagesInGuildByTime';
 import enqueueGifFeaturedCategoriesRefresh from './tasks/EnqueueGifFeaturedCategoriesRefresh';
 import expireAttachments from './tasks/ExpireAttachments';
@@ -50,6 +51,7 @@ import type {WorkerTaskName} from './WorkerLaneConfig';
 export const workerTasks: Record<WorkerTaskName, WorkerTaskHandler> = {
 	applicationProcessDeletion,
 	batchGuildAuditLogMessageDeletes,
+	closeExpiredThreads,
 	bulkAddGuildMembers: bulkAddGuildMembers,
 	bulkBanFileShas: bulkBanFileShas,
 	bulkDeleteSelfMessagesImmediate,
