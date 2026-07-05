@@ -113,6 +113,12 @@ handle_post_update(Event, EventData, OldState, NewState) when
     post_update_channel(Event, EventData, OldState, NewState);
 handle_post_update(guild_member_remove, EventData, _OldState, NewState) ->
     post_update_member_remove(EventData, NewState);
+handle_post_update(thread_member_add, EventData, _OldState, NewState) ->
+    guild_state_thread:handle_member_add(EventData, NewState);
+handle_post_update(thread_member_remove, EventData, _OldState, NewState) ->
+    guild_state_thread:handle_member_remove(EventData, NewState);
+handle_post_update(thread_update, EventData, _OldState, NewState) ->
+    guild_state_thread:handle_thread_update(EventData, NewState);
 handle_post_update(Event, _EventData, OldState, NewState) ->
     post_update_fallback(Event, OldState, NewState).
 

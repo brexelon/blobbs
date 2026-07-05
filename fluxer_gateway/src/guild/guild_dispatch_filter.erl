@@ -106,6 +106,11 @@ is_channel_scoped_event(message_reaction_remove_emoji) -> true;
 is_channel_scoped_event(typing_start) -> true;
 is_channel_scoped_event(channel_pins_update) -> true;
 is_channel_scoped_event(webhooks_update) -> true;
+is_channel_scoped_event(thread_create) -> true;
+is_channel_scoped_event(thread_update) -> true;
+is_channel_scoped_event(thread_delete) -> true;
+is_channel_scoped_event(thread_member_add) -> true;
+is_channel_scoped_event(thread_member_remove) -> true;
 is_channel_scoped_event(_) -> false.
 
 -spec is_invite_event(event()) -> boolean().
@@ -204,6 +209,21 @@ extract_channel_id(Event, FinalData) when
 ->
     ChannelIdBin = maps:get(<<"id">>, FinalData, undefined),
     guild_dispatch_decorate:require_snowflake(<<"id">>, ChannelIdBin);
+%% Thread create/update/delete are scoped to the PARENT channel: anyone who can
+%% view the parent channel receives the "a thread exists / changed" notice, which
+%% drives the in-channel thread box, sidebar entry, and thread-list dropdown.
+extract_channel_id(Event, FinalData) when
+    Event =:= thread_create; Event =:= thread_update; Event =:= thread_delete
+->
+    ParentIdBin = maps:get(<<"parent_id">>, FinalData, undefined),
+    guild_dispatch_decorate:require_snowflake(<<"parent_id">>, ParentIdBin);
+%% Thread membership changes are scoped to the thread's own channel: only sessions
+%% that already hold (virtual) access to the thread receive them.
+extract_channel_id(Event, FinalData) when
+    Event =:= thread_member_add; Event =:= thread_member_remove
+->
+    ThreadIdBin = maps:get(<<"thread_id">>, FinalData, undefined),
+    guild_dispatch_decorate:require_snowflake(<<"thread_id">>, ThreadIdBin);
 extract_channel_id(_, FinalData) ->
     ChannelIdBin = maps:get(<<"channel_id">>, FinalData, undefined),
     guild_dispatch_decorate:require_snowflake(<<"channel_id">>, ChannelIdBin).
@@ -266,6 +286,34 @@ extract_channel_id_channel_create_uses_id_field_test() ->
 extract_channel_id_channel_update_uses_id_field_test() ->
     Data = #{<<"id">> => <<"42">>},
     ?assertEqual(42, extract_channel_id(channel_update, Data)).
+
+is_channel_scoped_event_thread_events_test() ->
+    ?assertEqual(true, is_channel_scoped_event(thread_create)),
+    ?assertEqual(true, is_channel_scoped_event(thread_update)),
+    ?assertEqual(true, is_channel_scoped_event(thread_delete)),
+    ?assertEqual(true, is_channel_scoped_event(thread_member_add)),
+    ?assertEqual(true, is_channel_scoped_event(thread_member_remove)),
+    ?assertEqual(false, is_channel_scoped_event(thread_list_sync)).
+
+extract_channel_id_thread_create_uses_parent_id_test() ->
+    Data = #{<<"id">> => <<"99">>, <<"parent_id">> => <<"42">>},
+    ?assertEqual(42, extract_channel_id(thread_create, Data)).
+
+extract_channel_id_thread_update_uses_parent_id_test() ->
+    Data = #{<<"id">> => <<"99">>, <<"parent_id">> => <<"42">>},
+    ?assertEqual(42, extract_channel_id(thread_update, Data)).
+
+extract_channel_id_thread_delete_uses_parent_id_test() ->
+    Data = #{<<"id">> => <<"99">>, <<"parent_id">> => <<"42">>},
+    ?assertEqual(42, extract_channel_id(thread_delete, Data)).
+
+extract_channel_id_thread_member_add_uses_thread_id_test() ->
+    Data = #{<<"thread_id">> => <<"99">>, <<"user_id">> => <<"7">>},
+    ?assertEqual(99, extract_channel_id(thread_member_add, Data)).
+
+extract_channel_id_thread_member_remove_uses_thread_id_test() ->
+    Data = #{<<"thread_id">> => <<"99">>, <<"user_id">> => <<"7">>},
+    ?assertEqual(99, extract_channel_id(thread_member_remove, Data)).
 
 filter_sessions_for_event_guild_wide_goes_to_all_sessions_test() ->
     S1 = #{session_id => <<"s1">>, user_id => 10, pid => self()},
