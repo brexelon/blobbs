@@ -62,6 +62,7 @@ import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuComma
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as PopoutCommands from '@app/features/ui/commands/PopoutCommands';
+import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {Popout} from '@app/features/ui/popover/PopoverPopout';
 import ContextMenu from '@app/features/ui/state/ContextMenu';
@@ -100,6 +101,14 @@ const UNSUPPRESS_EMBEDS_DESCRIPTOR = msg({
 const FORWARD_DESCRIPTOR = msg({
 	message: 'Forward',
 	comment: 'Tooltip on the forward button in the inline message hover action bar.',
+});
+const START_THREAD_DESCRIPTOR = msg({
+	message: 'Start new thread',
+	comment: 'Tooltip on the thread button in the inline message hover action bar when no thread exists yet.',
+});
+const JOIN_THREAD_DESCRIPTOR = msg({
+	message: 'Join thread',
+	comment: 'Tooltip on the thread button in the inline message hover action bar when the message already has a thread.',
 });
 const shiftKeyManager = (() => {
 	let isShiftPressed = false;
@@ -356,6 +365,8 @@ interface MessageActionBarCoreProps {
 		canPinMessage: boolean;
 		canForwardMessage: boolean;
 		shouldRenderSuppressEmbeds: boolean;
+		canStartThread: boolean;
+		hasThread: boolean;
 	};
 	isSaved: boolean;
 	developerMode: boolean;
@@ -388,6 +399,8 @@ export const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observe
 			canPinMessage,
 			canForwardMessage,
 			shouldRenderSuppressEmbeds,
+			canStartThread,
+			hasThread,
 		} = permissions;
 		const supportsInteractiveActions = useMemo(() => !isClientSystemMessage(message), [message]);
 		const handlers = useMemo(
@@ -741,6 +754,16 @@ export const MessageActionBarCore: React.FC<MessageActionBarCoreProps> = observe
 										label={i18n._(REPLY_DESCRIPTOR)}
 										onClick={handlers.handleReply}
 										data-flx="channel.message-action-bar.message-action-bar-core.message-action-bar-button.reply"
+									/>
+								)}
+								{message.isUserMessage() && supportsInteractiveActions && canStartThread && (
+									<MessageActionBarButton
+										icon={
+											<ThreadIcon size={20} data-flx="channel.message-action-bar.message-action-bar-core.thread-icon" />
+										}
+										label={i18n._(hasThread ? JOIN_THREAD_DESCRIPTOR : START_THREAD_DESCRIPTOR)}
+										onClick={handlers.handleStartThread}
+										data-flx="channel.message-action-bar.message-action-bar-core.message-action-bar-button.thread"
 									/>
 								)}
 								{message.isUserMessage() && supportsInteractiveActions && canForwardMessage && (

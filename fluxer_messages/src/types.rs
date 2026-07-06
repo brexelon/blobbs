@@ -193,6 +193,10 @@ pub struct Message {
     pub call: Option<MessageCall>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message_snapshots: Option<Vec<MessageSnapshot>>,
+    #[serde(default, deserialize_with = "serde_id::opt_i64_from_string_or_number")]
+    pub thread_id: Option<i64>,
+    #[serde(default)]
+    pub thread_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -461,6 +465,10 @@ pub struct ApiMessageResponse {
     pub nonce: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub call: Option<ApiMessageCallResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub referenced_message: Option<Box<ApiMessageResponse>>,
 }

@@ -154,6 +154,8 @@ const MessageBaseResponseSchema = z.object({
 	message_snapshots: z.array(MessageSnapshotResponse).nullish().describe('Snapshots of forwarded messages'),
 	nonce: z.string().nullish().describe('A client-provided value for message deduplication'),
 	call: MessageCallResponse.nullish().describe('Call information if this message represents a call'),
+	thread_id: SnowflakeStringType.nullish().describe('The ID of the thread started from this message, if any'),
+	thread_name: z.string().nullish().describe('The name of the thread started from this message, if any'),
 });
 
 type MessageBaseResponse = z.infer<typeof MessageBaseResponseSchema>;
@@ -356,6 +358,8 @@ export interface Message {
 	readonly state?: string;
 	readonly nonce?: string;
 	readonly blocked?: boolean;
+	readonly thread_id?: string | null;
+	readonly thread_name?: string | null;
 	readonly _allowedMentions?: AllowedMentions;
 	readonly _favoriteMemeId?: string;
 }

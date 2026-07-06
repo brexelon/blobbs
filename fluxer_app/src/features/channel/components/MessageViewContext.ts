@@ -21,6 +21,8 @@ export interface MessagePreviewPermissions {
 	canForwardMessage: boolean;
 	canSuppressEmbeds: boolean;
 	shouldRenderSuppressEmbeds: boolean;
+	canStartThread: boolean;
+	hasThread: boolean;
 }
 
 export interface MessageViewContextValue {
