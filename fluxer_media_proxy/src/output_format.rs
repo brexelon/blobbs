@@ -20,16 +20,12 @@ pub struct OutputSelection {
 pub fn is_output_format_supported(ext: AssetExtension) -> bool {
     !matches!(
         ext,
-        AssetExtension::Avif
-            | AssetExtension::Heic
-            | AssetExtension::Heif
-            | AssetExtension::Jxl
-            | AssetExtension::Svg
+        AssetExtension::Avif | AssetExtension::Heic | AssetExtension::Heif | AssetExtension::Jxl
     )
 }
 
 pub fn can_encode_to(ext: AssetExtension) -> bool {
-    is_output_format_supported(ext)
+    is_output_format_supported(ext) && ext != AssetExtension::Svg
 }
 
 pub fn coerce_unsupported_format(ext: AssetExtension) -> AssetExtension {
@@ -77,18 +73,6 @@ mod tests {
         let r = select_url_variant(Input {
             kind: AssetKind::Avatar,
             original: AssetExtension::Avif,
-            requested_size: Some(128),
-            manual_format_override: None,
-        });
-        assert_eq!(AssetExtension::Webp, r.format);
-        assert_eq!("url-coerced", r.reason);
-    }
-
-    #[test]
-    fn svg_url_extension_coerces_to_webp() {
-        let r = select_url_variant(Input {
-            kind: AssetKind::Avatar,
-            original: AssetExtension::Svg,
             requested_size: Some(128),
             manual_format_override: None,
         });

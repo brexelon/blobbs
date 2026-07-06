@@ -18,7 +18,7 @@ import {
 	SnowflakeStringType,
 	SnowflakeType,
 } from '@fluxer/schema/src/primitives/SchemaPrimitives';
-import {DiscriminatorType, EmailType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
+import {EmailType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import {z} from 'zod';
 
 export const UserAdminResponseSchema = z.object({
@@ -302,7 +302,7 @@ export type SendPasswordResetRequest = z.infer<typeof SendPasswordResetRequest>;
 export const ChangeUsernameRequest = z.object({
 	user_id: SnowflakeType.describe('ID of the user to change username for'),
 	username: UsernameType.describe('New username for the user'),
-	discriminator: DiscriminatorType.optional().describe('Legacy discriminator value'),
+	discriminator: Int32Type.optional().describe('Legacy discriminator value'),
 });
 
 export type ChangeUsernameRequest = z.infer<typeof ChangeUsernameRequest>;
@@ -347,6 +347,26 @@ export const ScheduleAccountDeletionRequest = z.object({
 });
 
 export type ScheduleAccountDeletionRequest = z.infer<typeof ScheduleAccountDeletionRequest>;
+
+export const DeleteAccountImmediatelyRequest = z.object({
+	user_id: SnowflakeType.describe('ID of the user to delete immediately'),
+	reason_code: Int32Type.describe('Code indicating the reason for deletion'),
+	public_reason: createStringType(0, 512).optional().describe('Public-facing reason for the deletion'),
+});
+
+export type DeleteAccountImmediatelyRequest = z.infer<typeof DeleteAccountImmediatelyRequest>;
+
+export const DeleteAllUserDataRequest = z.object({
+	user_id: SnowflakeType.describe('ID of the user whose data should be purged from the database'),
+});
+
+export type DeleteAllUserDataRequest = z.infer<typeof DeleteAllUserDataRequest>;
+
+export const DeleteAllUserDataResponse = z.object({
+	deleted: z.literal(true).describe('Indicates the user and all associated data were permanently removed'),
+});
+
+export type DeleteAllUserDataResponse = z.infer<typeof DeleteAllUserDataResponse>;
 
 export const SetUserAclsRequest = z.object({
 	user_id: SnowflakeType.describe('ID of the user to set ACLs for'),

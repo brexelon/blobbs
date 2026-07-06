@@ -112,6 +112,7 @@ async fn jobs_list(
     };
 
     let current_url = jobs_url(config, &query);
+    let auto_poll = query.cursor_bucket_day.is_none();
     let list_params = templates::pages::jobs_list::JobsListParams {
         status_filter: status,
         task_type_filter: task_type,
@@ -120,6 +121,7 @@ async fn jobs_list(
         current_url: &current_url,
         jobs: &jobs,
         next_cursor: next_cursor.as_ref(),
+        auto_poll,
     };
     let markup = if htmx::targets(&headers, "jobs-results") {
         templates::pages::jobs_list::jobs_results(config, &list_params)

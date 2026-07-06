@@ -38,7 +38,6 @@ function createUser(params: {
 		...EMPTY_USER_ROW,
 		user_id: params.userId,
 		username: `user-${params.userId.toString()}`,
-		discriminator: 1234,
 		avatar_hash: params.avatarHash,
 		banner_hash: params.bannerHash ?? null,
 		bot: params.isBot ?? false,

@@ -18,7 +18,6 @@ import {checkIsPremium, getEffectivePremiumUntil} from '../user/UserHelpers';
 export class User {
 	readonly id: UserID;
 	readonly username: string;
-	readonly discriminator: number;
 	readonly globalName: string | null;
 	readonly isBot: boolean;
 	readonly isSystem: boolean;
@@ -80,7 +79,6 @@ export class User {
 	constructor(row: UserRow) {
 		this.id = row.user_id;
 		this.username = row.username;
-		this.discriminator = row.discriminator;
 		this.globalName = row.global_name ?? null;
 		this.isBot = row.bot ?? false;
 		this.isSystem = row.system ?? false;
@@ -171,7 +169,6 @@ export class User {
 		return {
 			user_id: this.id,
 			username: this.username,
-			discriminator: this.discriminator,
 			global_name: this.globalName,
 			bot: this.isBot,
 			system: this.isSystem,

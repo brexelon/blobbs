@@ -2,7 +2,7 @@
 
 import {defineErrorI18nLocaleMessages} from '../ErrorI18nMessages';
 
-const ERROR_I18N_TR_MESSAGES = defineErrorI18nLocaleMessages({
+export const ERROR_I18N_TR_MESSAGES = defineErrorI18nLocaleMessages({
 	"account.already_verified": "Hesabın zaten doğrulandı.",
 	"account.communication_disabled": "İletişim devre dışı bırakıldı.",
 	"account.disabled": "Bu hesap devre dışı bırakıldı.",

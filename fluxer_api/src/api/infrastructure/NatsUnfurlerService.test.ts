@@ -70,7 +70,6 @@ describe('NatsUnfurlerService', () => {
 					bypass_cache: true,
 					cache_only: false,
 					youtube_api_key: null,
-					klipy_api_key: null,
 				},
 				timeout: 12000,
 			},

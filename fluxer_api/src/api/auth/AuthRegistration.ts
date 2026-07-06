@@ -18,7 +18,6 @@ import {ms} from 'itty-time';
 import type {ApiContext} from '../ApiContext';
 import {createEmailVerificationToken, createInviteCode, createUserID, type UserID} from '../BrandedTypes';
 import type {APIConfig} from '../config/APIConfig';
-import type {IDiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {KVActivityTracker} from '../infrastructure/KVActivityTracker';
 import {
 	type InstanceConfigRepository,
@@ -47,7 +46,7 @@ import * as AgeUtils from '../utils/AgeUtils';
 import {extractEmailDomain} from '../utils/EmailDomainUtils';
 import {lookupGeoip} from '../utils/IpUtils';
 import {generateRandomUsername} from '../utils/UsernameGenerator';
-import {deriveUsernameFromDisplayName} from '../utils/UsernameSuggestionUtils';
+import {deriveUsernameFromDisplayName, resolveAvailableUsername} from '../utils/UsernameSuggestionUtils';
 import * as AuthPassword from './AuthPassword';
 import * as AuthSession from './AuthSession';
 import * as AuthUtility from './AuthUtility';
@@ -86,7 +85,6 @@ export interface RegistrationDependencies {
 	inviteService: InviteService | null;
 	instanceConfigRepository: InstanceConfigRepository;
 	singleCommunityService: SingleCommunityService;
-	discriminatorService: IDiscriminatorService;
 	kvActivityTracker: KVActivityTracker;
 	registrationRiskEvaluator: IRegistrationRiskEvaluator;
 	accountPolicyEvaluator: IAccountPolicyEvaluator;
@@ -123,7 +121,6 @@ export async function register(
 		inviteService,
 		instanceConfigRepository,
 		singleCommunityService,
-		discriminatorService,
 		kvActivityTracker,
 		registrationRiskEvaluator,
 		accountPolicyEvaluator,
@@ -194,28 +191,27 @@ export async function register(
 		const emailTaken = await users.findByEmail(rawEmail);
 		if (emailTaken) throw InputValidationError.fromCode('email', ValidationErrorCodes.EMAIL_ALREADY_IN_USE);
 	}
-	let usernameCandidate: string | undefined = data.username ?? undefined;
-	let discriminator: number | null = null;
-	if (!usernameCandidate) {
+	let usernameCandidate: string | undefined = data.username?.toLowerCase() ?? undefined;
+	if (usernameCandidate) {
+		if (!(await users.isUsernameAvailable(usernameCandidate))) {
+			throw InputValidationError.fromCode('username', ValidationErrorCodes.TOO_MANY_USERS_WITH_THIS_USERNAME);
+		}
+	} else {
 		const derivedUsername = deriveUsernameFromDisplayName(data.global_name ?? '');
 		if (derivedUsername) {
-			try {
-				discriminator = await allocateDiscriminator(discriminatorService, derivedUsername);
-				usernameCandidate = derivedUsername;
-			} catch (error) {
-				if (!(error instanceof InputValidationError)) {
-					throw error;
-				}
+			usernameCandidate =
+				(await resolveAvailableUsername(derivedUsername, (candidate) => users.isUsernameAvailable(candidate))) ??
+				undefined;
+		}
+		if (!usernameCandidate) {
+			let candidate = generateRandomUsername();
+			for (let i = 0; i < 10 && !(await users.isUsernameAvailable(candidate)); i++) {
+				candidate = generateRandomUsername();
 			}
+			usernameCandidate = candidate;
 		}
 	}
-	if (!usernameCandidate) {
-		usernameCandidate = generateRandomUsername();
-		discriminator = await allocateDiscriminator(discriminatorService, usernameCandidate);
-	} else if (discriminator === null) {
-		discriminator = await allocateDiscriminator(discriminatorService, usernameCandidate);
-	}
-	const username = usernameCandidate!;
+	const username = usernameCandidate;
 	const grantBootstrapAdmin =
 		shouldAttemptBootstrapAdminGrant(config, {
 			rawEmail,
@@ -236,7 +232,6 @@ export async function register(
 	let user = await users.create({
 		user_id: userId,
 		username,
-		discriminator,
 		global_name: data.global_name || null,
 		bot: false,
 		system: false,
@@ -412,7 +407,6 @@ export async function register(
 		await instanceConfigRepository.addPendingRegistration({
 			user_id: user.id.toString(),
 			username: user.username,
-			discriminator: user.discriminator,
 			global_name: user.globalName,
 			email: rawEmail,
 			requested_at: now.toISOString(),
@@ -578,10 +572,3 @@ async function enforceRegistrationRateLimits(
 	}
 }
 
-async function allocateDiscriminator(discriminatorService: IDiscriminatorService, username: string): Promise<number> {
-	const result = await discriminatorService.generateDiscriminator({username});
-	if (!result.available || result.discriminator === -1) {
-		throw InputValidationError.fromCode('username', ValidationErrorCodes.TOO_MANY_USERS_WITH_THIS_USERNAME);
-	}
-	return result.discriminator;
-}

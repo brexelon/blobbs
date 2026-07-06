@@ -46,7 +46,7 @@ export class AdminGuildLookupService {
 				owner_id: guild.ownerId.toString(),
 				owner_username: ownerUser?.username ?? null,
 				owner_global_name: ownerUser?.globalName ?? null,
-				owner_discriminator: ownerUser ? String(ownerUser.discriminator).padStart(4, '0') : null,
+				owner_discriminator: ownerUser ? '0' : null,
 				name: guild.name,
 				vanity_url_code: guild.vanityUrlCode,
 				icon: guild.iconHash,

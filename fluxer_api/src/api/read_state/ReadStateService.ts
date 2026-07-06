@@ -155,7 +155,7 @@ export class ReadStateService {
 		if (readState == null) {
 			return;
 		}
-		await this.gatewayService.invalidatePushBadgeCount({userId});
+		await this.notifyMentionCountUpdates([readState]);
 	}
 
 	async bulkIncrementMentionCounts(
@@ -170,19 +170,50 @@ export class ReadStateService {
 		}
 		try {
 			const appliedUpdates = await this.repository.bulkIncrementMentionCounts(updates);
-			const uniqueUserIds = Array.from(new Set(appliedUpdates.map((update) => update.userId)));
-			await Promise.all(
-				uniqueUserIds.map((userId) =>
-					this.gatewayService.invalidatePushBadgeCount({userId}).catch((error) => {
-						Logger.error({userId: userId.toString(), error}, 'Failed to invalidate push badge count');
-						return null;
-					}),
-				),
-			);
+			await this.notifyMentionCountUpdates(appliedUpdates);
 		} catch (error) {
 			Logger.error({error}, 'Bulk increment mention counts failed');
 			throw error;
 		}
+	}
+
+	private async notifyMentionCountUpdates(readStates: Array<ReadState>): Promise<void> {
+		if (readStates.length === 0) {
+			return;
+		}
+		const uniqueUserIds = Array.from(new Set(readStates.map((readState) => readState.userId)));
+		await Promise.all(
+			uniqueUserIds.map((userId) =>
+				this.gatewayService.invalidatePushBadgeCount({userId}).catch((error) => {
+					Logger.error({userId: userId.toString(), error}, 'Failed to invalidate push badge count');
+					return null;
+				}),
+			),
+		);
+		await Promise.all(
+			readStates.map((readState) => {
+				if (readState.lastMessageId == null) {
+					return Promise.resolve(null);
+				}
+				return this.dispatchMessageAck({
+					userId: readState.userId,
+					channelId: readState.channelId,
+					messageId: readState.lastMessageId,
+					mentionCount: readState.mentionCount,
+					version: readState.version,
+				}).catch((error) => {
+					Logger.error(
+						{
+							userId: readState.userId.toString(),
+							channelId: readState.channelId.toString(),
+							error,
+						},
+						'Failed to dispatch MESSAGE_ACK for mention count update',
+					);
+					return null;
+				});
+			}),
+		);
 	}
 
 	async ackPins(params: {userId: UserID; channelId: ChannelID; timestamp: Date}): Promise<void> {

@@ -10,7 +10,6 @@ function createUserRow(overrides: Partial<UserRow> = {}): UserRow {
 		...EMPTY_USER_ROW,
 		user_id: createUserID(1n),
 		username: 'test_user',
-		discriminator: 1,
 		bot: false,
 		password_hash: 'hash',
 		traits: new Set<string>(),

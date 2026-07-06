@@ -34,14 +34,17 @@ import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import type {SearchContext} from '@app/features/member/state/MemberSearch';
 import MemberSearch from '@app/features/member/state/MemberSearch';
+import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import * as HighlightCommands from '@app/features/messaging/commands/HighlightCommands';
 import * as ReactionCommands from '@app/features/messaging/commands/ReactionCommands';
 import {
 	buildCommandArgOptions,
 	buildEmojiAutocompleteOptions,
 	buildEmojiReactionOptions,
+	collectChannelAccessibleMembers,
 	filterDMUsers,
 	filterGuildMembers,
+	filterMentionableRolesForChannel,
 	getMemberDisplayName,
 	MEMBER_SEARCH_LIMIT,
 	MENTION_RESULT_LIMIT,
@@ -63,6 +66,7 @@ import {
 import {type MentionSegment, TextareaSegmentManager} from '@app/features/messaging/utils/TextareaSegmentManager';
 import MentionFrecency from '@app/features/notification/state/MentionFrecency';
 import Permission from '@app/features/permissions/state/Permission';
+import * as PermissionUtils from '@app/features/permissions/utils/PermissionUtils';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
 import Users from '@app/features/user/state/Users';
@@ -143,6 +147,14 @@ export function useTextareaAutocomplete({
 	const [memberSearchResults, setMemberSearchResults] = useState<Array<GuildMember>>([]);
 	const [isMemberSearchLoading, setIsMemberSearchLoading] = useState(false);
 	const permissionVersion = useSyncExternalStore(Permission.subscribe.bind(Permission), () => Permission.version);
+	const guildMemberVersion = useSyncExternalStore(GuildMembers.subscribe.bind(GuildMembers), () =>
+		channel?.guildId ? GuildMembers.getGuildMemberVersion(channel.guildId) : 0,
+	);
+	const channelMemberListVersion = useSyncExternalStore(MemberSidebar.subscribe.bind(MemberSidebar), () =>
+		channel?.guildId && channel.id
+			? MemberSidebar.getChannelListVersion(channel.guildId, channel.id)
+			: 0,
+	);
 	const gifCacheRef = useRef<Map<string, Array<Gif>>>(new Map());
 	const currentSearchRef = useRef<string | null>(null);
 	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -303,15 +315,18 @@ export function useTextareaAutocomplete({
 		}
 		const searchQuery = autocompleteTriggerMatchedText;
 		const guildId = channel.guildId;
+		const channelId = channel.id;
+		const channelAccessibleMembers = collectChannelAccessibleMembers(guildId, channelId);
 		const isGuildFullyLoaded = GuildMembers.isGuildFullyLoaded(guildId);
 		currentGuildIdRef.current = guildId;
 		const sessionKey = `${guildId}:${searchQuery}`;
 		if (mentionSessionRef.current.key !== sessionKey) {
 			mentionSessionRef.current = {key: sessionKey, order: new Map(), nextRank: 0};
 		}
-		const cachedMembers = GuildMembers.getMembers(guildId);
-		if (cachedMembers.length > 0) {
-			const cachedMatches = matchSorter(cachedMembers, searchQuery, {
+		const memberSource =
+			channelAccessibleMembers.length > 0 ? channelAccessibleMembers : GuildMembers.getMembers(guildId);
+		if (memberSource.length > 0) {
+			const cachedMatches = matchSorter(memberSource, searchQuery, {
 				keys: [(member) => getMemberDisplayName(member), 'nick', 'user.globalName', 'user.username', 'user.tag'],
 			}).slice(0, MEMBER_SEARCH_LIMIT);
 			setMemberSearchResults(cachedMatches);
@@ -327,17 +342,33 @@ export function useTextareaAutocomplete({
 			}
 			return;
 		}
-		setIsMemberSearchLoading(true);
-		const boosters = MentionFrecency.getBoosters(guildId);
-		context.setQuery(searchQuery, {}, new Set(), new Set(), boosters);
+		const trimmedQuery = searchQuery.trim();
+		if (trimmedQuery.length > 0) {
+			setIsMemberSearchLoading(true);
+			const boosters = MentionFrecency.getBoosters(guildId);
+			context.setQuery(searchQuery, {}, new Set(), new Set(), boosters);
+		} else {
+			context.clearQuery();
+			setIsMemberSearchLoading(memberSource.length === 0);
+		}
 		if (memberFetchDebounceTimerRef.current) {
 			clearTimeout(memberFetchDebounceTimerRef.current);
 		}
+		const fetchDelayMs = trimmedQuery.length > 0 ? 300 : 0;
 		memberFetchDebounceTimerRef.current = setTimeout(() => {
-			void MemberSearch.fetchMembersInBackground(searchQuery, [guildId]);
+			void MemberSearch.fetchMembersInBackground(searchQuery, [guildId]).finally(() => {
+				setIsMemberSearchLoading(false);
+			});
 			memberFetchDebounceTimerRef.current = null;
-		}, 300);
-	}, [autocompleteTriggerMatchedText, autocompleteTriggerType, channel?.guildId]);
+		}, fetchDelayMs);
+	}, [
+		autocompleteTriggerMatchedText,
+		autocompleteTriggerType,
+		channel?.guildId,
+		channel?.id,
+		guildMemberVersion,
+		channelMemberListVersion,
+	]);
 	const autocompleteQuery = useMemo(() => {
 		if (!autocompleteTrigger) return '';
 		switch (autocompleteTriggerType) {
@@ -470,7 +501,24 @@ export function useTextareaAutocomplete({
 		},
 		[channel],
 	);
-	const canViewChannel = useCallback((_userId: string): boolean => true, []);
+	const canViewChannel = useCallback(
+		(userId: string): boolean => {
+			if (!channel) {
+				return true;
+			}
+			return PermissionUtils.canUserAccessChannel(userId, channel);
+		},
+		[channel],
+	);
+	const canMentionRoleInChannel = useCallback(
+		(roleId: string): boolean => {
+			if (!channel) {
+				return true;
+			}
+			return PermissionUtils.canRoleAccessChannel(roleId, channel);
+		},
+		[channel],
+	);
 	useEffect(() => {
 		let options: Array<AutocompleteOption> = [];
 		if (!autocompleteTrigger) {
@@ -515,19 +563,31 @@ export function useTextareaAutocomplete({
 					const userOptions = filterDMUsers(users, parsedQuery);
 					options = channel.isPersonalNotes() ? userOptions : [...userOptions, ...SPECIAL_MENTIONS];
 				} else {
-					const membersToUse = unionMembers(memberSearchResults, GuildMembers.getMembers(channel.guildId ?? ''));
+					const channelAccessibleMembers =
+						channel.guildId != null && channel.id.length > 0
+							? collectChannelAccessibleMembers(channel.guildId, channel.id)
+							: [];
+					const useChannelMemberList = channelAccessibleMembers.length > 0;
+					const membersToUse = unionMembers(
+						memberSearchResults,
+						useChannelMemberList ? channelAccessibleMembers : GuildMembers.getMembers(channel.guildId ?? ''),
+					);
 					const parsedQuery = parseMentionQuery(matchedText ?? '');
 					const queryForMatching = parsedQuery.usernameQuery.trim();
 					const members = filterGuildMembers(
 						membersToUse,
 						parsedQuery,
-						true,
+						!useChannelMemberList,
 						canViewChannel,
 						mentionSessionRef.current.order,
 					);
 					recordMentionMembers(members.map((o) => o.member));
-					const mentionableRoles = Guilds.getGuildRoles(channel.guildId ?? '').filter(
-						(role) => canMentionEveryone || role.mentionable,
+					const mentionableRoles = filterMentionableRolesForChannel(
+						channel.guildId ?? '',
+						Guilds.getGuildRoles(channel.guildId ?? ''),
+						channelAccessibleMembers,
+						canMentionEveryone,
+						canMentionRoleInChannel,
 					);
 					const matchedRoles = queryForMatching
 						? matchSorter(mentionableRoles, queryForMatching, {
@@ -546,7 +606,7 @@ export function useTextareaAutocomplete({
 					const specialMentions = canMentionEveryone
 						? SPECIAL_MENTIONS.filter((mention) => {
 								if (!queryForMatching) return true;
-								return mention.kind.toLowerCase().includes(queryForMatching.toLowerCase());
+								return mention.kind.substring(1).toLowerCase().includes(queryForMatching.toLowerCase());
 							})
 						: [];
 					options = [...members, ...specialMentions, ...roles];
@@ -677,10 +737,14 @@ export function useTextareaAutocomplete({
 		gifState,
 		canUseCommand,
 		canManageUser,
+		canViewChannel,
+		canMentionRoleInChannel,
 		memberSearchResults,
 		i18n,
 		expressionDataVersion,
 		permissionVersion,
+		guildMemberVersion,
+		channelMemberListVersion,
 	]);
 	const applyAutocompleteValue = useCallback(
 		(nextValue: string, nextSegments: ReadonlyArray<MentionSegment>, selectionStart = nextValue.length) => {

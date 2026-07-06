@@ -20,6 +20,7 @@ interface MapChannelToResponseParams {
 	effectiveNsfw?: boolean;
 	effectiveContentWarningLevel?: number;
 	effectiveContentWarningText?: string | null;
+	isThreadMember?: boolean;
 }
 
 function serializeBaseChannelFields(channel: Channel) {
@@ -122,6 +123,30 @@ function serializeGuildCategoryChannel(channel: Channel, ctx: ContentWarningCtx)
 	};
 }
 
+function serializeGuildThreadChannel(
+	channel: Channel,
+	ctx: ContentWarningCtx,
+	isThreadMember?: boolean,
+): ChannelResponse {
+	return {
+		...serializeBaseChannelFields(channel),
+		...serializeMessageableFields(channel),
+		...serializePositionableGuildChannelFields(channel),
+		topic: channel.topic,
+		...serializeContentWarningFields(channel, ctx),
+		rate_limit_per_user: channel.rateLimitPerUser,
+		thread_metadata: {
+			name: channel.threadName ?? channel.name ?? '',
+			state: channel.threadState ?? 0,
+			creator_id: channel.threadCreatorId ? channel.threadCreatorId.toString() : null,
+			creator_name: channel.threadCreatorName ?? null,
+			auto_close_duration_seconds: channel.threadAutoCloseDurationSeconds ?? 0,
+			auto_close_at: channel.threadAutoCloseAt ? channel.threadAutoCloseAt.toISOString() : null,
+		},
+		...(isThreadMember === undefined ? {} : {joined: isThreadMember}),
+	};
+}
+
 function serializeGuildLinkChannel(channel: Channel, ctx: ContentWarningCtx): ChannelResponse {
 	return {
 		...serializeBaseChannelFields(channel),
@@ -203,6 +228,9 @@ export async function mapChannelToResponse(params: MapChannelToResponseParams): 
 			break;
 		case ChannelTypes.GUILD_CATEGORY:
 			response = serializeGuildCategoryChannel(channel, ctx);
+			break;
+		case ChannelTypes.GUILD_THREAD:
+			response = serializeGuildThreadChannel(channel, ctx, params.isThreadMember);
 			break;
 		case ChannelTypes.GUILD_LINK:
 			response = serializeGuildLinkChannel(channel, ctx);

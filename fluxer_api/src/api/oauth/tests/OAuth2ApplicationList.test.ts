@@ -32,7 +32,7 @@ describe('OAuth2 Application List', () => {
 		expect(app.redirect_uris).toBeDefined();
 		expect(app.bot?.id).toBeTruthy();
 		expect(app.bot?.username).toBeTruthy();
-		expect(app.bot?.discriminator).toBeTruthy();
+		expect(app.bot?.discriminator).toBe('0');
 		expect(app.bot?.token).toBeUndefined();
 		expect(app.client_secret).toBeUndefined();
 	});

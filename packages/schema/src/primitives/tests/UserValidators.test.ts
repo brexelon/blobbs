@@ -2,7 +2,6 @@
 
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {
-	DiscriminatorType,
 	EmailType,
 	GlobalNameType,
 	PasswordType,
@@ -54,52 +53,6 @@ describe('EmailType', () => {
 	});
 });
 
-describe('DiscriminatorType', () => {
-	it('accepts valid single digit discriminators', () => {
-		const result = DiscriminatorType.safeParse('1');
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(1);
-		}
-	});
-	it('accepts valid four digit discriminators', () => {
-		const result = DiscriminatorType.safeParse('1234');
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(1234);
-		}
-	});
-	it('accepts zero as discriminator', () => {
-		const result = DiscriminatorType.safeParse('0');
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(0);
-		}
-	});
-	it('accepts discriminators with leading zeros', () => {
-		const result = DiscriminatorType.safeParse('0001');
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(1);
-		}
-	});
-	it('rejects discriminators with more than 4 digits', () => {
-		const result = DiscriminatorType.safeParse('12345');
-		expect(result.success).toBe(false);
-		if (!result.success) {
-			expect(result.error.issues[0].message).toBe(ValidationErrorCodes.DISCRIMINATOR_INVALID_FORMAT);
-		}
-	});
-	it('rejects non-numeric discriminators', () => {
-		const result = DiscriminatorType.safeParse('abc');
-		expect(result.success).toBe(false);
-	});
-	it('rejects negative discriminators', () => {
-		const result = DiscriminatorType.safeParse('-1');
-		expect(result.success).toBe(false);
-	});
-});
-
 describe('UsernameType', () => {
 	it('accepts valid alphanumeric usernames', () => {
 		const result = UsernameType.safeParse('testuser');
@@ -115,6 +68,19 @@ describe('UsernameType', () => {
 	it('accepts usernames with numbers', () => {
 		const result = UsernameType.safeParse('user123');
 		expect(result.success).toBe(true);
+	});
+	it('accepts usernames ending with a single underscore or period', () => {
+		expect(UsernameType.safeParse('john_').success).toBe(true);
+		expect(UsernameType.safeParse('john.').success).toBe(true);
+	});
+	it('rejects usernames with leading underscores or periods', () => {
+		expect(UsernameType.safeParse('_john').success).toBe(false);
+		expect(UsernameType.safeParse('.john').success).toBe(false);
+	});
+	it('rejects usernames with consecutive underscores or periods', () => {
+		expect(UsernameType.safeParse('john__').success).toBe(false);
+		expect(UsernameType.safeParse('john..').success).toBe(false);
+		expect(UsernameType.safeParse('john._').success).toBe(false);
 	});
 	it('trims whitespace', () => {
 		const result = UsernameType.safeParse('  testuser  ');

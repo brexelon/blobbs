@@ -2,9 +2,7 @@
 
 import {existsSync} from 'node:fs';
 import {loadConfig} from '@fluxer/config/src/ConfigLoader';
-import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {afterAll, afterEach, beforeAll} from 'vitest';
-import type {UserID} from '../BrandedTypes';
 import {buildAPIConfigFromMaster, initializeConfig} from '../Config';
 import {setInjectedMessageResponseDataService} from '../channel/services/message/MessageResponseDataService';
 import {
@@ -12,13 +10,11 @@ import {
 	setCassandraQueryExecutorForTesting,
 	shutdownCassandraQueryExecutorForTesting,
 } from '../database/CassandraQueryExecution';
-import type {IUsersServiceClient} from '../infrastructure/UsersServiceClient';
-import {setInjectedUsersServiceClient} from '../infrastructure/UsersServiceClient';
+import {RepositoryUsersServiceClient, setInjectedUsersServiceClient} from '../infrastructure/UsersServiceClient';
 import {initializeLogger} from '../Logger';
 import {setInjectedKVProvider, setInjectedSnowflakeService} from '../middleware/ServiceRegistry';
 import {getInstanceConfigRepository, getUserRepository} from '../middleware/ServiceSingletons';
 import {drainSearchTasks, enableSearchTaskTracking} from '../search/SearchTaskTracker';
-import {mapUserToPartialResponse} from '../user/UserMappers';
 import {InMemoryCassandraQueryExecutor} from './InMemoryCassandraQueryExecutor';
 import {MockKVProvider} from './mocks/MockKVProvider';
 import {MockSnowflakeService} from './mocks/MockSnowflakeService';
@@ -74,14 +70,8 @@ function setDefaultTestEnv(): void {
 		FLUXER_PASSKEY_RP_NAME: 'Fluxer Test',
 		FLUXER_PASSKEY_RP_ID: 'localhost',
 		FLUXER_PASSKEY_ADDITIONAL_ALLOWED_ORIGINS: 'http://localhost',
-		FLUXER_EMAIL_ENABLED: 'true',
-		FLUXER_EMAIL_PROVIDER: 'smtp',
-		FLUXER_EMAIL_FROM_EMAIL: 'noreply@example.com',
-		FLUXER_EMAIL_SMTP_HOST: 'localhost',
-		FLUXER_EMAIL_SMTP_PORT: '1025',
-		FLUXER_EMAIL_SMTP_USERNAME: 'test',
-		FLUXER_EMAIL_SMTP_PASSWORD: 'test',
-		FLUXER_EMAIL_SMTP_SECURE: 'false',
+		FLUXER_EMAIL_ENABLED: 'false',
+		FLUXER_EMAIL_PROVIDER: 'none',
 		FLUXER_LIVEKIT_ENABLED: 'false',
 		FLUXER_STRIPE_ENABLED: 'true',
 		FLUXER_SEARCH_ENGINE: 'elasticsearch',
@@ -100,20 +90,10 @@ function setDefaultTestEnv(): void {
 	}
 }
 
-class RepositoryBackedUsersServiceClient implements IUsersServiceClient {
-	async getUserPartialResponses(userIds: Array<UserID>): Promise<Map<UserID, UserPartialResponse>> {
-		const userRepository = getUserRepository();
-		const result = new Map<UserID, UserPartialResponse>();
-		for (const userId of userIds) {
-			const user = await userRepository.findUnique(userId);
-			if (user) {
-				result.set(userId, mapUserToPartialResponse(user));
-			}
-		}
-		return result;
+class RepositoryBackedUsersServiceClient extends RepositoryUsersServiceClient {
+	constructor() {
+		super(getUserRepository());
 	}
-
-	async invalidateUserCache(_userId: UserID): Promise<void> {}
 }
 
 setDefaultTestEnv();

@@ -15,9 +15,11 @@ import {
 } from '@app/features/expressions/utils/ExpressionPermissionUtils';
 import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
+import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import type {User} from '@app/features/user/models/User';
 import Users from '@app/features/user/state/Users';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
+import type {GuildRole} from '@fluxer/schema/src/domains/guild/GuildRoleSchemas';
 import type {I18n} from '@lingui/core';
 import {matchSorter} from 'match-sorter';
 
@@ -80,17 +82,14 @@ export function filterDMUsers(
 	let matchedUsers: typeof users;
 	if (parsedQuery.hasTagSeparator) {
 		const usernameQueryLower = parsedQuery.usernameQuery.toLowerCase();
-		const tagQueryLower = parsedQuery.tagQuery?.toLowerCase() ?? '';
 		matchedUsers = users.filter((user) => {
 			const username = toLowerSearchText(user.username);
 			const display = toLowerSearchText(getUserDisplayName(user));
-			const discriminator = firstDisplayText(user.discriminator);
-			const matchesUsername =
+			return (
 				usernameQueryLower.length === 0 ||
 				username.startsWith(usernameQueryLower) ||
-				display.startsWith(usernameQueryLower);
-			const matchesTag = tagQueryLower.length === 0 || discriminator.startsWith(tagQueryLower);
-			return matchesUsername && matchesTag;
+				display.startsWith(usernameQueryLower)
+			);
 		});
 	} else if (trimmedUsername.length === 0) {
 		matchedUsers = users;
@@ -107,6 +106,30 @@ export function filterDMUsers(
 		kind: 'user' as const,
 		user,
 	}));
+}
+
+export function collectChannelAccessibleMembers(guildId: string, channelId: string): Array<GuildMember> {
+	return MemberSidebar.collectLoadedMembers(guildId, channelId);
+}
+
+export function filterMentionableRolesForChannel(
+	guildId: string,
+	roles: ReadonlyArray<GuildRole>,
+	channelMembers: ReadonlyArray<GuildMember>,
+	canMentionEveryone: boolean,
+	canMentionRoleInChannel?: (roleId: string) => boolean,
+): Array<GuildRole> {
+	const mentionableRoles = roles.filter((role) => canMentionEveryone || role.mentionable);
+	if (channelMembers.length === 0) {
+		return mentionableRoles.filter((role) => canMentionRoleInChannel?.(role.id) ?? true);
+	}
+	const roleIdsInChannel = new Set<string>([guildId]);
+	for (const member of channelMembers) {
+		for (const roleId of member.roles) {
+			roleIdsInChannel.add(roleId);
+		}
+	}
+	return mentionableRoles.filter((role) => roleIdsInChannel.has(role.id));
 }
 
 export function filterGuildMembers(
@@ -128,19 +151,16 @@ export function filterGuildMembers(
 	let matchedMembers: typeof filteredByAccess;
 	if (parsedQuery.hasTagSeparator) {
 		const usernameQueryLower = parsedQuery.usernameQuery.toLowerCase();
-		const tagQueryLower = parsedQuery.tagQuery?.toLowerCase() ?? '';
 		matchedMembers = filteredByAccess.filter((member) => {
 			const nick = toLowerSearchText(member.nick);
 			const username = toLowerSearchText(member.user?.username);
 			const display = toLowerSearchText(getMemberDisplayName(member));
-			const discriminator = firstDisplayText(member.user?.discriminator);
-			const matchesUsername =
+			return (
 				usernameQueryLower.length === 0 ||
 				username.startsWith(usernameQueryLower) ||
 				display.startsWith(usernameQueryLower) ||
-				nick.startsWith(usernameQueryLower);
-			const matchesTag = tagQueryLower.length === 0 || discriminator.startsWith(tagQueryLower);
-			return matchesUsername && matchesTag;
+				nick.startsWith(usernameQueryLower)
+			);
 		});
 	} else if (trimmedUsername.length === 0) {
 		matchedMembers = filteredByAccess;

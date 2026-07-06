@@ -32,14 +32,13 @@ export async function sendFriendRequestByTag(
 	harness: ApiTestHarness,
 	token: string,
 	username: string,
-	discriminator: string,
 ): Promise<{
 	response: Response;
 	json: RelationshipResponse;
 }> {
 	const {response, json} = await createBuilder<RelationshipResponse>(harness, token)
 		.post('/users/@me/relationships')
-		.body({username, discriminator})
+		.body({username})
 		.executeWithResponse();
 	if (response.status !== 200) {
 		throw new Error(`Expected 200, got ${response.status}`);

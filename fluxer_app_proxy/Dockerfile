@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ARG RUST_VERSION=1.93.0
 ENV RUSTUP_HOME=/usr/local/rustup \
 	CARGO_HOME=/usr/local/cargo \
+	CARGO_NET_RETRY=10 \
+	CARGO_HTTP_MULTIPLEXING=false \
 	PATH=/usr/local/cargo/bin:$PATH
 RUN set -eux; \
 	curl --retry 3 --retry-all-errors --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs \
@@ -71,9 +73,10 @@ COPY fluxer_app/src/ ./fluxer_app/src/
 ENV BUILD_VERSION=${BUILD_VERSION} \
 	PUBLIC_ASSET_BASE_URL=${PUBLIC_ASSET_BASE_URL}
 
+# build:release extracts new i18n strings, compiles catalogs, then bundles the SPA.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
 	--mount=type=cache,target=/usr/local/cargo/git \
-	cd fluxer_app && pnpm build
+	cd fluxer_app && pnpm build:release
 
 # Extract the full SPA asset tree for local serving by the app proxy.
 FROM alpine:3.21 AS app-assets
@@ -89,6 +92,9 @@ FROM rust:1-bookworm AS rust-builder
 ARG FLUXER_APP_PROXY_TIME_FREEZE_ENABLED="true"
 
 WORKDIR /usr/src/app
+
+ENV CARGO_NET_RETRY=10 \
+	CARGO_HTTP_MULTIPLEXING=false
 
 COPY Cargo.lock ./
 COPY fluxer_common/ fluxer_common/

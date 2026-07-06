@@ -202,6 +202,7 @@ const AvatarComponent = React.forwardRef<HTMLDivElement, AvatarProps>(
 				ref={mergedRef}
 				size={size}
 				avatarUrl={avatarPresentation.avatarUrl}
+				fallbackAvatarUrl={fallbackAvatarUrl}
 				hoverAvatarUrl={safeHoverAvatarUrl}
 				status={status}
 				isMobileStatus={isMobileStatus}

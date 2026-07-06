@@ -143,6 +143,14 @@ import {
 	type InviteRow,
 	PRIVATE_CHANNEL_COLUMNS,
 	type PrivateChannelRow,
+	THREAD_BY_AUTO_CLOSE_COLUMNS,
+	THREAD_BY_PARENT_COLUMNS,
+	THREAD_MEMBER_BY_USER_COLUMNS,
+	THREAD_MEMBER_COLUMNS,
+	type ThreadByAutoCloseRow,
+	type ThreadByParentRow,
+	type ThreadMemberByUserRow,
+	type ThreadMemberRow,
 	WEBHOOK_COLUMNS,
 	type WebhookRow,
 } from './database/types/ChannelTypes';
@@ -314,6 +322,7 @@ import {
 	USER_BY_STRIPE_CUSTOMER_ID_COLUMNS,
 	USER_BY_STRIPE_SUBSCRIPTION_ID_COLUMNS,
 	USER_BY_USERNAME_COLUMNS,
+	USER_BY_USERNAME_V2_COLUMNS,
 	USER_COLUMNS,
 	USER_CONTACT_CHANGE_LOG_COLUMNS,
 	USER_DM_HISTORY_COLUMNS,
@@ -330,6 +339,7 @@ import {
 	type UserByStripeCustomerIdRow,
 	type UserByStripeSubscriptionIdRow,
 	type UserByUsernameRow,
+	type UserByUsernameV2Row,
 	type UserContactChangeLogRow,
 	type UserDmHistoryRow,
 	type UserEmailOwnerRow,
@@ -365,6 +375,11 @@ export const UserByUsername = defineTable<UserByUsernameRow, 'username' | 'discr
 	name: 'users_by_username',
 	columns: USER_BY_USERNAME_COLUMNS,
 	primaryKey: ['username', 'discriminator', 'user_id'],
+});
+export const UserByUsernameV2 = defineTable<UserByUsernameV2Row, 'username'>({
+	name: 'users_by_username_v2',
+	columns: USER_BY_USERNAME_V2_COLUMNS,
+	primaryKey: ['username'],
 });
 export const UserByEmail = defineTable<UserByEmailRow, 'email_lower' | 'user_id'>({
 	name: 'users_by_email',
@@ -605,6 +620,34 @@ export const DmStates = defineTable<DmStateRow, 'hi_user_id' | 'lo_user_id' | 'c
 	name: 'dm_states',
 	columns: DM_STATE_COLUMNS,
 	primaryKey: ['hi_user_id', 'lo_user_id', 'channel_id'],
+});
+export const ThreadMembers = defineTable<ThreadMemberRow, 'thread_id' | 'user_id', 'thread_id'>({
+	name: 'thread_members',
+	columns: THREAD_MEMBER_COLUMNS,
+	primaryKey: ['thread_id', 'user_id'],
+	partitionKey: ['thread_id'],
+});
+export const ThreadMembersByUser = defineTable<ThreadMemberByUserRow, 'user_id' | 'thread_id', 'user_id'>({
+	name: 'thread_members_by_user',
+	columns: THREAD_MEMBER_BY_USER_COLUMNS,
+	primaryKey: ['user_id', 'thread_id'],
+	partitionKey: ['user_id'],
+});
+export const ThreadsByParent = defineTable<ThreadByParentRow, 'parent_id' | 'thread_id', 'parent_id'>({
+	name: 'threads_by_parent',
+	columns: THREAD_BY_PARENT_COLUMNS,
+	primaryKey: ['parent_id', 'thread_id'],
+	partitionKey: ['parent_id'],
+});
+export const ThreadsByAutoClose = defineTable<
+	ThreadByAutoCloseRow,
+	'close_bucket' | 'auto_close_at' | 'thread_id',
+	'close_bucket'
+>({
+	name: 'threads_by_auto_close_at',
+	columns: THREAD_BY_AUTO_CLOSE_COLUMNS,
+	primaryKey: ['close_bucket', 'auto_close_at', 'thread_id'],
+	partitionKey: ['close_bucket'],
 });
 
 interface PinnedDmRow {

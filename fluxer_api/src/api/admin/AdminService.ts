@@ -9,7 +9,6 @@ import type {IChannelRepository} from '../channel/IChannelRepository';
 import type {ChannelService} from '../channel/services/ChannelService';
 import type {IGuildRepositoryAggregate} from '../guild/repositories/IGuildRepositoryAggregate';
 import type {GuildService} from '../guild/services/GuildService';
-import type {IDiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '../infrastructure/EntityAssetService';
 import type {IAssetDeletionQueue} from '../infrastructure/IAssetDeletionQueue';
 import type {IStorageService} from '../infrastructure/IStorageService';
@@ -68,7 +67,6 @@ export class AdminService {
 		private readonly channelRepository: IChannelRepository,
 		private readonly adminRepository: IAdminRepository,
 		private readonly inviteRepository: InviteRepository,
-		private readonly discriminatorService: IDiscriminatorService,
 		private readonly guildService: GuildService,
 		private readonly userCacheService: UserCacheService,
 		private readonly channelService: ChannelService,
@@ -103,7 +101,6 @@ export class AdminService {
 			apiContext: this.apiContext,
 			guildRepository: this.guildRepository,
 			channelRepository: this.channelRepository,
-			discriminatorService: this.discriminatorService,
 			entityAssetService: this.entityAssetService,
 			auditService: this.auditService,
 			userCacheService: this.userCacheService,

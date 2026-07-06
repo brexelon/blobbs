@@ -2,7 +2,7 @@
 
 import {defineErrorI18nLocaleMessages} from '../ErrorI18nMessages';
 
-const ERROR_I18N_HE_MESSAGES = defineErrorI18nLocaleMessages({
+export const ERROR_I18N_HE_MESSAGES = defineErrorI18nLocaleMessages({
 	"account.already_verified": "החשבון כבר מאומת.",
 	"account.communication_disabled": "התקשורת מושבתת.",
 	"account.disabled": "החשבון הזה הושבת.",

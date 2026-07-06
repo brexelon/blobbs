@@ -91,12 +91,12 @@ export class UserRepository implements IUserRepositoryAggregate {
 		return this.accountRepo.findUniqueAssert(userId);
 	}
 
-	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
-		return this.accountRepo.findByUsernameDiscriminator(username, discriminator);
+	async findByUsername(username: string): Promise<User | null> {
+		return this.accountRepo.findByUsername(username);
 	}
 
-	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
-		return this.accountRepo.findDiscriminatorsByUsername(username);
+	async isUsernameAvailable(username: string): Promise<boolean> {
+		return this.accountRepo.isUsernameAvailable(username);
 	}
 
 	async findByEmail(email: string): Promise<User | null> {
@@ -182,6 +182,10 @@ export class UserRepository implements IUserRepositoryAggregate {
 
 	async deleteUserSecondaryIndices(userId: UserID): Promise<void> {
 		return this.accountRepo.deleteUserSecondaryIndices(userId);
+	}
+
+	async deleteUser(userId: UserID): Promise<void> {
+		return this.accountRepo.deleteUser(userId);
 	}
 
 	async removeFromAllGuilds(userId: UserID): Promise<void> {

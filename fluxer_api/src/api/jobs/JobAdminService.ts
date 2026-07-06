@@ -71,27 +71,31 @@ export class JobAdminService {
 }
 
 function rowToEntry(row: JobByIdRow): JobLedgerEntry {
+	const createdAt = row.created_at ?? row.started_at ?? row.completed_at;
+	if (!createdAt || !row.task_type) {
+		throw new Error(`Job ${row.job_id.toString()} is missing required ledger fields`);
+	}
 	return {
 		job_id: row.job_id.toString(),
 		task_type: row.task_type,
 		status: row.status,
-		progress_current: row.progress_current === null ? null : Number(row.progress_current),
-		progress_total: row.progress_total === null ? null : Number(row.progress_total),
-		progress_message: row.progress_message,
-		error_message: row.error_message,
-		created_at: row.created_at.toISOString(),
+		progress_current: row.progress_current === null || row.progress_current === undefined ? null : Number(row.progress_current),
+		progress_total: row.progress_total === null || row.progress_total === undefined ? null : Number(row.progress_total),
+		progress_message: row.progress_message ?? null,
+		error_message: row.error_message ?? null,
+		created_at: createdAt.toISOString(),
 		started_at: row.started_at ? row.started_at.toISOString() : null,
 		completed_at: row.completed_at ? row.completed_at.toISOString() : null,
-		requested_by_user_id: row.requested_by_user_id === null ? null : row.requested_by_user_id.toString(),
-		audit_log_reason: row.audit_log_reason,
-		jet_stream_lane: row.jet_stream_lane,
-		jet_stream_seq: row.jet_stream_seq,
-		attempts: row.attempts,
-		max_attempts: row.max_attempts,
+		requested_by_user_id: row.requested_by_user_id == null ? null : row.requested_by_user_id.toString(),
+		audit_log_reason: row.audit_log_reason ?? null,
+		jet_stream_lane: row.jet_stream_lane ?? null,
+		jet_stream_seq: row.jet_stream_seq ?? null,
+		attempts: row.attempts ?? 0,
+		max_attempts: row.max_attempts ?? 5,
 		run_at: row.run_at ? row.run_at.toISOString() : null,
-		cancel_requested: row.cancel_requested,
-		context_link: row.context_link,
-		payload: row.payload,
-		result: row.result,
+		cancel_requested: row.cancel_requested ?? false,
+		context_link: row.context_link ?? null,
+		payload: row.payload ?? null,
+		result: row.result ?? null,
 	};
 }

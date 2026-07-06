@@ -13,7 +13,6 @@ import {createBase64StringType} from '@fluxer/schema/src/primitives/FileValidato
 import {
 	createBitflagInt32Type,
 	createInt32EnumType,
-	createNamedObject,
 	createNamedStringLiteralUnion,
 	createStringType,
 	Int32Type,
@@ -21,7 +20,7 @@ import {
 	SnowflakeType,
 	withOpenApiType,
 } from '@fluxer/schema/src/primitives/SchemaPrimitives';
-import {DiscriminatorType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
+import {UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import {z} from 'zod';
 
 const RedirectURIString = createStringType(1).refine((value) => {
@@ -325,7 +324,7 @@ export const OAuth2ApplicationsMeResponse = z.union([ApplicationListResponse, Ap
 
 export type OAuth2ApplicationsMeResponse = z.infer<typeof OAuth2ApplicationsMeResponse>;
 
-const OAuth2AuthorizationResponse = createNamedObject('OAuth2AuthorizationResponse', {
+const OAuth2AuthorizationResponse = z.object({
 	application: z
 		.object({
 			id: SnowflakeStringType.describe('The unique identifier of the application'),
@@ -434,7 +433,6 @@ export type ApplicationUpdateRequest = z.infer<typeof ApplicationUpdateRequest>;
 
 export const BotProfileUpdateRequest = z.object({
 	username: UsernameType.optional().describe('The username of the bot'),
-	discriminator: DiscriminatorType.optional().describe('The discriminator of the bot'),
 	avatar: createBase64StringType(1, Math.ceil(AVATAR_MAX_SIZE * (4 / 3)))
 		.nullish()
 		.describe('The avatar image as base64'),

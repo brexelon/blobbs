@@ -88,6 +88,7 @@
 .usernameRow {
 	display: flex;
 	align-items: center;
+	gap: 0.25rem;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -97,11 +98,18 @@
 	line-height: 1.125rem;
 }
 
-.pronouns {
-	margin: 0;
-	font-size: 0.875rem;
+.usernameSeparator {
+	flex-shrink: 0;
 	color: var(--text-tertiary);
-	line-height: 1.125rem;
+}
+
+.pronounsInline {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-tertiary);
 }
 
 .srOnly {

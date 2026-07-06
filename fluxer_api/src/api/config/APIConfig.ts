@@ -271,7 +271,13 @@ export interface APIConfig {
 		domain: string;
 		secure: boolean;
 	};
+	gif: {
+		provider: 'klipy' | 'tenor';
+	};
 	klipy: {
+		apiKey?: string;
+	};
+	tenor: {
 		apiKey?: string;
 	};
 	youtube: {
@@ -281,7 +287,6 @@ export interface APIConfig {
 		selfHosted: boolean;
 		autoJoinInviteCode?: string;
 		visionariesGuildId?: string;
-		visionariesGuildVisionaryRoleId?: string;
 		branding: {
 			productName: string;
 			iconUrl?: string;

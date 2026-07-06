@@ -32,7 +32,7 @@ class FakeConnectionManager implements INatsConnectionManager {
 							FoundApi: {
 								id: '2',
 								channel_id: '1',
-								author: {id: '3', username: 'author', discriminator: '0001', avatar: null, flags: 0},
+								author: {id: '3', username: 'author', discriminator: '0', avatar: null, flags: 0},
 								type: MessageTypes.DEFAULT,
 								flags: 0,
 								content: '',

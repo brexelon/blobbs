@@ -24,6 +24,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = observer(
 		renderActionButtons,
 		previewOverrides,
 		showProfileDataWarning,
+		initialTab,
 	}) => {
 		const effectiveProfile = profile?.getEffectiveProfile() ?? null;
 		const bannerColor = getUserAccentColor(user, effectiveProfile?.accent_color);
@@ -73,6 +74,7 @@ export const ProfileModalContent: React.FC<ProfileModalContentProps> = observer(
 					autoFocusNote={autoFocusNote}
 					noteRef={noteRef}
 					showProfileDataWarning={showProfileDataWarning}
+					initialTab={initialTab}
 					data-flx="user.user-profile-modal.profile-modal-content.profile-body"
 				/>
 			</>

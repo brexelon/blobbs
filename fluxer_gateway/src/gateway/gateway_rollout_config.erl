@@ -340,7 +340,8 @@ subscribe_to_nats(State) ->
 subscribe_to_rollout_subject() ->
     try gateway_nats_rpc:subscribe(?NATS_SUBJECT, <<>>) of
         {ok, Sid} -> {ok, Sid};
-        {error, Reason} -> {error, Reason}
+        {error, Reason} -> {error, Reason};
+        Other -> {error, Other}
     catch
         Class:Reason -> {error, {Class, Reason}}
     end.

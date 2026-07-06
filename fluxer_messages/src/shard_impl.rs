@@ -48,7 +48,7 @@ const PUBLIC_USER_FLAGS: i64 =
 #[cfg(test)]
 const USER_FLAG_DELETED: i64 = 1_i64 << 34;
 const FLUXER_SYSTEM_USER_ID: i64 = 0;
-const FLUXER_SYSTEM_USERNAME: &str = "Fluxer";
+const FLUXER_SYSTEM_USERNAME: &str = "ZVLN";
 const FLUXER_SYSTEM_DISCRIMINATOR: &str = "0000";
 const USER_FLAG_STAFF: i64 = 1;
 const DELETED_USER_USERNAME: &str = "DeletedUser";
@@ -58,15 +58,6 @@ const ENRICHMENT_QUERY_CONCURRENCY: usize = 16;
 const REACTION_MESSAGE_BATCH_SIZE: usize = 64;
 const ATTACHMENT_DECAY_BATCH_SIZE: usize = 128;
 const BUCKET_INDEX_PAGE_SIZE: u32 = 200;
-const JS_MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
-
-fn assert_safe_byte_size(value: i64) -> i64 {
-    assert!(
-        (0..=JS_MAX_SAFE_INTEGER).contains(&value),
-        "attachment size must fit a non-negative JavaScript safe integer"
-    );
-    value
-}
 
 #[cfg(feature = "scylla")]
 const MESSAGE_COLUMNS: &str = "\
@@ -1241,7 +1232,7 @@ impl MessagesShard {
             description: attachment.description.clone(),
             content_type: Some(content_type),
             content_hash: attachment.content_hash.clone(),
-            size: assert_safe_byte_size(attachment.size.unwrap_or_default()),
+            size: attachment.size.unwrap_or_default(),
             url: (!expired).then_some(url.clone()),
             proxy_url: (!expired).then_some(url),
             width: (!is_audio).then_some(attachment.width).flatten(),
@@ -3073,7 +3064,7 @@ mod tests {
         });
 
         assert_eq!(mapped.id, "0");
-        assert_eq!(mapped.username, "Fluxer");
+        assert_eq!(mapped.username, FLUXER_SYSTEM_USERNAME);
         assert_eq!(mapped.discriminator, "0000");
         assert_eq!(mapped.global_name, None);
         assert_eq!(mapped.bot, Some(true));
@@ -3086,7 +3077,7 @@ mod tests {
         let mapped = deleted_user(0);
 
         assert_eq!(mapped.id, "0");
-        assert_eq!(mapped.username, "Fluxer");
+        assert_eq!(mapped.username, FLUXER_SYSTEM_USERNAME);
         assert_eq!(mapped.global_name, None);
         assert_eq!(mapped.bot, Some(true));
         assert_eq!(mapped.system, Some(true));

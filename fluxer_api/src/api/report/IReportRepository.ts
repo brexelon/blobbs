@@ -162,6 +162,8 @@ export abstract class IReportRepository {
 		auditLogReason: string | null,
 	): Promise<IARSubmission>;
 
+	abstract deleteReport(reportId: ReportID): Promise<IARSubmission>;
+
 	abstract listAllReportsPaginated(limit: number, lastReportId?: ReportID): Promise<Array<IARSubmission>>;
 
 	abstract upsertDsaEmailVerification(row: DSAReportEmailVerificationRow): Promise<void>;

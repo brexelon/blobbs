@@ -21,7 +21,6 @@ import {z} from 'zod';
 import {requireSudoMode} from '../../auth/services/SudoVerificationService';
 import {createChannelID, createUserID} from '../../BrandedTypes';
 import {DefaultUserOnly, LoginRequired} from '../../middleware/AuthMiddleware';
-import {GroupDmRecipientAddProtectionMiddleware} from '../../middleware/GroupDmProtectionMiddleware';
 import {RateLimitMiddleware} from '../../middleware/RateLimitMiddleware';
 import {OpenAPI} from '../../middleware/ResponseTypeMiddleware';
 import {SudoModeMiddleware} from '../../middleware/SudoModeMiddleware';
@@ -209,12 +208,11 @@ export function ChannelController(app: HonoApp) {
 		RateLimitMiddleware(RateLimitConfigs.CHANNEL_UPDATE),
 		LoginRequired,
 		Validator('param', ChannelIdUserIdParam),
-		GroupDmRecipientAddProtectionMiddleware,
 		OpenAPI({
 			operationId: 'add_group_dm_recipient',
 			summary: 'Add recipient to group DM',
 			description:
-				'Adds a user to a group direct message channel. The requesting user must be a member of the group DM. Requires CAPTCHA verification.',
+				'Adds a user to a group direct message channel. The requesting user must be a member of the group DM.',
 			responseSchema: null,
 			statusCode: 204,
 			security: ['botToken', 'bearerToken', 'sessionToken'],

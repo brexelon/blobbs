@@ -18,7 +18,6 @@ function retryAfterMinutes(result: RateLimitResult): number {
 export async function enforceFluxerTagChangeRateLimit(params: {
 	rateLimitService: IRateLimitService;
 	userId: UserID;
-	errorPath: 'username' | 'discriminator';
 }): Promise<void> {
 	const rateLimit = await params.rateLimitService.checkLimit({
 		identifier: `username_change:${params.userId}`,
@@ -26,7 +25,7 @@ export async function enforceFluxerTagChangeRateLimit(params: {
 		windowMs: FLUXER_TAG_CHANGE_WINDOW_MS,
 	});
 	if (!rateLimit.allowed) {
-		throw InputValidationError.fromCode(params.errorPath, ValidationErrorCodes.USERNAME_CHANGED_TOO_MANY_TIMES, {
+		throw InputValidationError.fromCode('username', ValidationErrorCodes.USERNAME_CHANGED_TOO_MANY_TIMES, {
 			minutes: retryAfterMinutes(rateLimit),
 		});
 	}

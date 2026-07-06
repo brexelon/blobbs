@@ -2,7 +2,7 @@
 
 import {UserFlags} from '@fluxer/constants/src/UserConstants';
 import {createUserID, type UserID} from '../../../../BrandedTypes';
-import {fetchMany, fetchOne, fetchPage, upsertOne} from '../../../../database/CassandraQueryExecution';
+import {deleteOneOrMany, fetchMany, fetchOne, fetchPage, upsertOne} from '../../../../database/CassandraQueryExecution';
 import {Db, type DbOp, nextVersion} from '../../../../database/CassandraTypes';
 import {
 	applyPatchToRow,
@@ -51,7 +51,6 @@ export class UserDataRepository {
 				...EMPTY_USER_ROW,
 				user_id: createUserID(FLUXER_BOT_USER_ID),
 				username: 'Fluxer',
-				discriminator: 0,
 				bot: true,
 				system: true,
 				flags: UserFlags.STAFF,
@@ -62,7 +61,6 @@ export class UserDataRepository {
 				...EMPTY_USER_ROW,
 				user_id: createUserID(DELETED_USER_ID),
 				username: 'DeletedUser',
-				discriminator: 0,
 				bot: false,
 				system: false,
 			});
@@ -227,5 +225,9 @@ export class UserDataRepository {
 			Users,
 		);
 		return {finalVersion: result.finalVersion};
+	}
+
+	async deleteUser(userId: UserID): Promise<void> {
+		await deleteOneOrMany(Users.deleteByPk({user_id: userId}));
 	}
 }

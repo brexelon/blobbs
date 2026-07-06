@@ -26,7 +26,6 @@ import type {GuildService} from '../guild/services/GuildService';
 import type {AvatarService} from '../infrastructure/AvatarService';
 import type {IPurgeQueue} from '../infrastructure/BunnyPurgeQueue';
 import {DisabledLiveKitService} from '../infrastructure/DisabledLiveKitService';
-import type {DiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {EmbedService} from '../infrastructure/EmbedService';
 import type {IAssetDeletionQueue} from '../infrastructure/IAssetDeletionQueue';
 import type {IGatewayService} from '../infrastructure/IGatewayService';
@@ -73,7 +72,6 @@ import {
 	getChannelRepository,
 	getConnectionRepository,
 	getContactChangeLogService,
-	getDiscriminatorService,
 	getEmailService,
 	getEmbedService,
 	getEntityAssetService,
@@ -147,7 +145,6 @@ export interface WorkerDependencies {
 	purgeQueue: IPurgeQueue;
 	gatewayService: IGatewayService;
 	mediaService: IMediaService;
-	discriminatorService: DiscriminatorService;
 	avatarService: AvatarService;
 	virusScanService: IVirusScanService;
 	rateLimitService: RateLimitService;
@@ -208,7 +205,6 @@ export async function initializeWorkerDependencies(snowflakeService: ISnowflakeS
 	const blueskyOAuthService = await resolveBlueskyOAuthService(instanceConfigRepository);
 	const connectionService = new ConnectionService(connectionRepository, gatewayService, blueskyOAuthService);
 	const mediaService = getMediaService();
-	const discriminatorService = getDiscriminatorService();
 	const ncmecSubmissionService = getNcmecSubmissionService();
 	const avatarService = getAvatarService();
 	const entityAssetService = getEntityAssetService();
@@ -316,7 +312,6 @@ export async function initializeWorkerDependencies(snowflakeService: ISnowflakeS
 		purgeQueue,
 		gatewayService,
 		mediaService,
-		discriminatorService,
 		avatarService,
 		virusScanService,
 		rateLimitService,

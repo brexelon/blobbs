@@ -101,6 +101,25 @@ describe('ReadStateRepository row storage', () => {
 			mention_count: 0,
 		});
 	});
+	it('bulk increments mention counts and returns updated read states', async () => {
+		const userId = createUserID(1n);
+		const channelId = createChannelID(10n);
+		await seedReadState(userId, channelId, 100n, 2);
+		const repository = new ReadStateRepository();
+		const readStates = await repository.bulkIncrementMentionCounts([
+			{userId, channelId, messageId: createMessageID(101n)},
+			{userId, channelId, messageId: createMessageID(90n)},
+		]);
+		expect(readStates).toHaveLength(1);
+		expect(readStates[0]).toMatchObject({
+			lastMessageId: createMessageID(100n),
+			mentionCount: 3,
+		});
+		expect(await loadReadState(userId, channelId)).toMatchObject({
+			message_id: createMessageID(100n),
+			mention_count: 3,
+		});
+	});
 });
 
 async function seedReadState(

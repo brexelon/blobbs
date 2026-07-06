@@ -46,9 +46,11 @@ import {
 } from '@app/features/user/components/popouts/UserProfileShared';
 import {ProfileCardActions} from '@app/features/user/components/profile/profile_card/ProfileCardActions';
 import {ProfileCardBanner} from '@app/features/user/components/profile/profile_card/ProfileCardBanner';
+import {ProfileCardBannerActions} from '@app/features/user/components/profile/profile_card/ProfileCardBannerActions';
 import {ProfileCardContent} from '@app/features/user/components/profile/profile_card/ProfileCardContent';
 import {ProfileCardFooter} from '@app/features/user/components/profile/profile_card/ProfileCardFooter';
 import {ProfileCardLayout} from '@app/features/user/components/profile/profile_card/ProfileCardLayout';
+import {ProfileCardMutuals} from '@app/features/user/components/profile/profile_card/ProfileCardMutuals';
 import {ProfileCardUserInfo} from '@app/features/user/components/profile/profile_card/ProfileCardUserInfo';
 import {UserProfileLoadingSkeleton} from '@app/features/user/components/profile/UserProfileLoadingSkeleton';
 import {useProfileCardDisplayState} from '@app/features/user/components/profile/useProfileCardDisplayState';
@@ -292,6 +294,19 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 							onAvatarClick={!isWebhook ? handleOpenFullProfile : undefined}
 							onAvatarContextMenu={handleAvatarContextMenu}
 							onBannerContextMenu={handleBannerContextMenu}
+							bannerActions={
+								!isWebhook && (
+									<ProfileCardBannerActions
+										user={user}
+										profile={profile}
+										profileContext={profileContext}
+										guildId={guildId}
+										isCurrentUser={isCurrentUser}
+										onViewFullProfile={handleOpenFullProfile}
+										data-flx="user.user-profile-popout.profile-card-banner-actions"
+									/>
+								)
+							}
 							data-flx="user.user-profile-popout.profile-card-banner"
 						/>
 						{!isWebhook && (
@@ -312,40 +327,54 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 									<LimitedProfileNotice data-flx="user.user-profile-popout.limited-profile-notice" />
 								</div>
 							)}
-							<ProfileCardUserInfo
-								displayName={displayName}
-								displayNameClassName={styles.profileDisplayName}
-								user={user}
-								pronouns={profileData?.pronouns}
-								showUsername={!isWebhook}
-								isClickable={!isWebhook}
-								isWebhook={isWebhook}
-								onDisplayNameClick={!isWebhook ? handleOpenFullProfile : undefined}
-								onUsernameClick={!isWebhook ? handleOpenFullProfile : undefined}
-								actions={
-									!isWebhook && (
-										<ProfileCardActions
-											userId={user.id}
-											isHovering={isHovering}
-											onNoteClick={handleOpenFullProfileNote}
-											data-flx="user.user-profile-popout.profile-card-actions"
-										/>
-									)
-								}
-								data-flx="user.user-profile-popout.profile-card-user-info"
-							/>
-							{!isWebhook && presenceCustomStatus && (
-								<div className={styles.profileCustomStatus} data-flx="user.user-profile-popout.profile-custom-status">
-									<CustomStatusDisplay
-										customStatus={presenceCustomStatus}
-										className={styles.profileCustomStatusText}
-										allowJumboEmoji
-										maxLines={0}
-										alwaysAnimate={shouldAutoplayProfileAnimations}
-										data-flx="user.user-profile-popout.profile-custom-status-text"
+							<div
+								className={styles.profileIntroSections}
+								data-flx="user.user-profile-popout.profile-intro-sections"
+							>
+								<ProfileCardUserInfo
+									displayName={displayName}
+									displayNameClassName={styles.profileDisplayName}
+									user={user}
+									pronouns={profileData?.pronouns}
+									showUsername={!isWebhook}
+									isClickable={!isWebhook}
+									isWebhook={isWebhook}
+									onDisplayNameClick={!isWebhook ? handleOpenFullProfile : undefined}
+									onUsernameClick={!isWebhook ? handleOpenFullProfile : undefined}
+									actions={
+										!isWebhook && (
+											<ProfileCardActions
+												userId={user.id}
+												isHovering={isHovering}
+												onNoteClick={handleOpenFullProfileNote}
+												data-flx="user.user-profile-popout.profile-card-actions"
+											/>
+										)
+									}
+									data-flx="user.user-profile-popout.profile-card-user-info"
+								/>
+								{!isWebhook && !isCurrentUser && !user.bot && profile && (
+									<ProfileCardMutuals
+										profile={profile}
+										user={user}
+										guildId={guildId}
+										onClose={requestClose}
+										data-flx="user.user-profile-popout.profile-card-mutuals"
 									/>
-								</div>
-							)}
+								)}
+								{!isWebhook && presenceCustomStatus && (
+									<div className={styles.profileCustomStatus} data-flx="user.user-profile-popout.profile-custom-status">
+										<CustomStatusDisplay
+											customStatus={presenceCustomStatus}
+											className={styles.profileCustomStatusText}
+											allowJumboEmoji
+											maxLines={0}
+											alwaysAnimate={shouldAutoplayProfileAnimations}
+											data-flx="user.user-profile-popout.profile-custom-status-text"
+										/>
+									</div>
+								)}
+							</div>
 							{!isWebhook && (
 								<VoiceActivitySection
 									userId={user.id}

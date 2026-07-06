@@ -18,6 +18,7 @@ import {
 	normalizeMemberListRanges,
 } from '@app/features/member/utils/MemberListRangeUtils';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import TransientPresence from '@app/features/presence/state/TransientPresence';
 import type {CustomStatus, GatewayCustomStatusPayload} from '@app/features/user/state/CustomStatus';
 import {fromGatewayCustomStatus} from '@app/features/user/state/CustomStatus';
 import {CustomStatusEmitter} from '@app/features/user/state/CustomStatusEmitter';
@@ -27,7 +28,7 @@ import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
 import type {StatusType} from '@fluxer/constants/src/StatusConstants';
 import {StatusTypes} from '@fluxer/constants/src/StatusConstants';
 import type {GuildMemberData} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
-import {makeAutoObservable, observable} from 'mobx';
+import {makeAutoObservable, observable, reaction} from 'mobx';
 
 interface MemberListGroup {
 	id: string;
@@ -158,6 +159,8 @@ class MemberSidebar {
 	lastAccess: Record<string, Record<string, number>> = {};
 	pruneIntervalId: number | null = null;
 	sessionVersion = 0;
+	listUpdateVersions = new Map<string, number>();
+	private listRevision = 0;
 	private materializedMemberCache = new WeakMap<MemberListMember, GuildMember>();
 	private pendingListUpdateBatches = new Map<string, PendingMemberListUpdateBatch>();
 	private preloadLeaseTimeoutId: number | null = null;
@@ -173,6 +176,7 @@ class MemberSidebar {
 			| 'materializedMemberCache'
 			| 'pendingListUpdateBatches'
 			| 'preloadLeaseTimeoutId'
+			| 'listRevision'
 		>(
 			this,
 			{
@@ -185,10 +189,58 @@ class MemberSidebar {
 				materializedMemberCache: false,
 				pendingListUpdateBatches: false,
 				preloadLeaseTimeoutId: false,
+				listRevision: false,
 			},
 			{autoBind: true},
 		);
 		this.startPruneInterval();
+	}
+
+	get version(): number {
+		return this.sessionVersion + this.listRevision;
+	}
+
+	subscribe(callback: () => void): () => void {
+		return reaction(
+			() => this.version,
+			() => callback(),
+		);
+	}
+
+	getChannelListVersion(guildId: string, channelId: string): number {
+		return this.getListUpdateVersion(guildId, channelId);
+	}
+
+	collectLoadedMembers(guildId: string, channelId: string): Array<GuildMember> {
+		const listState = this.getList(guildId, channelId);
+		if (!listState?.hasReceivedInitialPayload) {
+			return [];
+		}
+		const seen = new Set<string>();
+		const members: Array<GuildMember> = [];
+		const addMember = (userId: string, memberData: MemberListOperationMember) => {
+			if (seen.has(userId)) {
+				return;
+			}
+			seen.add(userId);
+			const item: MemberListItem = {
+				type: 'member',
+				data: {userId, member: memberData},
+			};
+			const member = this.materializeItemMember(guildId, item);
+			if (member) {
+				members.push(member);
+			}
+		};
+		for (const item of listState.items.values()) {
+			addMember(item.data.userId, item.data.member);
+		}
+		for (const row of listState.rows.values()) {
+			if (row.member && row.userId) {
+				addMember(row.userId, row.member);
+			}
+		}
+		return members;
 	}
 
 	handleSessionInvalidated(): void {
@@ -200,7 +252,9 @@ class MemberSidebar {
 		this.listSubscribedChannelIds = {};
 		this.activeMemberListSubscription = null;
 		this.lastAccess = {};
+		this.listUpdateVersions.clear();
 		this.sessionVersion += 1;
+		this.listRevision += 1;
 	}
 
 	handleGuildDelete(guildId: string): void {
@@ -264,7 +318,7 @@ class MemberSidebar {
 	}
 
 	handleListUpdate(params: MemberListUpdateParams): void {
-		const {guildId, listId, channelId} = params;
+		const {guildId, listId, channelId, ops} = params;
 		if (this.isMemberListUpdatesDisabled(guildId)) {
 			return;
 		}
@@ -274,6 +328,11 @@ class MemberSidebar {
 			existingGuildLists[listId] ??
 			(localStorageKey ? existingGuildLists[localStorageKey] : undefined) ??
 			(channelId ? existingGuildLists[channelId] : undefined);
+		if (ops.length > 0) {
+			this.clearPendingListUpdateBatch(guildId, listId);
+			this.applyListUpdate(params);
+			return;
+		}
 		if (!existingList?.hasReceivedInitialPayload || typeof window === 'undefined') {
 			this.applyListUpdate(params);
 			return;
@@ -505,10 +564,34 @@ class MemberSidebar {
 			guildLists[storageKey] = this.createEmptyListState();
 		}
 		const listState = guildLists[storageKey];
+		const visibleGroups = this.visibleGroups(groups);
+		const subscribedRanges = normalizeMemberListRanges(listState.subscribedRanges);
+		this.touchList(guildId, storageKey);
+		if (subscribedRanges.length === 0) {
+			listState.memberCount = memberCount;
+			listState.onlineCount = onlineCount;
+			listState.groups = visibleGroups;
+			listState.hasReceivedInitialPayload = true;
+			listState.rows = new Map();
+			listState.items = new Map();
+			listState.presences = new Map();
+			listState.customStatuses = new Map();
+			this.bumpListUpdateVersion(guildId, storageKey);
+			this.lists = {...this.lists, [guildId]: {...guildLists, [storageKey]: listState}};
+			return;
+		}
+		if (ops.length === 0) {
+			listState.memberCount = memberCount;
+			listState.onlineCount = onlineCount;
+			listState.groups = visibleGroups;
+			listState.hasReceivedInitialPayload = true;
+			this.bumpListUpdateVersion(guildId, storageKey);
+			this.lists = {...this.lists, [guildId]: {...guildLists, [storageKey]: listState}};
+			return;
+		}
 		const newRows = new Map(listState.rows);
 		const changedPresenceUserIds = new Set<string>();
 		const changedCustomStatusUserIds = new Set<string>();
-		this.touchList(guildId, storageKey);
 		for (const op of ops) {
 			const [start, end] = op.range;
 			for (let i = start; i <= end; i++) {
@@ -525,7 +608,6 @@ class MemberSidebar {
 				}
 			}
 		}
-		const visibleGroups = this.visibleGroups(groups);
 		const groupLayouts = buildMemberListLayout(visibleGroups);
 		const totalMembers = Math.max(memberCount, getTotalMemberCount(visibleGroups));
 		const totalRows = groupLayouts.length > 0 ? getTotalRowsFromLayout(groupLayouts) : totalMembers;
@@ -536,13 +618,12 @@ class MemberSidebar {
 			}
 			boundedRows.set(index, row);
 		}
-		const subscribedRanges = normalizeMemberListRanges(listState.subscribedRanges);
-		const prunedRows =
-			subscribedRanges.length > 0 ? this.pruneRowsToRanges(boundedRows, subscribedRanges) : boundedRows;
+		const prunedRows = this.pruneRowsToRanges(boundedRows, subscribedRanges);
 		const newItems = new Map<number, MemberListItem>();
-		const newPresences = new Map<string, StatusType>();
-		const newCustomStatuses = new Map<string, CustomStatus | null>();
+		const newPresences = new Map(listState.presences);
+		const newCustomStatuses = new Map(listState.customStatuses);
 		const nextKnownCustomStatuses = new Map(listState.knownCustomStatuses);
+		const transientPresenceUpdates: Array<{userId: string; status: StatusType}> = [];
 		const userIdRowCounts = new Map<string, number>();
 		const recordCustomStatus = (userId: string, customStatus: CustomStatus | null) => {
 			newCustomStatuses.set(userId, customStatus);
@@ -585,6 +666,9 @@ class MemberSidebar {
 					changedPresenceUserIds.add(row.userId);
 				}
 				newPresences.set(row.userId, presenceStatus);
+				if (previousPresenceStatus !== presenceStatus) {
+					transientPresenceUpdates.push({userId: row.userId, status: presenceStatus});
+				}
 			}
 			if (row.presence && Object.hasOwn(row.presence, 'custom_status')) {
 				const customStatus = fromGatewayCustomStatus(row.presence.custom_status ?? null);
@@ -609,7 +693,11 @@ class MemberSidebar {
 		listState.knownCustomStatuses = nextKnownCustomStatuses;
 		listState.subscribedRanges = subscribedRanges;
 		listState.hasReceivedInitialPayload = true;
+		this.bumpListUpdateVersion(guildId, storageKey);
 		this.lists = {...this.lists, [guildId]: {...guildLists, [storageKey]: listState}};
+		if (transientPresenceUpdates.length > 0) {
+			TransientPresence.updatePresences(transientPresenceUpdates);
+		}
 		if (duplicateUserIds.length > 0) {
 			const uniqueDuplicateUserIds = Array.from(new Set(duplicateUserIds));
 			this.logger.warn('Duplicate member rows received in list update:', {
@@ -798,12 +886,14 @@ class MemberSidebar {
 		clearLocalSubscription,
 		ownerId,
 		updateGateway,
+		preservePresenceCache = false,
 	}: {
 		guildId: string;
 		channelId: string;
 		clearLocalSubscription: boolean;
 		ownerId?: string | null;
 		updateGateway: boolean;
+		preservePresenceCache?: boolean;
 	}): void {
 		if (ownerId !== undefined) {
 			if (!this.isActiveMemberListSubscriptionOwner(guildId, channelId, ownerId)) {
@@ -843,6 +933,11 @@ class MemberSidebar {
 			guildLists[storageKey] = {
 				...existingList,
 				subscribedRanges: EMPTY_MEMBER_LIST_RANGES,
+				rows: new Map(),
+				items: new Map(),
+				presences: preservePresenceCache ? existingList.presences : new Map(),
+				customStatuses: preservePresenceCache ? existingList.customStatuses : new Map(),
+				knownCustomStatuses: preservePresenceCache ? existingList.knownCustomStatuses : new Map(),
 			};
 			this.touchList(guildId, storageKey);
 			this.lists = {...this.lists, [guildId]: guildLists};
@@ -866,13 +961,20 @@ class MemberSidebar {
 		this.activeMemberListSubscription = {guildId, channelId, ownerId, source};
 	}
 
-	releaseMemberListSubscription(guildId: string, channelId: string, ownerId: string): void {
+	releaseMemberListSubscription(
+		guildId: string,
+		channelId: string,
+		ownerId: string,
+		updateGateway = false,
+		preservePresenceCache = false,
+	): void {
 		this.clearChannelSubscription({
 			guildId,
 			channelId,
 			clearLocalSubscription: true,
 			ownerId,
-			updateGateway: false,
+			updateGateway,
+			preservePresenceCache,
 		});
 	}
 
@@ -918,6 +1020,50 @@ class MemberSidebar {
 			}
 		}
 		return items;
+	}
+
+	private listUpdateVersionKey(guildId: string, listId: string): string {
+		return `${guildId} ${listId}`;
+	}
+
+	private bumpListUpdateVersion(guildId: string, listId: string): void {
+		const key = this.listUpdateVersionKey(guildId, listId);
+		this.listUpdateVersions.set(key, (this.listUpdateVersions.get(key) ?? 0) + 1);
+		this.listRevision += 1;
+	}
+
+	/**
+	 * Monotonic counter that increments every time a member list update is applied
+	 * for the given channel's list. Subscribers use it to detect a fresh SYNC after
+	 * a gateway resume even when stale members remain cached.
+	 */
+	getListUpdateVersion(guildId: string, channelId: string): number {
+		const storageKey = this.resolveListKey(guildId, channelId);
+		return this.listUpdateVersions.get(this.listUpdateVersionKey(guildId, storageKey)) ?? 0;
+	}
+
+	areItemsLoadedForRanges(guildId: string, channelId: string, ranges: NormalizedMemberListRanges): boolean {
+		const list = this.getList(guildId, channelId);
+		if (!list?.hasReceivedInitialPayload || ranges.length === 0) {
+			return false;
+		}
+		const layouts = buildMemberListLayout(list.groups);
+		const totalRows = layouts.length > 0 ? getTotalRowsFromLayout(layouts) : list.memberCount;
+		for (const [start, end] of ranges) {
+			const rangeEnd = totalRows > 0 ? Math.min(end, totalRows - 1) : end;
+			for (let rowIndex = start; rowIndex <= rangeEnd; rowIndex += 1) {
+				if (layouts.length > 0) {
+					const layout = getGroupLayoutForRow(layouts, rowIndex);
+					if (!layout || rowIndex === layout.headerRowIndex) {
+						continue;
+					}
+				}
+				if (!list.items.has(rowIndex)) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	getList(guildId: string, listId: string): MemberListState | undefined {
@@ -1374,6 +1520,7 @@ class MemberSidebar {
 
 	private evictList(guildId: string, listId: string): void {
 		this.clearPendingListUpdateBatch(guildId, listId);
+		this.listUpdateVersions.delete(this.listUpdateVersionKey(guildId, listId));
 		const active = this.activeMemberListSubscription;
 		if (active?.source === 'preload' && active.guildId === guildId) {
 			const activeListId = this.resolveListKey(guildId, active.channelId);

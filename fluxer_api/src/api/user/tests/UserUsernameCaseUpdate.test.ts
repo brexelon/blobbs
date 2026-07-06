@@ -3,8 +3,6 @@
 import {afterEach, beforeEach, describe, expect, test} from 'vitest';
 import {createTestAccount} from '../../auth/tests/AuthTestUtils';
 import {type ApiTestHarness, createApiTestHarness} from '../../test/ApiTestHarness';
-import {HTTP_STATUS} from '../../test/TestConstants';
-import {createBuilder} from '../../test/TestRequestBuilder';
 import {fetchUserMe, updateUserProfile} from './UserTestUtils';
 
 async function runCaseUpdateTest(
@@ -18,7 +16,6 @@ async function runCaseUpdateTest(
 		};
 		initialUser: {
 			username: string;
-			discriminator: string;
 		};
 	}) => Promise<void>,
 ): Promise<void> {
@@ -28,7 +25,6 @@ async function runCaseUpdateTest(
 		account,
 		initialUser: {
 			username: initialUser.username,
-			discriminator: initialUser.discriminator,
 		},
 	});
 }
@@ -41,28 +37,23 @@ describe('User Username Case Update', () => {
 	afterEach(async () => {
 		await harness?.shutdown();
 	});
-	test('re-sending existing username keeps discriminator', async () => {
+	test('re-sending existing username keeps username unchanged', async () => {
 		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
 			const updated = await updateUserProfile(harness, account.token, {
 				username: initialUser.username,
 				password: account.password,
 			});
 			expect(updated.json.username).toBe(initialUser.username);
-			expect(updated.json.discriminator).toBe(initialUser.discriminator);
 		});
 	});
-	test('changing username case preserves discriminator', async () => {
+	test('changing username case normalizes to lowercase', async () => {
 		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
-			let newUsername = initialUser.username.toUpperCase();
-			if (newUsername === initialUser.username) {
-				newUsername = initialUser.username.toLowerCase();
-			}
+			const newUsername = initialUser.username.toUpperCase();
 			const updated = await updateUserProfile(harness, account.token, {
 				username: newUsername,
 				password: account.password,
 			});
-			expect(updated.json.username).toBe(newUsername);
-			expect(updated.json.discriminator).toBe(initialUser.discriminator);
+			expect(updated.json.username).toBe(initialUser.username.toLowerCase());
 		});
 	});
 	test('changing username completely works', async () => {
@@ -75,60 +66,13 @@ describe('User Username Case Update', () => {
 			expect(updated.json.username).toBe(newUsername);
 		});
 	});
-	test('no-op username and discriminator stays unchanged', async () => {
+	test('no-op username stays unchanged', async () => {
 		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
 			const updated = await updateUserProfile(harness, account.token, {
 				username: initialUser.username,
-				discriminator: initialUser.discriminator,
 				password: account.password,
 			});
 			expect(updated.json.username).toBe(initialUser.username);
-			expect(updated.json.discriminator).toBe(initialUser.discriminator);
-		});
-	});
-	test('case-only change with explicit discriminator keeps discriminator', async () => {
-		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
-			let newUsername = initialUser.username.toLowerCase();
-			if (newUsername === initialUser.username) {
-				newUsername = initialUser.username.toUpperCase();
-			}
-			const updated = await updateUserProfile(harness, account.token, {
-				username: newUsername,
-				discriminator: initialUser.discriminator,
-				password: account.password,
-			});
-			expect(updated.json.username).toBe(newUsername);
-			expect(updated.json.discriminator).toBe(initialUser.discriminator);
-		});
-	});
-	test('non-premium username change always rerolls discriminator even when explicitly echoed', async () => {
-		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
-			const newUsername = `preserve${initialUser.username.slice(0, Math.min(initialUser.username.length, 24))}`;
-			const updated = await updateUserProfile(harness, account.token, {
-				username: newUsername,
-				discriminator: initialUser.discriminator,
-				password: account.password,
-			});
-			expect(updated.json.username).toBe(newUsername);
-			expect(updated.json.discriminator).not.toBe(initialUser.discriminator);
-		});
-	});
-	test('non-premium username change rerolls when requested discriminator is already taken', async () => {
-		await runCaseUpdateTest(harness, async ({account, initialUser}) => {
-			const otherAccount = await createTestAccount(harness);
-			const {json: otherUser} = await fetchUserMe(harness, otherAccount.token);
-			await createBuilder(harness, otherAccount.token)
-				.patch(`/test/users/${otherAccount.userId}/discriminator`)
-				.body({discriminator: initialUser.discriminator})
-				.expect(HTTP_STATUS.OK)
-				.execute();
-			const updated = await updateUserProfile(harness, account.token, {
-				username: otherUser.username,
-				discriminator: initialUser.discriminator,
-				password: account.password,
-			});
-			expect(updated.json.username).toBe(otherUser.username);
-			expect(updated.json.discriminator).not.toBe(initialUser.discriminator);
 		});
 	});
 });

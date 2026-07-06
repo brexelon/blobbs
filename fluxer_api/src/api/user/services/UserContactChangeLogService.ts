@@ -86,12 +86,7 @@ export class UserContactChangeLogService {
 	}
 
 	private buildFluxerTag(user: User | null): string | null {
-		if (!user) return null;
-		const discriminator = user.discriminator?.toString() ?? '';
-		if (!user.username || discriminator === '') {
-			return null;
-		}
-		const paddedDiscriminator = discriminator.padStart(4, '0');
-		return `${user.username}#${paddedDiscriminator}`;
+		if (!user?.username) return null;
+		return user.username;
 	}
 }

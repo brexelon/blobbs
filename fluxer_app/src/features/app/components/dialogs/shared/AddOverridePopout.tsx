@@ -83,14 +83,10 @@ function filterMembers(
 	let matched: Array<GuildMember>;
 	if (parsed.hasTagSeparator) {
 		const usernameLower = parsed.usernameQuery.toLowerCase();
-		const tagLower = parsed.tagQuery?.toLowerCase() ?? '';
 		matched = members.filter((member) => {
 			const nick = member.nick?.toLowerCase() ?? '';
 			const username = member.user.username.toLowerCase();
-			const matchesUsername =
-				usernameLower.length === 0 || username.startsWith(usernameLower) || nick.startsWith(usernameLower);
-			const matchesTag = tagLower.length === 0 || member.user.discriminator.startsWith(tagLower);
-			return matchesUsername && matchesTag;
+			return usernameLower.length === 0 || username.startsWith(usernameLower) || nick.startsWith(usernameLower);
 		});
 	} else {
 		const trimmed = parsed.usernameQuery.trim();

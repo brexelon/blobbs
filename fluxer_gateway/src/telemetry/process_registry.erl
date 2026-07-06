@@ -199,7 +199,10 @@ cleanup_on_down(DeadPid, ProcessMap) ->
         ProcessMap
     ).
 
--spec cleanup_on_down(process_prefix(), pid(), process_map()) -> process_map().
+-spec cleanup_on_down
+    (process_prefix(), pid(), #{binary() => {pid(), reference()}}) ->
+        #{binary() => {pid(), reference()}};
+    (process_prefix(), pid(), process_map()) -> process_map().
 cleanup_on_down(Prefix, DeadPid, ProcessMap) ->
     maps:fold(
         fun

@@ -8,13 +8,18 @@ export const ChannelTypes = {
 	GUILD_VOICE: 2,
 	GROUP_DM: 3,
 	GUILD_CATEGORY: 4,
+	GUILD_THREAD: 5,
 	GUILD_LINK: 998,
 	DM_PERSONAL_NOTES: 999,
 } as const;
 
 export type ChannelType = ValueOf<typeof ChannelTypes>;
 
-export const GUILD_TEXT_BASED_CHANNEL_TYPES = new Set<number>([ChannelTypes.GUILD_TEXT, ChannelTypes.GUILD_VOICE]);
+export const GUILD_TEXT_BASED_CHANNEL_TYPES = new Set<number>([
+	ChannelTypes.GUILD_TEXT,
+	ChannelTypes.GUILD_VOICE,
+	ChannelTypes.GUILD_THREAD,
+]);
 export const TEXT_BASED_CHANNEL_TYPES = new Set<number>([
 	...GUILD_TEXT_BASED_CHANNEL_TYPES,
 	ChannelTypes.DM,
@@ -30,6 +35,21 @@ export const ChannelOverwriteTypesDescriptions: Record<keyof typeof ChannelOverw
 	ROLE: 'Overwrite applies to a role',
 	MEMBER: 'Overwrite applies to a member',
 };
+export const ThreadStates = {
+	OPEN: 0,
+	CLOSED: 1,
+	ARCHIVED: 2,
+} as const;
+
+export type ThreadStateValue = ValueOf<typeof ThreadStates>;
+
+export const ThreadStatesDescriptions: Record<keyof typeof ThreadStates, string> = {
+	OPEN: 'Thread is open and accepting messages',
+	CLOSED: 'Thread is closed but can be reopened by sending a message',
+	ARCHIVED: 'Thread is archived and can only be reopened by a moderator',
+};
+export const THREAD_AUTO_CLOSE_DURATIONS_SECONDS = [3600, 86400, 259200, 604800] as const;
+export const DEFAULT_THREAD_AUTO_CLOSE_DURATION_SECONDS = 604800;
 export const InviteTypes = {
 	GUILD: 0,
 	GROUP_DM: 1,
@@ -182,6 +202,7 @@ export const Permissions = {
 	BYPASS_SLOWMODE: 1n << 52n,
 	UPDATE_RTC_REGION: 1n << 53n,
 	VIEW_CHANNEL_MEMBERS: 1n << 54n,
+	CREATE_THREADS: 1n << 55n,
 } as const;
 export const PermissionsDescriptions: Record<keyof typeof Permissions, string> = {
 	CREATE_INSTANT_INVITE: 'Allows creation of instant invites',
@@ -221,6 +242,7 @@ export const PermissionsDescriptions: Record<keyof typeof Permissions, string> =
 	BYPASS_SLOWMODE: 'Allows bypassing slowmode',
 	UPDATE_RTC_REGION: 'Allows updating the voice region',
 	VIEW_CHANNEL_MEMBERS: 'Allows viewing the member list in a channel',
+	CREATE_THREADS: 'Allows creating threads in a channel',
 };
 export const ALL_PERMISSIONS = Object.values(Permissions).reduce((acc, p) => acc | p, 0n);
 export const DEFAULT_PERMISSIONS =
@@ -238,7 +260,8 @@ export const DEFAULT_PERMISSIONS =
 	Permissions.USE_VAD |
 	Permissions.CHANGE_NICKNAME |
 	Permissions.USE_EXTERNAL_STICKERS |
-	Permissions.VIEW_CHANNEL_MEMBERS;
+	Permissions.VIEW_CHANNEL_MEMBERS |
+	Permissions.CREATE_THREADS;
 export const ElevatedPermissions =
 	Permissions.KICK_MEMBERS |
 	Permissions.BAN_MEMBERS |

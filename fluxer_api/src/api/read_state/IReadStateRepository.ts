@@ -28,12 +28,7 @@ export abstract class IReadStateRepository {
 			channelId: ChannelID;
 			messageId: MessageID;
 		}>,
-	): Promise<
-		Array<{
-			userId: UserID;
-			channelId: ChannelID;
-		}>
-	>;
+	): Promise<Array<ReadState>>;
 
 	abstract deleteReadState(userId: UserID, channelId: ChannelID): Promise<void>;
 

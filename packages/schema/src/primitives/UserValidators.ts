@@ -14,9 +14,13 @@ import {
 import {z} from 'zod';
 
 const EMAIL_LOCAL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$/;
-const DISCRIMINATOR_REGEX = /^\d{1,4}$/;
-const FLUXER_TAG_REGEX = /^[a-zA-Z0-9_]+$/;
+export const USERNAME_CHARACTER_REGEX = /^[a-z0-9_.]+$/;
+const USERNAME_INVALID_FORMAT_REGEX = /^[_.]|[_.]{2}/;
 export const PHONE_E164_REGEX = /^\+[1-9]\d{1,14}$/;
+
+export function hasValidUsernameFormat(value: string): boolean {
+	return USERNAME_CHARACTER_REGEX.test(value) && !USERNAME_INVALID_FORMAT_REGEX.test(value);
+}
 
 function sanitizeUsername(value: string): string {
 	if (value.length > MAX_STRING_PROCESSING_LENGTH) {
@@ -50,29 +54,17 @@ export const EmailType = withOpenApiType(
 		}, ValidationErrorCodes.INVALID_EMAIL_LOCAL_PART),
 	'EmailType',
 );
-export const DiscriminatorType = withOpenApiType(
-	z
-		.union([z.string(), z.number()])
-		.transform((value) => String(value))
-		.pipe(z.string().regex(DISCRIMINATOR_REGEX, ValidationErrorCodes.DISCRIMINATOR_INVALID_FORMAT))
-		.transform((value) => {
-			return Number.parseInt(value, 10);
-		}),
-	'DiscriminatorType',
-);
 export const UsernameType = withOpenApiType(
 	z
 		.string()
-		.transform((value) => value.trim())
+		.transform((value) => value.trim().toLowerCase())
 		.pipe(withStringLengthRangeValidation(z.string(), 1, 32, ValidationErrorCodes.USERNAME_LENGTH_INVALID))
-		.refine((value) => FLUXER_TAG_REGEX.test(value), ValidationErrorCodes.USERNAME_INVALID_CHARACTERS)
+		.refine((value) => hasValidUsernameFormat(value), ValidationErrorCodes.USERNAME_INVALID_CHARACTERS)
 		.refine((value) => {
-			const lowerValue = value.toLowerCase();
-			return lowerValue !== 'everyone' && lowerValue !== 'here';
+			return value !== 'everyone' && value !== 'here';
 		}, ValidationErrorCodes.USERNAME_RESERVED_VALUE)
 		.refine((value) => {
-			const lowerValue = value.toLowerCase();
-			return !lowerValue.includes('fluxer') && !lowerValue.includes('system message');
+			return !value.includes('fluxer') && !value.includes('system message');
 		}, ValidationErrorCodes.USERNAME_CANNOT_CONTAIN_RESERVED_TERMS),
 	'UsernameType',
 );

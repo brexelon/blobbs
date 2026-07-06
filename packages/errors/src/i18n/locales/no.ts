@@ -2,7 +2,7 @@
 
 import {defineErrorI18nLocaleMessages} from '../ErrorI18nMessages';
 
-const ERROR_I18N_NO_MESSAGES = defineErrorI18nLocaleMessages({
+export const ERROR_I18N_NO_MESSAGES = defineErrorI18nLocaleMessages({
 	"account.already_verified": "Kontoen din er allerede bekreftet.",
 	"account.communication_disabled": "Kommunikasjon er deaktivert.",
 	"account.disabled": "Denne kontoen er deaktivert.",

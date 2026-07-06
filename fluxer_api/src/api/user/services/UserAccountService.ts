@@ -9,7 +9,6 @@ import type {IConnectionRepository} from '../../connection/IConnectionRepository
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
 import type {GuildService} from '../../guild/services/GuildService';
 import {GuildMemberSearchIndexService} from '../../guild/services/member/GuildMemberSearchIndexService';
-import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '../../infrastructure/EntityAssetService';
 import type {KVAccountDeletionQueueService} from '../../infrastructure/KVAccountDeletionQueueService';
 import type {UserCacheService} from '../../infrastructure/UserCacheService';
@@ -65,7 +64,6 @@ export class UserAccountService {
 		guildService: GuildService,
 		entityAssetService: EntityAssetService,
 		guildRepository: IGuildRepositoryAggregate,
-		discriminatorService: IDiscriminatorService,
 		kvDeletionQueue: KVAccountDeletionQueueService,
 		private readonly contactChangeLogService: UserContactChangeLogService,
 		connectionRepository: IConnectionRepository,
@@ -94,7 +92,6 @@ export class UserAccountService {
 			userSettingsRepository: userAccountRepository,
 			guildRepository,
 			guildService,
-			discriminatorService,
 			connectionRepository,
 		});
 		this.profileService = new UserAccountProfileService({
@@ -108,9 +105,7 @@ export class UserAccountService {
 		this.securityService = new UserAccountSecurityService({
 			apiContext: this.apiContext,
 			userAccountRepository,
-			discriminatorService,
 			rateLimitService,
-			limitConfigService,
 		});
 		this.settingsService = new UserAccountSettingsService({
 			userAccountRepository,
@@ -186,7 +181,6 @@ export class UserAccountService {
 		}
 		const nameChanged =
 			user.username !== updatedUser.username ||
-			user.discriminator !== updatedUser.discriminator ||
 			user.globalName !== updatedUser.globalName;
 		if (nameChanged) {
 			void this.reindexGuildMembersForUser(updatedUser);

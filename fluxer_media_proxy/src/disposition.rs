@@ -29,9 +29,6 @@ fn normalize_mime(content_type: &str) -> &str {
 
 pub fn is_inline_viewable(content_type: &str) -> bool {
     let mime = normalize_mime(content_type);
-    if mime.eq_ignore_ascii_case("image/svg+xml") {
-        return false;
-    }
     if mime.len() >= 6 && mime[..6].eq_ignore_ascii_case("image/") {
         return true;
     }
@@ -114,7 +111,7 @@ mod tests {
         );
         assert_eq!(Decision::Inline, decide("video/mp4", false));
         assert_eq!(Decision::Inline, decide("application/pdf", false));
-        assert_eq!(Decision::Attachment, decide("image/svg+xml", false));
+        assert_eq!(Decision::Inline, decide("image/svg+xml", false));
         assert_eq!(
             Decision::Attachment,
             decide("application/octet-stream", false)
@@ -135,7 +132,7 @@ mod tests {
     #[test]
     fn case_insensitive_mime_matching() {
         assert_eq!(Decision::Inline, decide("IMAGE/PNG", false));
-        assert_eq!(Decision::Attachment, decide("Image/Svg+Xml", false));
+        assert_eq!(Decision::Inline, decide("Image/Svg+Xml", false));
     }
 
     #[test]

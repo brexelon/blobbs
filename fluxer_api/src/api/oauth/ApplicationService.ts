@@ -2,8 +2,6 @@
 
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import {
-	DELETED_USER_GLOBAL_NAME,
-	DELETED_USER_USERNAME,
 	ProfileFieldPrivacyFlags,
 	UserFlags,
 } from '@fluxer/constants/src/UserConstants';
@@ -22,7 +20,6 @@ import type {IChannelRepository} from '../channel/IChannelRepository';
 import type {ApplicationRow} from '../database/types/OAuth2Types';
 import type {UserRow} from '../database/types/UserTypes';
 import {contentModerationService} from '../infrastructure/ContentModerationService';
-import type {DiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {EntityAssetService, PreparedAssetUpload} from '../infrastructure/EntityAssetService';
 import type {UserCacheService} from '../infrastructure/UserCacheService';
 import {Logger} from '../Logger';
@@ -32,6 +29,7 @@ import type {User} from '../models/User';
 import {enforceFluxerTagChangeRateLimit} from '../user/FluxerTagChangeRateLimit';
 import {hasPartialUserFieldsChanged, mapUserToPrivateResponse} from '../user/UserMappers';
 import {hashPassword} from '../utils/PasswordUtils';
+import {allocateDeletedUserIdentity} from '../utils/DeletedUserIdentityUtils';
 import {generateRandomUsername} from '../utils/UsernameGenerator';
 import {deriveUsernameFromDisplayName} from '../utils/UsernameSuggestionUtils';
 import {remapAuthorMessagesToDeletedUser} from './ApplicationMessageAuthorAnonymization';
@@ -40,7 +38,6 @@ import {generateOAuthTokenSecret} from './OAuthTokenSecret';
 import type {IApplicationRepository} from './repositories/IApplicationRepository';
 
 interface ApplicationServiceDeps {
-	discriminatorService: DiscriminatorService;
 	channelRepository: IChannelRepository;
 	applicationRepository: IApplicationRepository;
 	botAuthService: BotAuthService;
@@ -68,30 +65,22 @@ export class ApplicationService {
 		public readonly deps: ApplicationServiceDeps,
 	) {}
 
-	private async generateBotUsername(applicationName: string): Promise<{
-		username: string;
-		discriminator: number;
-	}> {
+	private async generateBotUsername(applicationName: string): Promise<{username: string}> {
+		const {users} = this.apiContext.services;
 		const preferredUsername = deriveUsernameFromDisplayName(applicationName);
-		if (preferredUsername) {
-			const discResult = await this.deps.discriminatorService.generateDiscriminator({
-				username: preferredUsername,
-			});
-			if (discResult.available && discResult.discriminator !== -1) {
-				return {username: preferredUsername, discriminator: discResult.discriminator};
-			}
+		if (preferredUsername && (await users.isUsernameAvailable(preferredUsername))) {
+			return {username: preferredUsername};
 		}
-		Logger.info(
-			{applicationName, preferredUsername: preferredUsername ?? null},
-			'Application name did not yield a usable bot username, falling back to random username',
-		);
+		if (preferredUsername) {
+			Logger.info(
+				{applicationName, preferredUsername},
+				'Application name did not yield a usable bot username, falling back to random username',
+			);
+		}
 		for (let attempts = 0; attempts < 100; attempts++) {
 			const randomUsername = generateRandomUsername();
-			const randomDiscResult = await this.deps.discriminatorService.generateDiscriminator({
-				username: randomUsername,
-			});
-			if (randomDiscResult.available && randomDiscResult.discriminator !== -1) {
-				return {username: randomUsername, discriminator: randomDiscResult.discriminator};
+			if (await users.isUsernameAvailable(randomUsername)) {
+				return {username: randomUsername};
 			}
 		}
 		throw new BotUserGenerationError();
@@ -135,7 +124,7 @@ export class ApplicationService {
 		}
 		const applicationId: ApplicationID = (await this.apiContext.services.snowflake.generate()) as ApplicationID;
 		const botUserId = applicationIdToUserId(applicationId);
-		const {username, discriminator} = await this.generateBotUsername(args.name);
+		const {username} = await this.generateBotUsername(args.name);
 		if (profileSubstringBlocklistCache.containsBannedSubstring('username', username)) {
 			throw new ContentBlockedError();
 		}
@@ -144,7 +133,6 @@ export class ApplicationService {
 				applicationId: applicationId.toString(),
 				botUserId: botUserId.toString(),
 				username,
-				discriminator,
 				applicationName: args.name,
 			},
 			'Creating application with bot user',
@@ -152,7 +140,6 @@ export class ApplicationService {
 		const botUserRow: UserRow = {
 			user_id: botUserId,
 			username,
-			discriminator,
 			global_name: null,
 			bot: true,
 			system: false,
@@ -331,12 +318,14 @@ export class ApplicationService {
 				}
 			}
 			const botUser = await this.apiContext.services.users.findUniqueAssert(botUserId);
+			const deletedUserIdentity = await allocateDeletedUserIdentity((username) =>
+				this.apiContext.services.users.isUsernameAvailable(username),
+			);
 			await this.apiContext.services.users.patchUpsert(
 				botUserId,
 				{
-					username: DELETED_USER_USERNAME,
-					global_name: DELETED_USER_GLOBAL_NAME,
-					discriminator: 0,
+					username: deletedUserIdentity.username,
+					global_name: deletedUserIdentity.globalName,
 					email: null,
 					email_verified: false,
 					password_hash: null,
@@ -437,7 +426,6 @@ export class ApplicationService {
 		applicationId: ApplicationID,
 		args: {
 			username?: string;
-			discriminator?: number;
 			avatar?: string | null;
 			banner?: string | null;
 			bio?: string | null;
@@ -463,34 +451,21 @@ export class ApplicationService {
 			messageId: null,
 			surface: 'profile_field',
 		});
-		if (args.discriminator !== undefined && args.discriminator !== botUser.discriminator) {
-			throw InputValidationError.fromCode('discriminator', ValidationErrorCodes.BOT_DISCRIMINATOR_CANNOT_BE_CHANGED);
-		}
 		const updates: Partial<UserRow> = {};
-		const newUsername = args.username ?? botUser.username;
-		const usernameChanged = args.username !== undefined && args.username !== botUser.username;
+		const usernameChanged = args.username !== undefined && args.username.toLowerCase() !== botUser.username;
 		if (usernameChanged) {
-			const result = await this.deps.discriminatorService.resolveUsernameChange({
-				currentUsername: botUser.username,
-				currentDiscriminator: botUser.discriminator,
-				newUsername,
-			});
-			if (result.username !== botUser.username) {
-				updates.username = result.username;
+			const newUsername = args.username!.toLowerCase();
+			if (!(await this.apiContext.services.users.isUsernameAvailable(newUsername))) {
+				throw InputValidationError.fromCode('username', ValidationErrorCodes.TOO_MANY_USERS_WITH_THIS_USERNAME);
 			}
-			if (result.discriminator !== botUser.discriminator) {
-				updates.discriminator = result.discriminator;
-			}
-			if (profileSubstringBlocklistCache.containsBannedSubstring('username', result.username)) {
+			if (profileSubstringBlocklistCache.containsBannedSubstring('username', newUsername)) {
 				throw new ContentBlockedError();
 			}
-			if (result.username !== botUser.username || result.discriminator !== botUser.discriminator) {
-				await enforceFluxerTagChangeRateLimit({
-					rateLimitService: this.apiContext.services.rateLimit,
-					userId: botUserId,
-					errorPath: 'username',
-				});
-			}
+			updates.username = newUsername;
+			await enforceFluxerTagChangeRateLimit({
+				rateLimitService: this.apiContext.services.rateLimit,
+				userId: botUserId,
+			});
 		}
 		updates.global_name = null;
 		const assetPrep = await this.prepareBotAssets({

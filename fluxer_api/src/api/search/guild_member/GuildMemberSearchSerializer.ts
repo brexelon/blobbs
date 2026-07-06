@@ -26,7 +26,7 @@ export function convertToSearchableGuildMember(member: GuildMember, user: User):
 		userId: member.userId.toString(),
 		username: user.username,
 		usernameSearch: buildUsernameSearch(user.username),
-		discriminator: String(user.discriminator).padStart(4, '0'),
+		discriminator: '0',
 		globalName: user.globalName ?? null,
 		nickname: member.nickname,
 		roleIds: Array.from(member.roleIds).map((id) => id.toString()),

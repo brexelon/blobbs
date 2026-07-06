@@ -19,7 +19,6 @@ function createUser(params?: {emailVerified?: boolean; hasVerifiedPhone?: boolea
 	return new User({
 		user_id: TEST_USER_ID,
 		username: 'member',
-		discriminator: 1,
 		global_name: null,
 		bot: false,
 		system: false,
@@ -116,7 +115,7 @@ function createMemberResponse(joinedAt = TEST_JOINED_AT): GuildMemberResponse {
 		user: {
 			id: TEST_USER_ID.toString(),
 			username: 'member',
-			discriminator: '0001',
+			discriminator: '0',
 			global_name: null,
 			avatar: null,
 			avatar_color: null,

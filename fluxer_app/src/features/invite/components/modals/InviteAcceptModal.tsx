@@ -76,7 +76,7 @@ const CREATED_BY_DESCRIPTOR = msg({
 });
 const INVITED_BY_DESCRIPTOR = msg({
 	message: 'Invited by {userTag}',
-	comment: 'Metadata label for an expression pack invite. userTag is the inviter username and discriminator.',
+	comment: 'Metadata label for an expression pack invite. userTag is the inviter username.',
 });
 const ACCEPTING_INVITE_INSTALLS_PACK_DESCRIPTOR = msg({
 	message: 'Accepting this invite installs the pack automatically.',
@@ -190,7 +190,7 @@ export const InviteAcceptModal = observer(function InviteAcceptModal({code}: Inv
 			const packActionLabel =
 				invite.pack.type === 'emoji' ? i18n._(INSTALL_EMOJI_PACK_DESCRIPTOR) : i18n._(INSTALL_STICKER_PACK_DESCRIPTOR);
 			const creatorUserName = NicknameUtils.getDisplayName(invite.pack.creator);
-			const inviterTag = invite.inviter ? `${invite.inviter.username}#${invite.inviter.discriminator}` : null;
+			const inviterTag = invite.inviter ? invite.inviter.username : null;
 			return (
 				<div className={styles.cardInner} data-flx="invite.invite-accept-modal.render-body.card-inner">
 					<InviteHeader invite={inviteForHeader} data-flx="invite.invite-accept-modal.render-body.invite-header" />

@@ -162,7 +162,9 @@ sanitize_text(Bin) when is_binary(Bin) ->
             safe_codepoints_to_binary(Codepoints, Bin);
         _ ->
             Bin
-    end.
+    end;
+sanitize_text(Other) ->
+    Other.
 
 -spec safe_codepoints_to_binary([integer()], binary()) -> binary().
 safe_codepoints_to_binary(Codepoints, Fallback) ->

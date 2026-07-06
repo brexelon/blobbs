@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {GifMediaFormat} from '@fluxer/schema/src/domains/gif/GifSchemas';
-import {
-	createStringType,
-	NonNegativeSafeIntegerType,
-	SnowflakeStringType,
-	SnowflakeType,
-} from '@fluxer/schema/src/primitives/SchemaPrimitives';
+import {createStringType, SnowflakeStringType, SnowflakeType} from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {z} from 'zod';
 
 const FavoriteMemeBase = z.object({
@@ -35,7 +30,7 @@ export const CreateFavoriteMemeFromUrlBodySchema = FavoriteMemeBase.extend({
 		.describe('Provider-issued slug or slug-id token for the GIF, when sourced from a provider'),
 	gif_provider: createStringType(1, 32)
 		.nullish()
-		.describe('Stable name of the GIF provider that issued gif_slug. New provider GIFs are sourced from KLIPY.'),
+		.describe('Stable name of the GIF provider that issued gif_slug (e.g. "klipy", "tenor")'),
 	media: z
 		.record(z.string(), GifMediaFormat)
 		.nullish()
@@ -72,7 +67,7 @@ export const FavoriteMemeResponse = z.object({
 	filename: z.string().describe('Original filename of the meme'),
 	content_type: z.string().describe('MIME type of the meme file'),
 	content_hash: z.string().nullish().describe('Hash of the file content for deduplication'),
-	size: NonNegativeSafeIntegerType.describe('File size in bytes'),
+	size: z.number().describe('File size in bytes'),
 	width: z.number().int().nullish().describe('Width of the image or video in pixels'),
 	height: z.number().int().nullish().describe('Height of the image or video in pixels'),
 	duration: z.number().nullish().describe('Duration of the video in seconds'),
@@ -82,9 +77,7 @@ export const FavoriteMemeResponse = z.object({
 	gif_provider: z
 		.string()
 		.nullish()
-		.describe(
-			'Stable name of the GIF provider that issued gif_slug, if any. Legacy records may contain older provider names.',
-		),
+		.describe('Stable name of the GIF provider that issued gif_slug (e.g. "klipy", "tenor"), if any'),
 	media: z
 		.record(z.string(), GifMediaFormat)
 		.nullish()

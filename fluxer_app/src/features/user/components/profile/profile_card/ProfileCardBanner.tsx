@@ -28,6 +28,7 @@ interface ProfileCardBannerProps {
 	onAvatarContextMenu?: (event: React.MouseEvent) => void;
 	onBannerContextMenu?: (event: React.MouseEvent) => void;
 	headerHeight?: number;
+	bannerActions?: React.ReactNode;
 }
 
 export const ProfileCardBanner: React.FC<ProfileCardBannerProps> = observer(
@@ -44,6 +45,7 @@ export const ProfileCardBanner: React.FC<ProfileCardBannerProps> = observer(
 		onAvatarContextMenu,
 		onBannerContextMenu,
 		headerHeight = 140,
+		bannerActions,
 	}) => {
 		const bannerHeight = PROFILE_POPOUT_GEOMETRY.bannerHeightPx;
 		const reactId = useId();
@@ -148,6 +150,7 @@ export const ProfileCardBanner: React.FC<ProfileCardBannerProps> = observer(
 						/>
 					</button>
 				</FocusRing>
+				{bannerActions}
 			</header>
 		);
 	},

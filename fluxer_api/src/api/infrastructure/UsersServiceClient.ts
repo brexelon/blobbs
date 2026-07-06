@@ -7,7 +7,9 @@ import {StringCodec} from 'nats';
 import {createUserID, type UserID} from '../BrandedTypes';
 import {Config} from '../Config';
 import {Logger} from '../Logger';
-import {isJsonRecord, parseJsonWithGuard} from '../utils/JsonBoundaryUtils';
+import type {IUserAccountRepository} from '../user/repositories/IUserAccountRepository';
+import {mapUserToPartialResponse} from '../user/UserMappers';
+import {isJsonRecord, parseJsonUnknown} from '../utils/JsonBoundaryUtils';
 
 const USERS_SERVICE_SUBJECT = process.env.FLUXER_USERS_SERVICE_SUBJECT || 'svc.users';
 const DEFAULT_USERS_SERVICE_TIMEOUT_MS = 6000;
@@ -42,6 +44,89 @@ function isUsersServiceResponse(value: unknown): value is UsersServiceResponse {
 		return isUserPartialResponse(value.FoundApiPartial);
 	}
 	return false;
+}
+
+function isUsersServiceErrorResponse(value: unknown): value is {error: string} {
+	return isJsonRecord(value) && typeof value.error === 'string';
+}
+
+export class RepositoryUsersServiceClient implements IUsersServiceClient {
+	constructor(private readonly userRepository: IUserAccountRepository) {}
+
+	async getUserPartialResponses(userIds: Array<UserID>): Promise<Map<UserID, UserPartialResponse>> {
+		const result = new Map<UserID, UserPartialResponse>();
+		for (const userId of userIds) {
+			const user = await this.userRepository.findUnique(userId);
+			if (user) {
+				result.set(userId, mapUserToPartialResponse(user));
+			}
+		}
+		return result;
+	}
+
+	async invalidateUserCache(_userId: UserID): Promise<void> {}
+}
+
+function uniqueUserIds(userIds: Array<UserID>): Array<UserID> {
+	const seen = new Set<string>();
+	const unique: Array<UserID> = [];
+	for (const userId of userIds) {
+		const key = userId.toString();
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		unique.push(userId);
+	}
+	return unique;
+}
+
+export class FallbackUsersServiceClient implements IUsersServiceClient {
+	constructor(
+		private readonly primary: IUsersServiceClient,
+		private readonly fallback: IUsersServiceClient,
+	) {}
+
+	async getUserPartialResponses(userIds: Array<UserID>): Promise<Map<UserID, UserPartialResponse>> {
+		let result: Map<UserID, UserPartialResponse>;
+		try {
+			result = await this.primary.getUserPartialResponses(userIds);
+		} catch (error) {
+			Logger.warn({error, userIds: userIds.map((userId) => userId.toString())}, '[users-service] falling back to repository');
+			return await this.fallback.getUserPartialResponses(userIds);
+		}
+		const missingUserIds = userIds.filter((userId) => !result.has(userId));
+		const staleAvatarUserIds = userIds.filter((userId) => {
+			const partial = result.get(userId);
+			return partial != null && partial.avatar == null;
+		});
+		const fallbackUserIds = uniqueUserIds([...missingUserIds, ...staleAvatarUserIds]);
+		if (fallbackUserIds.length === 0) {
+			return result;
+		}
+		const fallbackPartials = await this.fallback.getUserPartialResponses(fallbackUserIds);
+		for (const [userId, partial] of fallbackPartials) {
+			const existing = result.get(userId);
+			if (existing == null) {
+				result.set(userId, partial);
+				continue;
+			}
+			if (existing.avatar == null && partial.avatar != null) {
+				result.set(userId, {
+					...existing,
+					avatar: partial.avatar,
+					avatar_color: partial.avatar_color ?? existing.avatar_color,
+				});
+			}
+		}
+		return result;
+	}
+
+	async invalidateUserCache(userId: UserID): Promise<void> {
+		await this.primary.invalidateUserCache(userId).catch((error) => {
+			Logger.warn({userId: userId.toString(), error}, '[users-service] invalidation failed');
+		});
+	}
 }
 
 export class NatsUsersServiceClient implements IUsersServiceClient {
@@ -163,11 +248,15 @@ export class NatsUsersServiceClient implements IUsersServiceClient {
 			const response = await connection.request(this.subject, this.codec.encode(JSON.stringify(payload)), {
 				timeout: this.requestTimeoutMs,
 			});
-			const parsed = parseJsonWithGuard(this.codec.decode(response.data), isUsersServiceResponse);
-			if (!parsed) {
-				throw new Error('[users-service] invalid response payload');
+			const responseText = this.codec.decode(response.data);
+			const parsed = parseJsonUnknown(responseText);
+			if (isUsersServiceResponse(parsed)) {
+				return parsed;
 			}
-			return parsed;
+			if (isUsersServiceErrorResponse(parsed)) {
+				throw new Error(`[users-service] ${parsed.error}`);
+			}
+			throw new Error(`[users-service] invalid response payload: ${responseText.slice(0, 500)}`);
 		} catch (error) {
 			Logger.warn({error, op: payload.op}, '[users-service] request failed');
 			throw error;
@@ -183,7 +272,9 @@ export function setInjectedUsersServiceClient(client: IUsersServiceClient | unde
 	usersServiceClient = undefined;
 }
 
-export function createUsersServiceClient(): IUsersServiceClient {
+export function createUsersServiceClient(
+	userRepository?: IUserAccountRepository,
+): IUsersServiceClient {
 	if (injectedUsersServiceClient !== undefined) {
 		return injectedUsersServiceClient;
 	}
@@ -198,12 +289,16 @@ export function createUsersServiceClient(): IUsersServiceClient {
 	void manager.connect().catch((error) => {
 		Logger.warn({error}, '[users-service] Failed to establish NATS connection');
 	});
-	usersServiceClient = new NatsUsersServiceClient(
+	const natsClient = new NatsUsersServiceClient(
 		manager,
 		readPositiveIntegerEnv('FLUXER_USERS_SERVICE_TIMEOUT_MS'),
 		USERS_SERVICE_SUBJECT,
 		readPositiveIntegerEnv('FLUXER_USERS_SERVICE_INFLIGHT_MAX_ENTRIES', DEFAULT_USERS_SERVICE_INFLIGHT_MAX_ENTRIES),
 	);
+	usersServiceClient =
+		userRepository !== undefined
+			? new FallbackUsersServiceClient(natsClient, new RepositoryUsersServiceClient(userRepository))
+			: natsClient;
 	return usersServiceClient;
 }
 

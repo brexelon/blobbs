@@ -6,6 +6,9 @@ ARG RUST_IMAGE=rust:1-trixie
 FROM ${RUST_IMAGE} AS builder
 WORKDIR /build
 
+ENV CARGO_NET_RETRY=10 \
+    CARGO_HTTP_MULTIPLEXING=false
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \

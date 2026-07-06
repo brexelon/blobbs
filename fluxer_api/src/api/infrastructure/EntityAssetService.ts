@@ -139,7 +139,7 @@ export class EntityAssetService {
 		const newHash = animated ? `a_${imageHashShort}` : imageHashShort;
 		const isAnimated = animated;
 		const newS3Key = `${s3KeyBase}/${imageHashShort}`;
-		const newCdnUrl = `${cdnUrlBase}/${newHash}.${format}`;
+		const newCdnUrl = `${cdnUrlBase}/${newHash}`;
 		if (newHash === previousHash) {
 			return {
 				newHash,

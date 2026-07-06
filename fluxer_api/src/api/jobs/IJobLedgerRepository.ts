@@ -34,6 +34,8 @@ export interface ListJobsResult {
 export abstract class IJobLedgerRepository {
 	abstract createJob(input: CreateJobInput): Promise<void>;
 
+	abstract setJetStreamSeq(jobId: bigint, seq: string): Promise<void>;
+
 	abstract getJob(jobId: bigint): Promise<JobByIdRow | null>;
 
 	abstract markRunning(jobId: bigint, lane: string): Promise<void>;

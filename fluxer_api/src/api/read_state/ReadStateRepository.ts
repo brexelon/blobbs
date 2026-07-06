@@ -114,12 +114,7 @@ export class ReadStateRepository implements IReadStateRepository {
 			channelId: ChannelID;
 			messageId: MessageID;
 		}>,
-	): Promise<
-		Array<{
-			userId: UserID;
-			channelId: ChannelID;
-		}>
-	> {
+	): Promise<Array<ReadState>> {
 		if (updates.length === 0) {
 			return [];
 		}
@@ -132,12 +127,7 @@ export class ReadStateRepository implements IReadStateRepository {
 			channelId: ChannelID;
 			messageId: MessageID;
 		}>,
-	): Promise<
-		Array<{
-			userId: UserID;
-			channelId: ChannelID;
-		}>
-	> {
+	): Promise<Array<ReadState>> {
 		if (updates.length === 0) {
 			return [];
 		}
@@ -150,37 +140,39 @@ export class ReadStateRepository implements IReadStateRepository {
 			),
 		);
 		const batch = new BatchBuilder();
-		const appliedUpdates: Array<{
-			userId: UserID;
-			channelId: ChannelID;
-		}> = [];
+		const appliedUpdates: Array<ReadState> = [];
 		for (const {userId, channelId, messageId, state} of existingStates) {
 			if (state) {
 				if (state.message_id != null && state.message_id >= messageId) {
 					continue;
 				}
+				const newMentionCount = (state.mention_count || 0) + 1;
 				batch.addPrepared(
 					ReadStates.patchByPk(
 						{user_id: userId, channel_id: channelId},
-						{mention_count: Db.set((state.mention_count || 0) + 1)},
+						{mention_count: Db.set(newMentionCount)},
 					),
 				);
-				appliedUpdates.push({userId, channelId});
+				appliedUpdates.push(
+					new ReadState({
+						...state,
+						mention_count: newMentionCount,
+					}),
+				);
 			} else {
 				const baselineMessageId = channelIdToMessageId(channelId);
 				if (baselineMessageId >= messageId) {
 					continue;
 				}
-				batch.addPrepared(
-					ReadStates.upsertAll({
-						user_id: userId,
-						channel_id: channelId,
-						message_id: baselineMessageId,
-						mention_count: 1,
-						last_pin_timestamp: null,
-					}),
-				);
-				appliedUpdates.push({userId, channelId});
+				const newRow: ReadStateRow = {
+					user_id: userId,
+					channel_id: channelId,
+					message_id: baselineMessageId,
+					mention_count: 1,
+					last_pin_timestamp: null,
+				};
+				batch.addPrepared(ReadStates.upsertAll(newRow));
+				appliedUpdates.push(new ReadState(newRow));
 			}
 		}
 		if (appliedUpdates.length > 0) {

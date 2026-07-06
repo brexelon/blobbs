@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {GenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModal';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
+import {GenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModal';
 
 const COMMUNITY_AT_CAPACITY_DESCRIPTOR = msg({
 	message: 'Community at capacity',

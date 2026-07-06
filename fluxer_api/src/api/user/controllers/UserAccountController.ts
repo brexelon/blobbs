@@ -498,19 +498,19 @@ export function UserAccountController(app: HonoApp) {
 			security: ['botToken', 'bearerToken', 'sessionToken'],
 			tags: ['Users'],
 			description:
-				'Checks if a username and discriminator combination is available for registration. Returns whether the tag is taken by another user.',
+				'Checks if a username is available for registration. Returns whether the username is taken by another user.',
 		}),
 		async (ctx) => {
-			const {username, discriminator} = ctx.req.valid('query');
+			const {username} = ctx.req.valid('query');
 			const currentUser = ctx.get('user');
 			const userAccountRequestService = ctx.get('userAccountRequestService');
-			if (!userAccountRequestService.checkTagAvailability({currentUser, username, discriminator})) {
+			if (!userAccountRequestService.checkUsernameAvailability({currentUser, username})) {
 				return ctx.json({taken: false});
 			}
-			const taken = await ctx
+			const available = await ctx
 				.get('userService')
-				.accountService.lookupService.checkUsernameDiscriminatorAvailability({username, discriminator});
-			return ctx.json({taken});
+				.accountService.lookupService.checkUsernameAvailability(username);
+			return ctx.json({taken: !available});
 		},
 	);
 	app.get(

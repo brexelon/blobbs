@@ -7,7 +7,7 @@ import SelectedGuild from '@app/features/navigation/state/SelectedGuild';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import Users from '@app/features/user/state/Users';
 import type {GuildMemberData} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
-import {makeAutoObservable} from 'mobx';
+import {makeAutoObservable, observable, reaction} from 'mobx';
 
 type Members = Record<string, GuildMember>;
 
@@ -83,15 +83,40 @@ class GuildMembers {
 	pendingRequests: Map<string, PendingMemberRequest> = new Map();
 	loadedGuilds: Set<string> = new Set();
 	private pendingMessageMemberHydration: Map<string, Set<string>> = new Map();
+	private readonly guildMemberVersions = observable.map<string, number>();
+	private globalMemberVersion = 0;
 
 	constructor() {
-		makeAutoObservable<this, 'pendingMessageMemberHydration'>(
+		makeAutoObservable<this, 'pendingMessageMemberHydration' | 'guildMemberVersions' | 'globalMemberVersion'>(
 			this,
 			{
 				pendingMessageMemberHydration: false,
+				guildMemberVersions: false,
+				globalMemberVersion: false,
 			},
 			{autoBind: true},
 		);
+	}
+
+	get version(): number {
+		return this.globalMemberVersion;
+	}
+
+	getGuildMemberVersion(guildId: string): number {
+		return this.guildMemberVersions.get(guildId) ?? 0;
+	}
+
+	subscribe(callback: () => void): () => void {
+		return reaction(
+			() => this.version,
+			() => callback(),
+		);
+	}
+
+	private bumpMemberVersion(guildId: string): void {
+		const current = this.guildMemberVersions.get(guildId) ?? 0;
+		this.guildMemberVersions.set(guildId, current + 1);
+		this.globalMemberVersion++;
 	}
 
 	getMember(guildId: string, userId?: string | null): GuildMember | null {
@@ -129,6 +154,8 @@ class GuildMembers {
 		this.nonMembers = {};
 		this.pendingMessageMemberHydration.clear();
 		this.loadedGuilds.clear();
+		this.guildMemberVersions.clear();
+		this.globalMemberVersion = 0;
 		for (const guild of guilds) {
 			this.handleGuildCreate(guild);
 		}
@@ -146,6 +173,7 @@ class GuildMembers {
 		addVoiceStateMembers(guild, members);
 		const missingVoiceStateMemberUserIds = getMissingVoiceStateMemberUserIds(guild, members);
 		this.members[guild.id] = members;
+		this.bumpMemberVersion(guild.id);
 		if (missingVoiceStateMemberUserIds.length > 0 && GatewayConnection.socket) {
 			void this.ensureMembersLoaded(guild.id, missingVoiceStateMemberUserIds).catch((error: unknown) => {
 				logger.warn('Failed to fetch missing voice members after guild create', {
@@ -174,6 +202,7 @@ class GuildMembers {
 		}
 		this.members[guildId][member.user.id] = new GuildMember(guildId, member);
 		this.nonMembers[guildId]?.delete(member.user.id);
+		this.bumpMemberVersion(guildId);
 	}
 
 	hydrateIfMissing(guildId: string, member: GuildMemberData): void {
@@ -185,6 +214,7 @@ class GuildMembers {
 		}
 		this.members[guildId][member.user.id] = new GuildMember(guildId, member);
 		this.nonMembers[guildId]?.delete(member.user.id);
+		this.bumpMemberVersion(guildId);
 	}
 
 	handleMemberRemove(guildId: string, userId: string): void {
@@ -196,6 +226,7 @@ class GuildMembers {
 		if (Object.keys(existingMembers).length === 0) {
 			delete this.members[guildId];
 		}
+		this.bumpMemberVersion(guildId);
 	}
 
 	handleGuildRoleDelete(guildId: string, roleId: string): void {
@@ -235,6 +266,9 @@ class GuildMembers {
 			newMembers.push(record);
 			guildMembers[member.user.id] = record;
 			negativeCache?.delete(member.user.id);
+		}
+		if (newMembers.length > 0) {
+			this.bumpMemberVersion(guildId);
 		}
 		if (nonce) {
 			const pending = this.pendingRequests.get(nonce);

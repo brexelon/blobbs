@@ -3,6 +3,7 @@
 import {CustomStatusDisplay} from '@app/features/app/components/shared/custom_status_display/CustomStatusDisplay';
 import Guilds from '@app/features/guild/state/Guilds';
 import type {GuildMember} from '@app/features/member/models/GuildMember';
+import {usePresenceCustomStatus} from '@app/features/presence/hooks/usePresenceCustomStatus';
 import {Button} from '@app/features/ui/button/Button';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
@@ -25,7 +26,7 @@ import {useProfileCardDisplayState} from '@app/features/user/components/profile/
 import {useAutoplayExpandedProfileAnimations} from '@app/features/user/hooks/useAutoplayExpandedProfileAnimations';
 import type {Profile} from '@app/features/user/models/Profile';
 import type {User} from '@app/features/user/models/User';
-import type {CustomStatus} from '@app/features/user/state/CustomStatus';
+import {normalizeCustomStatus, type CustomStatus} from '@app/features/user/state/CustomStatus';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import type {ProfilePreviewOverrides} from '@app/features/user/utils/ProfileDisplayUtils';
 import {type BadgeSettings, createMockProfile} from '@app/features/user/utils/ProfileUtils';
@@ -219,7 +220,14 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 		const borderColor = accentColor;
 		const bannerColor = accentColor;
 		const selectedGuild = guildId ? Guilds.getGuild(guildId) : null;
-		const hasPreviewStatus = previewCustomStatus !== undefined;
+		const hasPreviewStatusOverride = previewCustomStatus !== undefined;
+		const presenceCustomStatus = usePresenceCustomStatus({
+			userId: user.id,
+			enabled: !hasPreviewStatusOverride,
+		});
+		const displayCustomStatus = normalizeCustomStatus(
+			hasPreviewStatusOverride ? previewCustomStatus : presenceCustomStatus,
+		);
 		const handlePreviewKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
@@ -267,17 +275,18 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = observer(
 								onUsernameClick={openMockProfile}
 								data-flx="user.profile.profile-preview.profile-card-user-info"
 							/>
-							<div className={styles.profileCustomStatus} data-flx="user.profile.profile-preview.profile-custom-status">
-								<CustomStatusDisplay
-									userId={hasPreviewStatus ? undefined : user.id}
-									customStatus={hasPreviewStatus ? previewCustomStatus : undefined}
-									className={styles.profileCustomStatusText}
-									allowJumboEmoji
-									maxLines={0}
-									alwaysAnimate={shouldAutoplayProfileAnimations}
-									data-flx="user.profile.profile-preview.profile-custom-status-text"
-								/>
-							</div>
+							{displayCustomStatus && (
+								<div className={styles.profileCustomStatus} data-flx="user.profile.profile-preview.profile-custom-status">
+									<CustomStatusDisplay
+										customStatus={displayCustomStatus}
+										className={styles.profileCustomStatusText}
+										allowJumboEmoji
+										maxLines={0}
+										alwaysAnimate={shouldAutoplayProfileAnimations}
+										data-flx="user.profile.profile-preview.profile-custom-status-text"
+									/>
+								</div>
+							)}
 							<UserProfilePreviewBio
 								profile={mockProfile}
 								onShowMore={openMockProfile}

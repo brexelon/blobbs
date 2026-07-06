@@ -4,7 +4,8 @@ use crate::api::generated::types as generated_types;
 
 use super::client::{AdminApiClient, ApiError, ApiResult};
 use super::types::{
-    ListReportsResponse, ReportEntry, ResolveReportResponse, SearchReportsResponse,
+    DeleteReportResponse, ListReportsResponse, ReportEntry, ResolveReportResponse,
+    SearchReportsResponse,
 };
 
 impl AdminApiClient {
@@ -52,6 +53,18 @@ impl AdminApiClient {
             report_id: generated_types::SnowflakeType::from(report_id.to_owned()),
         };
         self.post_typed_with_reason("/admin/reports/resolve", &body, audit_log_reason)
+            .await
+    }
+
+    pub async fn delete_report(
+        &self,
+        report_id: &str,
+        audit_log_reason: Option<&str>,
+    ) -> ApiResult<DeleteReportResponse> {
+        let body = generated_types::DeleteReportRequest {
+            report_id: generated_types::SnowflakeType::from(report_id.to_owned()),
+        };
+        self.post_typed_with_reason("/admin/reports/delete", &body, audit_log_reason)
             .await
     }
 

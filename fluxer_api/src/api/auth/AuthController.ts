@@ -39,7 +39,7 @@ import {
 } from '@fluxer/schema/src/domains/auth/AuthSchemas';
 import {Config} from '../Config';
 import {DefaultUserOnly, LoginRequiredAllowSuspicious} from '../middleware/AuthMiddleware';
-import {CaptchaMiddleware} from '../middleware/CaptchaMiddleware';
+import {CaptchaMiddleware, CaptchaMiddlewareSkipFlutter} from '../middleware/CaptchaMiddleware';
 import {LocalAuthMiddleware} from '../middleware/LocalAuthMiddleware';
 import {RateLimitMiddleware} from '../middleware/RateLimitMiddleware';
 import {OpenAPI} from '../middleware/ResponseTypeMiddleware';
@@ -133,7 +133,7 @@ export function AuthController(app: HonoApp) {
 	app.post(
 		'/auth/login',
 		LocalAuthMiddleware,
-		CaptchaMiddleware,
+		CaptchaMiddlewareSkipFlutter,
 		RateLimitMiddleware(RateLimitConfigs.AUTH_LOGIN),
 		Validator('json', LoginRequest),
 		OpenAPI({
@@ -531,7 +531,7 @@ export function AuthController(app: HonoApp) {
 			description: 'Generate username suggestions based on a provided global name for new account registration.',
 		}),
 		async (ctx) => {
-			const response = ctx.get('authRequestService').getUsernameSuggestions({
+			const response = await ctx.get('authRequestService').getUsernameSuggestions({
 				globalName: ctx.req.valid('json').global_name,
 			});
 			return ctx.json(response);

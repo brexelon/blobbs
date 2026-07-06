@@ -25,7 +25,6 @@ function createUser(params?: {isBot?: boolean}): User {
 		...EMPTY_USER_ROW,
 		user_id: createUserID(params?.isBot ? 2n : 1n),
 		username: params?.isBot ? 'bot-user' : 'regular-user',
-		discriminator: 1234,
 		bot: params?.isBot ?? false,
 		version: 1,
 	});

@@ -116,7 +116,7 @@ function getTransformedMember(memberRecord: GuildMember, guildId?: string): Tran
 	const user = memberRecord.user;
 	const member: TransformedMember = {
 		id: user.id,
-		username: `${user.username}#${user.discriminator}`,
+		username: user.username,
 		guildIds: [],
 	};
 	if (user.bot) {
@@ -364,7 +364,7 @@ class MemberSearch {
 		if (!worker) return;
 		const user = Users.getUser(userId);
 		if (!user) return;
-		const username = `${user.username}#${user.discriminator}`;
+		const username = user.username;
 		updateMembers([{id: userId, username, isFriend}]);
 	}
 
@@ -392,13 +392,10 @@ class MemberSearch {
 	}
 
 	async fetchMembersInBackground(query: string, guildIds: Array<string>, priorityGuildId?: string): Promise<void> {
-		const trimmed = query['trim']();
-		if (!trimmed) {
-			return;
-		}
 		if (!guildIds || guildIds.length === 0) {
 			return;
 		}
+		const normalizedQuery = query.trim();
 		const sortedGuildIds = priorityGuildId
 			? [...guildIds].sort((a, b) => (a === priorityGuildId ? -1 : b === priorityGuildId ? 1 : 0))
 			: guildIds;
@@ -415,7 +412,7 @@ class MemberSearch {
 		if (eligibleGuildIds.length === 0) {
 			return;
 		}
-		const key = `${eligibleGuildIds.join(',')}:${trimmed.toLowerCase()}`;
+		const key = `${eligibleGuildIds.join(',')}:${normalizedQuery.toLowerCase()}`;
 		const existing = this.inFlightFetches.get(key);
 		if (existing) {
 			await existing;
@@ -424,7 +421,7 @@ class MemberSearch {
 		const promise = new Promise<void>((resolve) => {
 			GuildMembers.requestMembersInBackground({
 				guildIds: eligibleGuildIds,
-				query: trimmed,
+				query: normalizedQuery,
 				limit: 25,
 				presences: true,
 			});

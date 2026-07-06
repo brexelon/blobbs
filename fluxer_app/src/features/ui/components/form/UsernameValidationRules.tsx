@@ -6,8 +6,7 @@ import {CheckIcon, XIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-
-const FLUXER_TAG_REGEX = /^[a-zA-Z0-9_]+$/;
+import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 
 export interface UsernameValidationResult {
 	validLength: boolean;
@@ -18,7 +17,7 @@ export interface UsernameValidationResult {
 function validateUsername(username: string): UsernameValidationResult {
 	const trimmed = username.trim();
 	const validLength = trimmed.length >= 1 && trimmed.length <= 32;
-	const validCharacters = trimmed.length === 0 || FLUXER_TAG_REGEX.test(trimmed);
+	const validCharacters = trimmed.length === 0 || hasValidUsernameFormat(trimmed);
 	const allValid = validLength && validCharacters;
 	return {
 		validLength,
@@ -43,7 +42,7 @@ export const UsernameValidationRules: React.FC<UsernameValidationRulesProps> = o
 		{
 			key: 'characters',
 			valid: validation.validCharacters,
-			label: <Trans>Letters (a-z, A-Z), numbers (0-9), and underscores (_) only</Trans>,
+			label: <Trans>Lowercase letters (a-z), numbers (0-9), underscores (_), and periods (.) only</Trans>,
 		},
 	];
 	return (

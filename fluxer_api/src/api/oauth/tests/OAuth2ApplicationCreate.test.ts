@@ -54,7 +54,7 @@ describe('OAuth2 Application Create', () => {
 		expect(result.application.bot).toBeDefined();
 		expect(result.application.bot?.id).toBeTruthy();
 		expect(result.application.bot?.username).toBeTruthy();
-		expect(result.application.bot?.discriminator).toBeTruthy();
+		expect(result.application.bot?.discriminator).toBe('0');
 		expect(result.application.bot?.token).toBeTruthy();
 		expect(result.clientSecret).toBeTruthy();
 		expect(result.botUserId).toBe(result.application.bot?.id);

@@ -64,6 +64,8 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             {{- if .Values.svc.cassandra }}
+            - name: FLUXER_DATABASE_BACKEND
+              value: "cassandra"
             - name: FLUXER_CASSANDRA_HOSTS
               value: {{ join "," .Values.svc.cassandra.hosts }}
             - name: FLUXER_CASSANDRA_KEYSPACE

@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {
-	DELETED_USER_DISCRIMINATOR,
-	DELETED_USER_GLOBAL_NAME,
-	DELETED_USER_USERNAME,
-	UserFlags,
-} from '@fluxer/constants/src/UserConstants';
+import {UserFlags} from '@fluxer/constants/src/UserConstants';
 import type {WorkerTaskHandler} from '@pkgs/worker/src/contracts/WorkerTask';
 import {z} from 'zod';
 import {applicationIdToUserId, createApplicationID, type GuildID} from '../../BrandedTypes';
@@ -13,6 +8,7 @@ import {mapGuildMemberToResponse} from '../../guild/GuildModel';
 import {Logger} from '../../Logger';
 import {createRequestCache} from '../../middleware/RequestCacheMiddleware';
 import {remapAuthorMessagesToDeletedUser} from '../../oauth/ApplicationMessageAuthorAnonymization';
+import {allocateDeletedUserIdentity} from '../../utils/DeletedUserIdentityUtils';
 import {getWorkerDependencies} from '../WorkerContext';
 import {chunkArray} from './utils/MessageDeletion';
 
@@ -60,12 +56,14 @@ const applicationProcessDeletion: WorkerTaskHandler = async (payload, helpers) =
 			await applicationRepository.deleteApplication(applicationId);
 			return;
 		}
+		const deletedUserIdentity = await allocateDeletedUserIdentity((username) =>
+			userRepository.isUsernameAvailable(username),
+		);
 		const updatedBotUser = await userRepository.patchUpsert(
 			botUserId,
 			{
-				username: DELETED_USER_USERNAME,
-				global_name: DELETED_USER_GLOBAL_NAME,
-				discriminator: DELETED_USER_DISCRIMINATOR,
+				username: deletedUserIdentity.username,
+				global_name: deletedUserIdentity.globalName,
 				flags: botUser.flags | UserFlags.DELETED,
 			},
 			botUser.toRow(),

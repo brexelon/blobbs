@@ -59,7 +59,7 @@ export function UserRelationshipController(app: HonoApp) {
 			security: ['bearerToken', 'sessionToken'],
 			tags: ['Users'],
 			description:
-				'Sends a friend request to a user identified by username tag (username#discriminator). Returns the new relationship object. Can fail if user not found or request already sent.',
+				'Sends a friend request to a user identified by username. Returns the new relationship object. Can fail if user not found or request already sent.',
 		}),
 		async (ctx) => {
 			const response = await ctx.get('userRelationshipRequestService').sendFriendRequestByTag({

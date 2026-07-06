@@ -372,8 +372,14 @@ fn status_card(config: &AdminConfig, report: &ReportEntry) -> Markup {
     }
 }
 
-fn actions_card(config: &AdminConfig, report: &ReportEntry, csrf_token: &str) -> Markup {
+fn actions_card(
+    config: &AdminConfig,
+    auth: &AuthContext,
+    report: &ReportEntry,
+    csrf_token: &str,
+) -> Markup {
     let base = &config.base_path;
+    let can_delete = has_acl(auth, acl::REPORT_DELETE);
     html! {
         (section_card(Some("Actions"), None, None, html! {
             div class="flex flex-col gap-3" {
@@ -405,6 +411,19 @@ fn actions_card(config: &AdminConfig, report: &ReportEntry, csrf_token: &str) ->
                 @if report.report_type == 1 {
                     @if let Some(ref channel_id) = report.mutual_dm_channel_id {
                         (nav_link(&message_lookup_href(base, channel_id, None), "View Mutual DM Channel"))
+                    }
+                }
+                @if can_delete {
+                    form method="post"
+                        action={(base) "/reports/" (&report.report_id) "/delete"}
+                        onsubmit="return confirm('Are you sure you want to delete this report? This permanently removes it from the database and cannot be undone.');" {
+                        (csrf_input(csrf_token))
+                        button type="submit"
+                            class="inline-flex w-full items-center justify-center gap-2 \
+                                   font-medium rounded-lg bg-red-600 text-white \
+                                   px-4 py-2 text-sm transition-colors hover:bg-red-700" {
+                            "Delete Report"
+                        }
                     }
                 }
             }
@@ -485,7 +504,7 @@ pub fn report_detail_page(
             }
             div class="space-y-6" {
                 (status_card(config, report))
-                (actions_card(config, report, csrf_token))
+                (actions_card(config, auth, report, csrf_token))
             }
         }
         }

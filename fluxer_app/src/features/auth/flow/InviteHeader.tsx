@@ -180,7 +180,7 @@ export const PackInviteHeader = observer(function PackInviteHeader({invite}: Pac
 	const creatorRecord = useMemo(() => new User(pack.creator), [pack.creator]);
 	const creatorDisplayName = NicknameUtils.getDisplayName(creatorRecord);
 	const packKindLabel = pack.type === 'emoji' ? i18n._(EMOJI_PACK_DESCRIPTOR) : i18n._(STICKER_PACK_DESCRIPTOR);
-	const inviterTag = invite.inviter ? `${invite.inviter.username}#${invite.inviter.discriminator}` : null;
+	const inviterTag = invite.inviter ? invite.inviter.username : null;
 	return (
 		<div className={styles.entityHeader} data-flx="auth.flow.invite-header.pack-invite-header.entity-header">
 			<div

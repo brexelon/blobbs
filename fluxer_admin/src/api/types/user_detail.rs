@@ -145,6 +145,12 @@ pub struct ResolveReportResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DeleteReportResponse {
+    pub report_id: String,
+    pub deleted: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GuildAuditLogEntry {
     pub id: String,
     pub action_type: i32,

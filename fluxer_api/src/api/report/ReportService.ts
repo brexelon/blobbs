@@ -699,7 +699,7 @@ export class ReportService {
 		if (!parsed) {
 			throw new InvalidDsaReportTargetError();
 		}
-		const user = await this.userRepository.findByUsernameDiscriminator(parsed.username, parsed.discriminator);
+		const user = await this.userRepository.findByUsername(parsed.username);
 		if (!user) {
 			throw new UnknownUserError();
 		}
@@ -735,17 +735,13 @@ export class ReportService {
 		return email.trim().toLowerCase();
 	}
 
-	private parseFluxerTag(tag: string): {
-		username: string;
-		discriminator: number;
-	} | null {
-		const trimmed = tag.trim();
-		const match = /^(.+)#(\d{4})$/.exec(trimmed);
-		if (!match) return null;
-		return {
-			username: match[1],
-			discriminator: Number.parseInt(match[2], 10),
-		};
+	private parseFluxerTag(tag: string): {username: string} | null {
+		const trimmed = tag.trim().toLowerCase();
+		if (!trimmed) return null;
+		const hashIndex = trimmed.lastIndexOf('#');
+		const username = hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed;
+		if (!username) return null;
+		return {username};
 	}
 
 	private extractChannelAndMessageFromLink(link: string): {
@@ -830,6 +826,16 @@ export class ReportService {
 		return report;
 	}
 
+	async deleteReport(reportId: ReportID): Promise<IARSubmission> {
+		const report = await this.reportRepository.deleteReport(reportId);
+		if (this.reportSearchService && 'deleteReport' in this.reportSearchService) {
+			await this.reportSearchService.deleteReport(reportId).catch((error) => {
+				Logger.error({error, reportId}, 'Failed to remove report from search index');
+			});
+		}
+		return report;
+	}
+
 	private async gatherMessageContext(
 		channelId: ChannelID,
 		targetMessageId: MessageID,
@@ -880,7 +886,7 @@ export class ReportService {
 				channel_id: channelId,
 				author_id: message.authorId!,
 				author_username: author.username,
-				author_discriminator: author.discriminator,
+				author_discriminator: 0,
 				author_avatar_hash: author.avatarHash || null,
 				content: message.content || null,
 				timestamp: snowflakeToDate(message.id),

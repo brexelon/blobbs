@@ -42,7 +42,10 @@ export function useEmojiCategories(
 		const sortedGuildEmojisByGuildId = new Map<string, Array<FlatEmoji>>();
 		for (const guildId of sortedGuildIds) {
 			if (guildEmojisByGuildId.has(guildId)) {
-				sortedGuildEmojisByGuildId.set(guildId, guildEmojisByGuildId.get(guildId)!);
+				sortedGuildEmojisByGuildId.set(
+					guildId,
+					guildEmojisByGuildId.get(guildId)!.sort((a, b) => a.name.localeCompare(b.name)),
+				);
 			}
 		}
 		return sortedGuildEmojisByGuildId;

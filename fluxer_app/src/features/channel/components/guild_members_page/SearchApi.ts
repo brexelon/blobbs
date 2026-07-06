@@ -28,7 +28,7 @@ export function toMemberDisplayData(searchMember: SearchableGuildMember, guildId
 	const user = Users.getUser(searchMember.user_id);
 	const member = GuildMembers.getMember(guildId, searchMember.user_id);
 	const displayName = member?.nick ?? searchMember.nickname ?? searchMember.global_name ?? searchMember.username;
-	const tag = user ? user.tag : `${searchMember.username}#${searchMember.discriminator}`;
+	const tag = user ? user.tag : searchMember.username;
 	return {
 		userId: searchMember.user_id,
 		displayName,

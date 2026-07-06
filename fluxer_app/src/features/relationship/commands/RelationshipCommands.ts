@@ -13,7 +13,7 @@ export interface SendFriendRequestOptions {
 
 type RelationshipCommand =
 	| {kind: 'send'; userId: string; options: SendFriendRequestOptions}
-	| {kind: 'send-by-tag'; username: string; discriminator: string}
+	| {kind: 'send-by-tag'; username: string}
 	| {kind: 'accept'; userId: string}
 	| {kind: 'remove'; userId: string}
 	| {kind: 'block'; userId: string}
@@ -42,7 +42,7 @@ async function dispatchRelationshipCommand(command: RelationshipCommand): Promis
 			return;
 		case 'send-by-tag':
 			await http.post(Endpoints.USER_RELATIONSHIPS, {
-				body: {username: command.username, discriminator: command.discriminator},
+				body: {username: command.username},
 			});
 			return;
 		case 'accept':
@@ -73,9 +73,9 @@ export async function sendFriendRequest(userId: string, options: SendFriendReque
 	}
 }
 
-export async function sendFriendRequestByTag(username: string, discriminator: string) {
+export async function sendFriendRequestByTag(username: string) {
 	try {
-		await dispatchRelationshipCommand({kind: 'send-by-tag', username, discriminator});
+		await dispatchRelationshipCommand({kind: 'send-by-tag', username});
 	} catch (error) {
 		rethrowRelationshipFailure('Failed to send friend request by tag:', error);
 	}

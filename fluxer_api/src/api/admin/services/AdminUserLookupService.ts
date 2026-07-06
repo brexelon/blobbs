@@ -26,9 +26,9 @@ export class AdminUserLookupService {
 		const query = data.query.trim();
 		const fluxerTagMatch = query.match(/^(.+)#(\d{1,4})$/);
 		if (fluxerTagMatch) {
-			const username = fluxerTagMatch[1];
-			const discriminator = parseInt(fluxerTagMatch[2], 10);
-			user = await userRepository.findByUsernameDiscriminator(username, discriminator);
+			// Legacy username#discriminator format — strip discriminator, look up by username
+			const username = fluxerTagMatch[1].toLowerCase();
+			user = await userRepository.findByUsername(username);
 		} else if (/^\d+$/.test(query)) {
 			try {
 				const userId = createUserID(BigInt(query));
@@ -40,7 +40,10 @@ export class AdminUserLookupService {
 		} else if (query.includes('@')) {
 			user = await userRepository.findByEmail(query);
 		} else {
-			user = await userRepository.findByStripeSubscriptionId(query);
+			user = await userRepository.findByUsername(query.toLowerCase());
+			if (!user) {
+				user = await userRepository.findByStripeSubscriptionId(query);
+			}
 		}
 		return {
 			users: user ? [await mapUserToAdminResponse(user, cacheService, acls)] : [],

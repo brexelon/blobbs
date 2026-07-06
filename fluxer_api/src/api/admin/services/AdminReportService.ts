@@ -38,7 +38,6 @@ import type {IARMessageContext, IARSubmission} from '../../report/IReportReposit
 import type {ReportService} from '../../report/ReportService';
 import {getReportSearchService} from '../../SearchFactory';
 import type {UserChannelService} from '../../user/services/UserChannelService';
-import {assertSafeByteSize} from '../../utils/ByteSizeUtils';
 import type {AdminAuditService} from './AdminAuditService';
 
 interface AdminReportServiceDeps {
@@ -139,6 +138,26 @@ export class AdminReportService {
 			status: resolvedReport.status,
 			resolved_at: resolvedReport.resolvedAt?.toISOString() ?? null,
 			public_comment: resolvedReport.publicComment,
+		};
+	}
+
+	async deleteReport(reportId: ReportID, adminUserId: UserID, auditLogReason: string | null) {
+		const {reportService, auditService} = this.deps;
+		const deletedReport = await reportService.deleteReport(reportId);
+		await auditService.createAuditLog({
+			adminUserId,
+			targetType: 'report',
+			targetId: BigInt(reportId),
+			action: 'delete_report',
+			auditLogReason,
+			metadata: new Map([
+				['report_id', reportId.toString()],
+				['report_type', deletedReport.reportType.toString()],
+			]),
+		});
+		return {
+			report_id: deletedReport.reportId.toString(),
+			deleted: true,
 		};
 	}
 
@@ -474,7 +493,7 @@ export class AdminReportService {
 			author_id: message.authorId.toString(),
 			author_username: message.authorUsername,
 			author_global_name: null,
-			author_discriminator: message.authorDiscriminator.toString().padStart(4, '0'),
+			author_discriminator: '0',
 			author_avatar: message.authorAvatarHash,
 			user_prior_ncmec_report_ids: priorReportsByAuthor.get(message.authorId.toString()) ?? [],
 		};
@@ -581,7 +600,7 @@ export class AdminReportService {
 				content_type: attachment.content_type ?? null,
 				width: attachment.width ?? null,
 				height: attachment.height ?? null,
-				size: attachment.size != null ? assertSafeByteSize(attachment.size, 'admin report attachment size') : null,
+				size: attachment.size != null ? Number(attachment.size) : null,
 				ncmec_status: attachmentStatusesById.get(attachment.attachment_id.toString())?.status ?? 'not_submitted',
 				ncmec_report_id: attachmentStatusesById.get(attachment.attachment_id.toString())?.ncmec_report_id ?? null,
 				ncmec_failure_reason: attachmentStatusesById.get(attachment.attachment_id.toString())?.failure_reason ?? null,
@@ -608,12 +627,11 @@ export class AdminReportService {
 		}
 		try {
 			const user = await this.deps.userCacheService.getUserPartialResponse(userId, requestCache);
-			const discriminator = user.discriminator?.padStart(4, '0') ?? '0000';
 			return {
-				tag: `${user.username}#${discriminator}`,
+				tag: user.username,
 				username: user.username,
 				global_name: user.global_name ?? null,
-				discriminator,
+				discriminator: '0',
 			};
 		} catch (error) {
 			Logger.warn({userId: userId.toString(), error}, 'Failed to resolve user tag for report');

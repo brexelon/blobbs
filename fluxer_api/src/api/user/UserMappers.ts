@@ -3,9 +3,6 @@
 import type {ChannelMessageNotifications} from '@fluxer/constants/src/NotificationConstants';
 import {
 	DEFAULT_GUILD_FOLDER_ICON,
-	DELETED_USER_DISCRIMINATOR,
-	DELETED_USER_GLOBAL_NAME,
-	DELETED_USER_USERNAME,
 	type GuildFolderIcon,
 	PremiumFlags,
 	PUBLIC_USER_FLAGS,
@@ -74,9 +71,9 @@ export function mapUserToPartialResponse(user: User): UserPartialResponse {
 	if (isDeleted) {
 		return {
 			id: user.id.toString(),
-			username: DELETED_USER_USERNAME,
-			discriminator: DELETED_USER_DISCRIMINATOR.toString().padStart(4, '0'),
-			global_name: DELETED_USER_GLOBAL_NAME,
+			username: user.username,
+			discriminator: '0',
+			global_name: user.globalName ?? user.username,
 			avatar: null,
 			avatar_color: null,
 			bot: isBot || undefined,
@@ -88,7 +85,7 @@ export function mapUserToPartialResponse(user: User): UserPartialResponse {
 	return {
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: user.discriminator.toString().padStart(4, '0'),
+		discriminator: '0',
 		global_name: user.globalName,
 		avatar: avatarHash,
 		avatar_color: user.avatarColor,
@@ -104,7 +101,6 @@ export function hasPartialUserFieldsChanged(oldUser: User, newUser: User): boole
 	const newPartial = mapUserToPartialResponse(newUser);
 	return (
 		oldPartial.username !== newPartial.username ||
-		oldPartial.discriminator !== newPartial.discriminator ||
 		oldPartial.global_name !== newPartial.global_name ||
 		oldPartial.avatar !== newPartial.avatar ||
 		oldPartial.avatar_color !== newPartial.avatar_color ||
@@ -163,7 +159,7 @@ export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 		premium_billing_cycle: user.premiumBillingCycle || null,
 		premium_lifetime_sequence: user.premiumLifetimeSequence ?? null,
 		premium_grace_ends_at: user.premiumGraceEndsAt?.toISOString() ?? null,
-		premium_discriminator: !!(user.premiumFlags & PremiumFlags.DISCRIMINATOR),
+		premium_discriminator: false,
 		premium_badge_hidden: !!(user.premiumFlags & PremiumFlags.BADGE_HIDDEN),
 		premium_badge_masked: !!(user.premiumFlags & PremiumFlags.BADGE_MASKED),
 		premium_badge_timestamp_hidden: !!(user.premiumFlags & PremiumFlags.BADGE_TIMESTAMP_HIDDEN),
@@ -226,7 +222,7 @@ export function mapUserToOAuthResponse(
 		sub: user.id.toString(),
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: user.discriminator.toString().padStart(4, '0'),
+		discriminator: '0',
 		avatar: stripAvatarForUser(user),
 		verified: includeEmail ? (user.emailVerified ?? false) : undefined,
 		email: includeEmail ? (user.email ?? null) : null,

@@ -616,4 +616,10 @@ export const ErrorCodeToI18nKey = {
 	[ValidationErrorCodes.ENTRANCE_SOUND_NAME_LENGTH_INVALID]: 'entrance_sounds.name_length_invalid',
 	[ValidationErrorCodes.ENTRANCE_SOUND_NOT_FOUND]: 'entrance_sounds.not_found',
 	[ValidationErrorCodes.ENTRANCE_SOUND_INVALID_SCOPE]: 'entrance_sounds.invalid_scope',
+	[ValidationErrorCodes.THREADS_NOT_SUPPORTED_IN_CHANNEL]: 'threads.not_supported_in_channel',
+	[ValidationErrorCodes.THREAD_ALREADY_EXISTS_ON_MESSAGE]: 'threads.already_exists_on_message',
+	[ValidationErrorCodes.THREAD_NOT_FOUND]: 'threads.not_found',
+	[ValidationErrorCodes.THREAD_ARCHIVED]: 'threads.archived',
+	[ValidationErrorCodes.THREAD_INVALID_STATE_TRANSITION]: 'threads.invalid_state_transition',
+	[ValidationErrorCodes.INVALID_THREAD_AUTO_CLOSE_DURATION]: 'threads.invalid_auto_close_duration',
 } as const satisfies Record<AllErrorCodes, ErrorI18nKey>;

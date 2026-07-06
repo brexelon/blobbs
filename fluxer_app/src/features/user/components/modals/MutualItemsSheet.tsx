@@ -14,13 +14,15 @@ import {Scroller} from '@app/features/ui/components/Scroller';
 import {StatusAwareAvatar} from '@app/features/ui/components/StatusAwareAvatar';
 import styles from '@app/features/user/components/modals/MutualItemsSheet.module.css';
 import {getMutualItemsDescriptor} from '@app/features/user/components/modals/user_profile_modal/MutualItemsDescriptors';
-import {getMutualCommunityDisplayItems} from '@app/features/user/components/modals/user_profile_modal/MutualItemsUtils';
+import {
+	getMutualCommunityDisplayItems,
+	getSortedMutualCommunityDisplayItems,
+	getSortedMutualFriends,
+} from '@app/features/user/components/modals/user_profile_modal/MutualItemsUtils';
 import type {Profile} from '@app/features/user/models/Profile';
-import {User} from '@app/features/user/models/User';
 import UserProfileMobile from '@app/features/user/state/UserProfileMobile';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import {ME} from '@fluxer/constants/src/AppConstants';
-import type {UserPartial} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {msg, plural} from '@lingui/core/macro';
 import {useLingui as useLinguiRuntime} from '@lingui/react';
 import {useLingui} from '@lingui/react/macro';
@@ -109,12 +111,10 @@ export const MutualItemsSheet: React.FC<MutualItemsSheetProps> = observer(
 	},
 );
 const MutualFriendsList: React.FC<{profile: Profile; onClose: () => void}> = observer(({profile, onClose}) => {
-	const friends = profile.mutualFriends ?? [];
+	const sortedFriends = getSortedMutualFriends(profile.mutualFriends ?? []);
 	return (
 		<>
-			{friends.map((friend: UserPartial) => {
-				const friendRecord = new User(friend);
-				return (
+			{sortedFriends.map((friendRecord) => (
 					<button
 						key={friendRecord.id}
 						type="button"
@@ -140,8 +140,7 @@ const MutualFriendsList: React.FC<{profile: Profile; onClose: () => void}> = obs
 							</span>
 						</div>
 					</button>
-				);
-			})}
+				))}
 		</>
 	);
 });
@@ -151,10 +150,15 @@ const MutualCommunitiesGroupsList: React.FC<{
 	onClose: () => void;
 }> = observer(({profile, groups, onClose}) => {
 	useLinguiRuntime();
-	const mutualCommunityDisplayItems = getMutualCommunityDisplayItems(profile.mutualGuilds ?? []);
+	const sortedGroups = [...groups].sort((left, right) =>
+		ChannelUtils.getDMDisplayName(left).localeCompare(ChannelUtils.getDMDisplayName(right), undefined, {
+			sensitivity: 'base',
+		}),
+	);
+	const sortedCommunities = getSortedMutualCommunityDisplayItems(profile.mutualGuilds ?? []);
 	return (
 		<>
-			{groups.map((group) => {
+			{sortedGroups.map((group) => {
 				const memberCount = group.recipientIds.length + 1;
 				const memberLabel = plural(
 					{count: memberCount},
@@ -206,13 +210,13 @@ const MutualCommunitiesGroupsList: React.FC<{
 					</button>
 				);
 			})}
-			{groups.length > 0 && mutualCommunityDisplayItems.length > 0 && (
+			{sortedGroups.length > 0 && sortedCommunities.length > 0 && (
 				<div
 					className={styles.sectionDivider}
 					data-flx="user.mutual-items-sheet.mutual-communities-groups-list.section-divider"
 				/>
 			)}
-			{mutualCommunityDisplayItems.map(({guild, nick}) => (
+			{sortedCommunities.map(({guild, nick}) => (
 				<button
 					key={guild.id}
 					type="button"

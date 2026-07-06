@@ -72,6 +72,10 @@ export class UserAccountRepository implements IUserAccountRepository {
 		return this.accountRepo.deleteUserSecondaryIndices(userId);
 	}
 
+	async deleteUser(userId: UserID): Promise<void> {
+		return this.accountRepo.deleteUser(userId);
+	}
+
 	async findByEmail(email: string): Promise<User | null> {
 		return this.lookupRepo.findByEmail(email);
 	}
@@ -95,12 +99,12 @@ export class UserAccountRepository implements IUserAccountRepository {
 		return this.lookupRepo.listUserIdsByLastActiveIp(lastActiveIp, limit, offset);
 	}
 
-	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
-		return this.lookupRepo.findByUsernameDiscriminator(username, discriminator);
+	async findByUsername(username: string): Promise<User | null> {
+		return this.lookupRepo.findByUsername(username);
 	}
 
-	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
-		return this.lookupRepo.findDiscriminatorsByUsername(username);
+	async isUsernameAvailable(username: string): Promise<boolean> {
+		return this.lookupRepo.isUsernameAvailable(username);
 	}
 
 	async getActivityTracking(userId: UserID): Promise<{

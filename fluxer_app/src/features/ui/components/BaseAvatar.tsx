@@ -97,6 +97,7 @@ interface BaseAvatarProps {
 	isTyping?: boolean;
 	showOffline?: boolean;
 	showSkeleton?: boolean;
+	fallbackAvatarUrl?: string;
 	className?: string;
 	isClickable?: boolean;
 	userTag?: string;
@@ -127,6 +128,7 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 			isTyping = false,
 			showOffline = true,
 			showSkeleton = false,
+			fallbackAvatarUrl,
 			className,
 			isClickable = false,
 			userTag,
@@ -170,16 +172,33 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 			target: isTyping ? 1 : 0,
 			enabled: shouldAnimateAvatarMask && !reducedMotion,
 		});
-		const candidateUrl =
-			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed ? hoverAvatarUrl || '' : avatarUrl;
-		const [imgError, setImgError] = useState(false);
+		const [hasPrimaryFailed, setHasPrimaryFailed] = useState(false);
+		const [hasFallbackFailed, setHasFallbackFailed] = useState(false);
+		const staticAvatarUrl =
+			hasPrimaryFailed && fallbackAvatarUrl && fallbackAvatarUrl !== avatarUrl
+				? fallbackAvatarUrl
+				: avatarUrl;
+		const resolvedCandidateUrl =
+			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed
+				? hoverAvatarUrl || ''
+				: staticAvatarUrl;
 		useEffect(() => {
-			setImgError(false);
-		}, [candidateUrl]);
+			setHasPrimaryFailed(false);
+			setHasFallbackFailed(false);
+		}, [avatarUrl, hoverAvatarUrl, animatedMediaPlaybackEnabled, animatedMediaPlaybackAllowed]);
 		const handleImageError = useCallback(() => {
-			setImgError(true);
+			setHasPrimaryFailed((primaryFailed) => {
+				if (!primaryFailed) {
+					return true;
+				}
+				setHasFallbackFailed(true);
+				return true;
+			});
 		}, []);
-		const showFallback = !candidateUrl || imgError;
+		const showFallback =
+			!resolvedCandidateUrl ||
+			hasFallbackFailed ||
+			(hasPrimaryFailed && (!fallbackAvatarUrl || fallbackAvatarUrl === avatarUrl));
 		const avatarMask = resolveAvatarMask({
 			shouldShowStatus,
 			isTyping,
@@ -346,7 +365,7 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 						/>
 					) : showFallback ? null : (
 						<image
-							href={candidateUrl}
+							href={resolvedCandidateUrl}
 							width={size}
 							height={size}
 							mask={avatarMaskUrl}

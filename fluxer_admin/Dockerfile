@@ -35,6 +35,8 @@ RUN printf '%s\n' \
 	> Cargo.toml
 
 ENV FLUXER_BUILD_VERSION="${BUILD_VERSION}"
+ENV CARGO_NET_RETRY=10 \
+	CARGO_HTTP_MULTIPLEXING=false
 
 RUN cargo build --release -p fluxer_admin \
 	&& cp target/release/fluxer_admin /usr/local/bin/fluxer-admin

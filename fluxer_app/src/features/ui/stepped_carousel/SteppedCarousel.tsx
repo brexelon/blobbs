@@ -9,6 +9,7 @@ import {
 import {AnimatePresence, motion, type Transition, useReducedMotion, type Variants} from 'framer-motion';
 import type React from 'react';
 import {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import clsx from 'clsx';
 
 interface SteppedCarouselProps<Step extends string> {
 	step: Step;
@@ -16,6 +17,7 @@ interface SteppedCarouselProps<Step extends string> {
 	children: React.ReactNode;
 	direction?: number;
 	focusOnStepChange?: boolean;
+	fillParent?: boolean;
 	ariaLabel?: string;
 	ariaLive?: 'off' | 'polite';
 	'data-flx'?: string;
@@ -80,6 +82,7 @@ export function SteppedCarousel<Step extends string>({
 	children,
 	direction: directionProp,
 	focusOnStepChange = false,
+	fillParent = false,
 	ariaLabel,
 	ariaLive,
 	'data-flx': dataFlx,
@@ -151,8 +154,8 @@ export function SteppedCarousel<Step extends string>({
 	}, [focusOnStepChange, model.focusRequestId]);
 	return (
 		<motion.div
-			className={styles.container}
-			animate={{height: model.contentHeight}}
+			className={clsx(styles.container, fillParent && styles.fillParent)}
+			animate={fillParent ? undefined : {height: model.contentHeight}}
 			transition={shouldReduceMotion ? instantTransition : heightTransition}
 			aria-label={ariaLabel}
 			aria-live={ariaLive}
@@ -169,7 +172,7 @@ export function SteppedCarousel<Step extends string>({
 				<motion.div
 					key={model.step}
 					ref={setMeasureNode}
-					className={styles.pane}
+					className={clsx(styles.pane, fillParent && styles.fillParentPane)}
 					custom={model.direction}
 					variants={shouldReduceMotion ? reducedMotionVariants : slideVariants}
 					initial="enter"

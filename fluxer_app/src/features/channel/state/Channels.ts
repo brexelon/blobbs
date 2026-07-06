@@ -9,6 +9,7 @@ import type {GuildReadyData} from '@app/features/gateway/types/GatewayGuildTypes
 import {filterViewableChannels} from '@app/features/messaging/utils/ChannelShared';
 import * as NavigationCommands from '@app/features/navigation/commands/NavigationCommands';
 import * as RouterUtils from '@app/features/navigation/utils/RouterUtils';
+import {hydrateUnresolvedUserPlaceholders} from '@app/features/user/state/UserPlaceholderHydration';
 import Users from '@app/features/user/state/Users';
 import {ME} from '@fluxer/constants/src/AppConstants';
 import {ChannelTypes, TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
@@ -150,6 +151,16 @@ class Channels {
 		for (const channel of channels) {
 			this.setChannel(channel);
 		}
+		const recipientIds = new Set<string>();
+		for (const channel of channels) {
+			if (!channel.recipients) {
+				continue;
+			}
+			for (const recipient of channel.recipients) {
+				recipientIds.add(recipient.id);
+			}
+		}
+		hydrateUnresolvedUserPlaceholders(recipientIds);
 		const userId = Authentication.currentUserId;
 		if (!userId) {
 			return;

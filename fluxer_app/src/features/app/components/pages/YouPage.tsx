@@ -114,7 +114,7 @@ export const YouPage = observer(({onAvatarClick}: YouPageProps) => {
 									</div>
 									<div className={styles.tagBadgeRow} data-flx="app.you-page.tag-badge-row">
 										<span className={styles.fullTag} data-flx="app.you-page.full-tag">
-											{NicknameUtils.formatTagForStreamerMode(`${user.username}#${user.discriminator}`)}
+											{NicknameUtils.formatTagForStreamerMode(user.username)}
 										</span>
 										<div className={styles.badgesWrapper} data-flx="app.you-page.badges-wrapper">
 											<UserProfileBadges

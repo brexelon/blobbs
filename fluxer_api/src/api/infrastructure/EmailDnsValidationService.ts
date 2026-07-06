@@ -25,6 +25,7 @@ interface IDnsResolver {
 interface EmailDnsValidationServiceOptions {
 	resolver?: IDnsResolver;
 	enforceInTestMode?: boolean;
+	enforceOnSelfHosted?: boolean;
 	positiveTtlMs?: number;
 	negativeTtlMs?: number;
 }
@@ -37,6 +38,7 @@ const DOMAIN_NO_RECORD_CODES = new Set(['ENODATA', 'ENOENT', 'NODATA']);
 export class EmailDnsValidationService implements IEmailDnsValidationService {
 	private readonly resolver: IDnsResolver;
 	private readonly enforceInTestMode: boolean;
+	private readonly enforceOnSelfHosted: boolean;
 	private readonly positiveTtlMs: number;
 	private readonly negativeTtlMs: number;
 	private readonly domainCache = new Map<string, DomainValidationCacheEntry>();
@@ -44,12 +46,20 @@ export class EmailDnsValidationService implements IEmailDnsValidationService {
 	constructor(options: EmailDnsValidationServiceOptions = {}) {
 		this.resolver = options.resolver ?? new Resolver();
 		this.enforceInTestMode = options.enforceInTestMode ?? false;
+		this.enforceOnSelfHosted = options.enforceOnSelfHosted ?? false;
 		this.positiveTtlMs = options.positiveTtlMs ?? ms('30 minutes');
 		this.negativeTtlMs = options.negativeTtlMs ?? ms('5 minutes');
 	}
 
 	async hasValidDnsRecords(email: string): Promise<boolean> {
 		if (!this.enforceInTestMode && Config.dev.testModeEnabled) {
+			return true;
+		}
+		// Self-hosted instances are operated by their own admins and frequently run in
+		// network environments with restricted or custom DNS resolution. Enforcing MX/A
+		// lookups there blocks legitimate, correctly-formatted addresses (e.g. the
+		// instance's own domain), so DNS validation is skipped unless explicitly enabled.
+		if (!this.enforceOnSelfHosted && Config.instance.selfHosted) {
 			return true;
 		}
 		const domain = this.extractDomain(email);

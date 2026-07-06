@@ -154,7 +154,6 @@ export const PUBLIC_USER_FLAGS =
 	UserFlags.SPAMMER;
 export const DELETED_USER_USERNAME = 'DeletedUser';
 export const DELETED_USER_GLOBAL_NAME = 'Deleted User';
-export const DELETED_USER_DISCRIMINATOR = 0;
 export const PublicUserFlags = {
 	STAFF: Number(UserFlags.STAFF),
 	CTP_MEMBER: Number(UserFlags.CTP_MEMBER),

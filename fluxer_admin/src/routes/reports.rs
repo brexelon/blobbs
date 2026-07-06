@@ -48,6 +48,12 @@ struct ResolveForm {
     resolution: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct DeleteForm {
+    #[serde(default)]
+    _csrf: Option<String>,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/reports", get(reports_list))
@@ -56,6 +62,10 @@ pub fn router() -> Router<AppState> {
         .route(
             "/reports/{report_id}/resolve",
             axum::routing::post(report_resolve),
+        )
+        .route(
+            "/reports/{report_id}/delete",
+            axum::routing::post(report_delete),
         )
 }
 
@@ -223,6 +233,56 @@ async fn report_resolve(
             flash::redirect_with_flash(
                 &format!("{base}/reports/{report_id}"),
                 FlashData::error("Failed to resolve report"),
+                config.is_production(),
+            )
+        }
+    }
+}
+
+async fn report_delete(
+    State(state): State<AppState>,
+    auth: axum::Extension<AuthContext>,
+    Path(report_id): Path<String>,
+    request: Request,
+) -> Response {
+    let config = state.config();
+    let base = &config.base_path;
+    let is_background = request
+        .uri()
+        .query()
+        .is_some_and(|query| query.split('&').any(|part| part == "background=1"));
+    let _form: DeleteForm = match Form::from_request(request, &state).await {
+        Ok(Form(f)) => f,
+        Err(error) => {
+            tracing::warn!(%error, report_id, "failed to parse report delete form");
+            return flash::redirect_with_flash(
+                &format!("{base}/reports/{report_id}"),
+                FlashData::error("Invalid form data"),
+                config.is_production(),
+            );
+        }
+    };
+    let client = AdminApiClient::new(state.http_client(), config, &auth.0.session);
+    let result = client.delete_report(&report_id, None).await;
+    match result {
+        Ok(_) => {
+            if is_background {
+                return StatusCode::NO_CONTENT.into_response();
+            }
+            flash::redirect_with_flash(
+                &format!("{base}/reports"),
+                FlashData::success("Report deleted"),
+                config.is_production(),
+            )
+        }
+        Err(error) => {
+            tracing::warn!(%error, report_id, "admin API request failed: delete report");
+            if is_background {
+                return StatusCode::BAD_GATEWAY.into_response();
+            }
+            flash::redirect_with_flash(
+                &format!("{base}/reports/{report_id}"),
+                FlashData::error("Failed to delete report"),
                 config.is_production(),
             )
         }

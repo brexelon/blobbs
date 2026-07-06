@@ -56,6 +56,7 @@ class GatewayConnection {
 	isConnected: boolean = false;
 	isConnecting: boolean = false;
 	isReady: boolean = false;
+	resumeGeneration: number = 0;
 	sessionId: string | null = null;
 	gatewayCountryCode: string | null = null;
 	gatewayLatitude: string | null = null;
@@ -598,6 +599,7 @@ class GatewayConnection {
 		this.isConnected = true;
 		this.isConnecting = false;
 		this.isReady = true;
+		this.resumeGeneration += 1;
 		SessionManager.handleConnectionReady();
 		this.markInitialGuildSynced(this.sessionId);
 		LocalPresence.updatePresence();

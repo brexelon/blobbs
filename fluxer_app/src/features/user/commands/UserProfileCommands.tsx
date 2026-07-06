@@ -12,6 +12,7 @@ import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as PopoutCommands from '@app/features/ui/commands/PopoutCommands';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {UserProfileModal} from '@app/features/user/components/modals/UserProfileModal';
+import type {ProfileTab} from '@app/features/user/components/modals/user_profile_modal/UserProfileModalShared';
 import {Profile, type ProfileWire} from '@app/features/user/models/Profile';
 import UserProfile from '@app/features/user/state/UserProfile';
 import UserProfileMobile from '@app/features/user/state/UserProfileMobile';
@@ -142,7 +143,12 @@ export function closeUserProfileSurfaces(): void {
 	ModalCommands.popAllByType(UserProfileModal);
 }
 
-export function openUserProfile(userId: string, guildId?: string, autoFocusNote?: boolean): boolean {
+export function openUserProfile(
+	userId: string,
+	guildId?: string,
+	autoFocusNote?: boolean,
+	initialTab?: ProfileTab,
+): boolean {
 	if (!canOpenUserProfileSurface()) {
 		logger.debug(
 			`Skipping profile open while protected routes are unavailable for user ${userId}${profileScope(guildId)}`,
@@ -150,7 +156,7 @@ export function openUserProfile(userId: string, guildId?: string, autoFocusNote?
 		return false;
 	}
 	if (MobileLayout.enabled) {
-		UserProfileMobile.open(userId, guildId, autoFocusNote);
+		UserProfileMobile.open(userId, guildId, autoFocusNote, initialTab);
 	} else {
 		ModalCommands.push(
 			modal(() => (
@@ -158,6 +164,7 @@ export function openUserProfile(userId: string, guildId?: string, autoFocusNote?
 					userId={userId}
 					guildId={guildId}
 					autoFocusNote={autoFocusNote}
+					initialTab={initialTab}
 					data-flx="user.user-profile-commands.open-user-profile.user-profile-modal"
 				/>
 			)),
@@ -170,6 +177,7 @@ export async function openLinkedUserProfile(
 	userId: string,
 	guildId?: string,
 	autoFocusNote?: boolean,
+	initialTab?: ProfileTab,
 ): Promise<boolean> {
 	if (!canOpenUserProfileSurface()) {
 		logger.debug(`Skipping linked profile open before fetch for user ${userId}${profileScope(guildId)}`);
@@ -181,5 +189,5 @@ export async function openLinkedUserProfile(
 		logger.error(`Failed to fetch linked profile for user ${userId}${guildId ? ` in guild ${guildId}` : ''}:`, error);
 		return false;
 	}
-	return openUserProfile(userId, guildId, autoFocusNote);
+	return openUserProfile(userId, guildId, autoFocusNote, initialTab);
 }

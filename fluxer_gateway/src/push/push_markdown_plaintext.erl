@@ -35,7 +35,8 @@ render_bounded_context(Content, ContextJson) when
     byte_size(ContextJson) =< ?MAX_CONTEXT_JSON_BYTES
 ->
     try push_markdown_plaintext_nif:render_push_preview_nif(Content, ContextJson) of
-        Preview when is_binary(Preview) -> Preview
+        Preview when is_binary(Preview) -> Preview;
+        _ -> strip_to_safe(Content)
     catch
         _:_ -> strip_to_safe(Content)
     end;

@@ -180,7 +180,7 @@ resume_lookup_trace_meta(SessionId) ->
 session_pid_trace_meta(Pid) ->
     node_trace_meta(session, node(Pid)).
 
--spec node_trace_meta(atom(), node()) -> map().
+-spec node_trace_meta(term(), node()) -> map().
 node_trace_meta(Operation, NodeName) ->
     #{
         remote => #{
@@ -189,9 +189,13 @@ node_trace_meta(Operation, NodeName) ->
         }
     }.
 
--spec trace_key(atom()) -> binary().
+-spec trace_key(term()) -> binary().
+trace_key(Value) when is_binary(Value) ->
+    Value;
+trace_key(Value) when is_atom(Value) ->
+    atom_to_binary(Value, utf8);
 trace_key(Value) ->
-    atom_to_binary(Value, utf8).
+    list_to_binary(io_lib:format("~p", [Value])).
 
 -spec node_pod_name_or_name(node()) -> binary().
 node_pod_name_or_name(NodeName) ->

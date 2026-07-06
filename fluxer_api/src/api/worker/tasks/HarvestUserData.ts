@@ -377,7 +377,6 @@ function buildUserDataJson(params: UserDataJsonParams) {
 		user: {
 			id: user.id.toString(),
 			username: user.username,
-			discriminator: user.discriminator,
 			bot: user.isBot,
 			system: user.isSystem,
 			email: user.email,

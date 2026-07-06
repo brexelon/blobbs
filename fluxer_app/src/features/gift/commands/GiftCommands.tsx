@@ -60,7 +60,7 @@ const logger = new Logger('Gifts');
 const MOCK_USER_PARTIAL: UserPartial = {
 	id: '000000000000000000',
 	username: 'MockUser',
-	discriminator: '0000',
+	discriminator: '0',
 	global_name: null,
 	avatar: null,
 	avatar_color: null,

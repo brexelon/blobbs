@@ -60,6 +60,10 @@ const VERIFY_EMAIL_TO_SEND_FRIEND_REQUESTS_DESCRIPTOR = msg({
 	message: 'Verify your email before sending friend requests.',
 	comment: 'Error toast when sending a friend request fails because the current account email is unverified.',
 });
+const FRIEND_REQUESTS_DISABLED_DESCRIPTOR = msg({
+	message: 'Friend requests are disabled on this server.',
+	comment: 'Error toast when sending a friend request fails because the instance admin has disabled direct messages/friend requests.',
+});
 const FAILED_TO_SEND_FRIEND_REQUEST_PLEASE_TRY_AGAIN_DESCRIPTOR = msg({
 	message: "Couldn't send the friend request. Try again.",
 	comment: 'Generic error toast when sending a friend request fails with no recognized API error code.',
@@ -139,6 +143,8 @@ export function getSendFriendRequestErrorMessage(
 			return i18n._(YOU_NEED_TO_CLAIM_YOUR_ACCOUNT_TO_SEND_DESCRIPTOR);
 		case APIErrorCodes.FRIEND_REQUEST_EMAIL_VERIFICATION_REQUIRED:
 			return i18n._(VERIFY_EMAIL_TO_SEND_FRIEND_REQUESTS_DESCRIPTOR);
+		case APIErrorCodes.DIRECT_MESSAGES_DISABLED:
+			return i18n._(FRIEND_REQUESTS_DISABLED_DESCRIPTOR);
 		default:
 			return i18n._(FAILED_TO_SEND_FRIEND_REQUEST_PLEASE_TRY_AGAIN_DESCRIPTOR);
 	}

@@ -38,7 +38,8 @@ import {DownloadService} from '../download/DownloadService';
 import {createEmailProvider} from '../email/EmailProviderFactory';
 import {FavoriteMemeRepository} from '../favorite_meme/FavoriteMemeRepository';
 import {GifService} from '../gif/GifService';
-import {createNatsGifProvider} from '../gif/NatsGifProvider';
+import {KlipyGifProvider} from '../gif/KlipyGifProvider';
+import {TenorGifProvider} from '../gif/TenorGifProvider';
 import {GuildAuditLogService} from '../guild/GuildAuditLogService';
 import {GuildDiscoveryRepository} from '../guild/repositories/GuildDiscoveryRepository';
 import {GuildRepository} from '../guild/repositories/GuildRepository';
@@ -348,7 +349,6 @@ export function setInjectedUnfurlerService(service: IUnfurlerService | undefined
 }
 
 const getDefaultUnfurlerService = singleton(() => {
-	const instanceConfigRepository = getInstanceConfigRepository();
 	const manager = new NatsConnectionManager({
 		url: Config.nats.coreUrl,
 		token: Config.nats.authToken || undefined,
@@ -359,8 +359,8 @@ const getDefaultUnfurlerService = singleton(() => {
 	});
 	return new NatsUnfurlerService(
 		manager,
-		async () => instanceConfigRepository.getEffectiveYoutubeApiKey(),
-		async () => (await instanceConfigRepository.getEffectiveGifConfig()).klipy_api_key,
+		async () => getInstanceConfigRepository().getEffectiveYoutubeApiKey(),
+		async () => getInstanceConfigRepository().getEffectiveKlipyApiKey(),
 	);
 });
 
@@ -373,17 +373,31 @@ export const getEmbedService = singleton(
 );
 export const getReadStateService = singleton(() => new ReadStateService(getReadStateRepository(), getGatewayService()));
 export const getDiscriminatorService = singleton(
-	() => new DiscriminatorService(getUserRepository(), getCacheService(), getLimitConfigService()),
+	() => new DiscriminatorService(getUserRepository()),
 );
 export const getBotAuthService = singleton(() => new BotAuthService(getApplicationRepository()));
 export const getBotMfaMirrorService = singleton(
 	() => new BotMfaMirrorService(getApplicationRepository(), getUserRepository(), getGatewayService()),
 );
 export const getGifService = singleton(() => {
+	const cache = getCacheService();
+	const media = getMediaService();
 	const instanceConfigRepository = getInstanceConfigRepository();
-	return new GifService(
-		createNatsGifProvider(async () => (await instanceConfigRepository.getEffectiveGifConfig()).klipy_api_key),
-	);
+	return new GifService({
+		providers: [
+			new TenorGifProvider(
+				cache,
+				media,
+				async () => (await instanceConfigRepository.getEffectiveGifConfig()).tenor_api_key,
+			),
+			new KlipyGifProvider(
+				cache,
+				media,
+				async () => (await instanceConfigRepository.getEffectiveGifConfig()).klipy_api_key,
+			),
+		],
+		activeName: async () => (await instanceConfigRepository.getEffectiveGifConfig()).provider,
+	});
 });
 export const getExpressionAssetPurger = singleton(() => new ExpressionAssetPurger(getAssetDeletionQueue()));
 export const getGuildAuditLogService = singleton(
@@ -413,7 +427,7 @@ export const getAdminApiKeyService = singleton(
 );
 
 export function createUserCacheService(): UserCacheService {
-	return new UserCacheService(createUsersServiceClient());
+	return new UserCacheService(createUsersServiceClient(getUserRepository()));
 }
 
 let serviceSingletonInitializationPromise: Promise<void> | null = null;

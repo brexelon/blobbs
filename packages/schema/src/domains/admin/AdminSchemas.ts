@@ -36,7 +36,6 @@ import {
 	createStringType,
 	Int32Type,
 	Int64StringType,
-	NonNegativeSafeIntegerType,
 	SnowflakeStringType,
 	SnowflakeType,
 	withOpenApiType,
@@ -166,6 +165,12 @@ export const ResolveReportRequest = z.object({
 });
 
 export type ResolveReportRequest = z.infer<typeof ResolveReportRequest>;
+
+export const DeleteReportRequest = z.object({
+	report_id: SnowflakeType.describe('The ID of the report to delete'),
+});
+
+export type DeleteReportRequest = z.infer<typeof DeleteReportRequest>;
 
 export const RefreshSearchIndexRequest = z.object({
 	index_type: SearchIndexTypeEnum,
@@ -527,6 +532,7 @@ const InstancePolicyResponse = z.object({
 	}),
 });
 
+const GifProviderSchema = z.enum(['tenor', 'klipy']);
 const CaptchaProviderSchema = z.enum(['hcaptcha', 'turnstile', 'none']);
 const EmailProviderSchema = z.enum(['smtp', 'none']);
 
@@ -559,6 +565,9 @@ const InstanceMediaResponse = z.object({
 
 const InstanceIntegrationsResponse = z.object({
 	gif: z.object({
+		provider: GifProviderSchema.nullable(),
+		effective_provider: GifProviderSchema,
+		tenor_api_key_set: z.boolean(),
 		klipy_api_key_set: z.boolean(),
 		effective_available: z.boolean(),
 	}),
@@ -590,7 +599,6 @@ const InstanceIntegrationsResponse = z.object({
 			secure: z.boolean().nullable(),
 		}),
 		disable_new_ip_authorization: z.boolean(),
-		effective_disable_new_ip_authorization: z.boolean(),
 	}),
 	bluesky: z.object({
 		enabled: z.boolean().nullable(),
@@ -647,6 +655,8 @@ export const InstanceConfigUpdateRequest = z.object({
 		.object({
 			gif: z
 				.object({
+					provider: GifProviderSchema.nullish(),
+					tenor_api_key: z.string().trim().max(4096).nullish(),
 					klipy_api_key: z.string().trim().max(4096).nullish(),
 				})
 				.nullish(),
@@ -801,7 +811,7 @@ const LimitRuleSchema = z.object({
 	id: z.string().min(1).describe('Unique rule identifier'),
 	filters: LimitFilterSchema.optional().describe('Optional filters that scope the rule'),
 	limits: z
-		.record(z.string(), NonNegativeSafeIntegerType)
+		.record(z.string(), z.number().min(0))
 		.refine(
 			(limits) => {
 				const limitKeys = Object.keys(limits);
@@ -1259,7 +1269,7 @@ const AdminMessageAttachmentSchema = z.object({
 	content_type: z.string().nullable(),
 	width: Int32Type.nullable(),
 	height: Int32Type.nullable(),
-	size: NonNegativeSafeIntegerType.nullable().optional(),
+	size: Int32Type.nullable().optional(),
 	ncmec_status: NcmecSubmissionStatusEnum,
 	ncmec_report_id: createStringType(1, 256).nullable(),
 	ncmec_failure_reason: createStringType(1, 4000).nullable(),
@@ -1398,6 +1408,10 @@ export const ResolveReportResponse = z.object({
 	resolved_at: z.string().nullable(),
 	public_comment: z.string().nullable(),
 });
+export const DeleteReportResponse = z.object({
+	report_id: SnowflakeStringType,
+	deleted: z.boolean(),
+});
 export const SearchReportsResponse = z.object({
 	reports: z.array(ReportAdminResponseSchema),
 	total: z.number(),
@@ -1426,7 +1440,7 @@ export const LimitConfigGetResponse = z.object({
 	}),
 	limit_config_json: z.string(),
 	self_hosted: z.boolean(),
-	defaults: z.record(z.string(), z.partialRecord(LimitKeySchema, z.number())),
+	defaults: z.record(z.string(), z.record(LimitKeySchema, z.number())),
 	metadata: z.record(LimitKeySchema, LimitKeyMetadataSchema),
 	categories: z.record(z.string(), z.string()),
 	limit_keys: z.array(z.string()),

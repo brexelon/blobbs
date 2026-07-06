@@ -375,6 +375,7 @@ const InviteModalContent = observer(function InviteModalContent({
 					<SteppedCarousel
 						step={showAdvanced ? 'advanced' : 'recipients'}
 						steps={INVITE_MODAL_VIEW_ORDER}
+						fillParent
 						data-flx="invite.invite-modal.stepped-carousel"
 					>
 						{!showAdvanced ? (

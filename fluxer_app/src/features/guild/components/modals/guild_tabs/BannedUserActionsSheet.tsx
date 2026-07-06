@@ -38,7 +38,7 @@ export const BannedUserActionsSheet: React.FC<BannedUserActionsSheetProps> = obs
 		const {user} = ban;
 		const userDisplayName = NicknameUtils.getDisplayName(user);
 		const userTag = NicknameUtils.formatTagForStreamerMode(
-			user.tag ?? `${user.username}#${(user.discriminator ?? '').padStart(4, '0')}`,
+			user.tag ?? user.username,
 		);
 		const handleViewDetails = () => {
 			ModalCommands.pushAfterBottomSheetClose(

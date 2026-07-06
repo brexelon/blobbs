@@ -12,6 +12,7 @@ import {SectionCard} from '@app/features/user/components/modals/tabs/application
 import type {ApplicationDetailForm} from '@app/features/user/components/modals/tabs/applications_tab/application_detail/ApplicationDetailTypes';
 import {AvatarUploader} from '@app/features/user/components/modals/tabs/my_profile_tab/AvatarUploader';
 import {BannerUploader} from '@app/features/user/components/modals/tabs/my_profile_tab/BannerUploader';
+import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import type React from 'react';
@@ -47,10 +48,6 @@ const USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR = msg
 });
 const BOT_USERNAME_DESCRIPTOR = msg({
 	message: 'Bot username',
-	comment: 'Short label in the bot profile section. Keep it concise.',
-});
-const DISCRIMINATOR_DESCRIPTOR = msg({
-	message: 'Discriminator',
 	comment: 'Short label in the bot profile section. Keep it concise.',
 });
 const BOT_BIO_DESCRIPTOR = msg({
@@ -165,9 +162,12 @@ export const BotProfileSection: React.FC<BotProfileSectionProps> = ({
 							minLength: {value: 1, message: i18n._(USERNAME_MUST_BE_AT_LEAST_1_CHARACTER_DESCRIPTOR)},
 							maxLength: {value: 32, message: i18n._(USERNAME_MUST_BE_AT_MOST_32_CHARACTERS_DESCRIPTOR)},
 							pattern: {
-								value: /^[a-zA-Z0-9_]+$/,
+								value: /^[a-z0-9_.]+$/,
 								message: i18n._(USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR),
 							},
+							validate: (value) =>
+								hasValidUsernameFormat(value) ||
+								i18n._(USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR),
 						}}
 						render={({field}) => (
 							<Input
@@ -182,19 +182,6 @@ export const BotProfileSection: React.FC<BotProfileSectionProps> = ({
 						)}
 						data-flx="user.applications-tab.application-detail.bot-profile-section.controller"
 					/>
-					<div
-						className={styles.discriminatorInput}
-						data-flx="user.applications-tab.application-detail.bot-profile-section.discriminator-input"
-					>
-						<Input
-							value={application.bot?.discriminator}
-							readOnly
-							disabled
-							maxLength={4}
-							aria-label={i18n._(DISCRIMINATOR_DESCRIPTOR)}
-							data-flx="user.applications-tab.application-detail.bot-profile-section.input--2"
-						/>
-					</div>
 				</div>
 				{form.formState.errors.username && (
 					<div className={styles.error} data-flx="user.applications-tab.application-detail.bot-profile-section.error">

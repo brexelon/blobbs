@@ -49,9 +49,7 @@ export const UploadManager = observer(({channel, canAttachFiles, canSendMessages
 		ModalCommands.popWithKey(UPLOAD_DROP_MODAL_KEY);
 	}, []);
 	const focusTextarea = useCallback(() => {
-		setTimeout(() => {
-			ComponentDispatch.dispatch('FOCUS_TEXTAREA', {channelId: channel.id});
-		}, 0);
+		ComponentDispatch.dispatch('FOCUS_TEXTAREA', {channelId: channel.id});
 	}, [channel.id]);
 	const onDrop = useCallback(
 		async (files: Array<File>, directUpload = false) => {

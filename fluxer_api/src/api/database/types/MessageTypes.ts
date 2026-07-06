@@ -150,6 +150,8 @@ export interface MessageRow {
 	call: Nullish<MessageCall>;
 	nsfw_emojis: Nullish<Set<EmojiID>>;
 	has_reaction: Nullish<boolean>;
+	thread_id?: Nullish<ChannelID>;
+	thread_name?: Nullish<string>;
 	version: number;
 }
 
@@ -178,6 +180,8 @@ export const MESSAGE_COLUMNS = [
 	'call',
 	'nsfw_emojis',
 	'has_reaction',
+	'thread_id',
+	'thread_name',
 	'version',
 ] as const satisfies ReadonlyArray<keyof MessageRow>;
 

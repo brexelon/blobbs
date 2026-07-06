@@ -159,7 +159,6 @@ export class OAuth2ApplicationsRequestService {
 		try {
 			const result = await this.applicationService.updateBotProfile(userId, createApplicationID(applicationId), {
 				username: body.username,
-				discriminator: body.discriminator,
 				avatar: body.avatar,
 				banner: body.banner,
 				bio: body.bio,

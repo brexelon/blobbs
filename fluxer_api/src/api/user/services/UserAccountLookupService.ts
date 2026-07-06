@@ -18,7 +18,6 @@ import type {IConnectionRepository} from '../../connection/IConnectionRepository
 import type {UserConnectionRow} from '../../database/types/ConnectionTypes';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
 import type {GuildService} from '../../guild/services/GuildService';
-import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {RequestCache} from '../../middleware/RequestCacheMiddleware';
 import type {GuildMember} from '../../models/GuildMember';
 import type {User} from '../../models/User';
@@ -41,7 +40,6 @@ interface UserAccountLookupServiceDeps {
 	userSettingsRepository: IUserSettingsRepository;
 	guildRepository: IGuildRepositoryAggregate;
 	guildService: GuildService;
-	discriminatorService: IDiscriminatorService;
 	connectionRepository: IConnectionRepository;
 }
 
@@ -278,21 +276,8 @@ export class UserAccountLookupService {
 		}));
 	}
 
-	async generateUniqueDiscriminator(username: string): Promise<number> {
-		const usedDiscriminators = await this.deps.userAccountRepository.findDiscriminatorsByUsername(username);
-		for (let i = 1; i <= 9999; i++) {
-			if (!usedDiscriminators.has(i)) return i;
-		}
-		throw new Error('No available discriminators for this username');
-	}
-
-	async checkUsernameDiscriminatorAvailability(params: {username: string; discriminator: number}): Promise<boolean> {
-		const {username, discriminator} = params;
-		const isAvailable = await this.deps.discriminatorService.isDiscriminatorAvailableForUsername(
-			username,
-			discriminator,
-		);
-		return !isAvailable;
+	async checkUsernameAvailability(username: string): Promise<boolean> {
+		return this.deps.userAccountRepository.isUsernameAvailable(username.toLowerCase());
 	}
 
 	private async getVisibleConnections(

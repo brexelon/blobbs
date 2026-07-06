@@ -209,8 +209,8 @@ function keyEventMatchesRegistration(
 	keybind: Pick<KeybindRegistration, 'keycode' | 'keyName'>,
 	event: Pick<NativeInputEvent, 'keycode' | 'keyName'>,
 ): boolean {
-	if (keybind.keyName !== null && event.keyName !== null && keybind.keyName === event.keyName) {
-		return true;
+	if (keybind.keyName !== null) {
+		return keybind.keyName === event.keyName;
 	}
 	return keybind.keycode !== 0 && keybind.keycode === event.keycode;
 }

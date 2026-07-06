@@ -6229,6 +6229,63 @@
 				}
 			}
 		},
+		"/admin/reports/delete": {
+			"post": {
+				"operationId": "delete_report",
+				"summary": "Delete report",
+				"tags": ["Admin"],
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteReportResponse"}}}
+					},
+					"400": {
+						"description": "Bad Request - The request was malformed or contained invalid data",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"401": {
+						"description": "Unauthorized - Authentication is required or the token is invalid",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"403": {
+						"description": "Forbidden - You do not have permission to perform this action",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"429": {
+						"description": "Too Many Requests - You are being rate limited",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+						"headers": {
+							"Retry-After": {
+								"description": "Number of seconds to wait before retrying (only on 429)",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Limit": {
+								"description": "The number of requests that can be made in the current window",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Remaining": {
+								"description": "The number of remaining requests that can be made",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Reset": {
+								"description": "Unix timestamp when the rate limit resets",
+								"schema": {"type": "integer"}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error - An unexpected error occurred",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					}
+				},
+				"description": "Permanently deletes a report from the database and removes it from the search index. Creates an audit log entry. Requires REPORT_DELETE permission.",
+				"security": [{"adminApiKey": []}],
+				"requestBody": {
+					"required": true,
+					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteReportRequest"}}}
+				}
+			}
+		},
 		"/admin/reports/resolve": {
 			"post": {
 				"operationId": "resolve_report",
@@ -8977,7 +9034,7 @@
 							"type": "integer",
 							"minimum": 0,
 							"maximum": 8640000000000000,
-							"format": "int53",
+							"format": "int64",
 							"description": "Inclusive start timestamp in milliseconds"
 						}
 					},
@@ -8989,7 +9046,7 @@
 							"type": "integer",
 							"minimum": 0,
 							"maximum": 8640000000000000,
-							"format": "int53",
+							"format": "int64",
 							"description": "Inclusive end timestamp in milliseconds"
 						}
 					},
@@ -9087,7 +9144,7 @@
 							"type": "integer",
 							"minimum": 0,
 							"maximum": 8640000000000000,
-							"format": "int53",
+							"format": "int64",
 							"description": "Inclusive start timestamp in milliseconds"
 						}
 					},
@@ -9099,7 +9156,7 @@
 							"type": "integer",
 							"minimum": 0,
 							"maximum": 8640000000000000,
-							"format": "int53",
+							"format": "int64",
 							"description": "Inclusive end timestamp in milliseconds"
 						}
 					},
@@ -10613,7 +10670,7 @@
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991,
-						"format": "int53",
+						"format": "int64",
 						"description": "Number of entries to skip"
 					}
 				}
@@ -10645,7 +10702,7 @@
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991,
-						"format": "int53",
+						"format": "int64",
 						"description": "Number of entries to skip"
 					}
 				}
@@ -11147,7 +11204,7 @@
 					"amount_cents": {
 						"type": "integer",
 						"maximum": 9007199254740991,
-						"format": "int53",
+						"format": "int64",
 						"minimum": 0,
 						"exclusiveMinimum": true
 					},
@@ -11981,7 +12038,7 @@
 				"properties": {
 					"guild_id": {"$ref": "#/components/schemas/SnowflakeType"},
 					"limit": {"type": "integer", "minimum": 1, "maximum": 200, "format": "int32"},
-					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 				},
 				"required": ["guild_id"]
 			},
@@ -12197,9 +12254,7 @@
 						"description": "Custom content warning text shown before entry",
 						"nullable": true,
 						"type": "string"
-					},
-					"approximate_member_count": {"$ref": "#/components/schemas/Int32Type"},
-					"approximate_presence_count": {"$ref": "#/components/schemas/Int32Type"}
+					}
 				},
 				"required": [
 					"id",
@@ -12219,7 +12274,7 @@
 				"properties": {
 					"query": {"type": "string"},
 					"limit": {"type": "integer", "minimum": 1, "maximum": 200, "format": "int32"},
-					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 				}
 			},
 			"ShutdownGuildRequest": {
@@ -12439,9 +12494,9 @@
 											"type": "integer",
 											"minimum": 1,
 											"maximum": 9007199254740991,
-											"format": "int53"
+											"format": "int64"
 										},
-										"use_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"},
+										"use_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"},
 										"revoked_at": {"nullable": true, "type": "string", "format": "date-time"},
 										"approval_required": {"type": "boolean"},
 										"last_used_at": {"nullable": true, "type": "string", "format": "date-time"},
@@ -12594,8 +12649,20 @@
 						"properties": {
 							"gif": {
 								"type": "object",
-								"properties": {"klipy_api_key_set": {"type": "boolean"}, "effective_available": {"type": "boolean"}},
-								"required": ["klipy_api_key_set", "effective_available"]
+								"properties": {
+									"provider": {"nullable": true, "enum": ["tenor", "klipy"], "type": "string"},
+									"effective_provider": {"enum": ["tenor", "klipy"], "type": "string"},
+									"tenor_api_key_set": {"type": "boolean"},
+									"klipy_api_key_set": {"type": "boolean"},
+									"effective_available": {"type": "boolean"}
+								},
+								"required": [
+									"provider",
+									"effective_provider",
+									"tenor_api_key_set",
+									"klipy_api_key_set",
+									"effective_available"
+								]
 							},
 							"youtube": {
 								"type": "object",
@@ -12642,9 +12709,7 @@
 											"secure": {"nullable": true, "type": "boolean"}
 										},
 										"required": ["host", "port", "username", "password_set", "secure"]
-									},
-									"disable_new_ip_authorization": {"type": "boolean"},
-									"effective_disable_new_ip_authorization": {"type": "boolean"}
+									}
 								},
 								"required": [
 									"enabled",
@@ -12653,9 +12718,7 @@
 									"effective_provider",
 									"from_email",
 									"from_name",
-									"smtp",
-									"disable_new_ip_authorization",
-									"effective_disable_new_ip_authorization"
+									"smtp"
 								]
 							},
 							"bluesky": {
@@ -12668,7 +12731,7 @@
 									"logo_uri": {"nullable": true, "type": "string"},
 									"tos_uri": {"nullable": true, "type": "string"},
 									"policy_uri": {"nullable": true, "type": "string"},
-									"key_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+									"key_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 								},
 								"required": [
 									"enabled",
@@ -12698,7 +12761,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -12706,7 +12769,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -12715,7 +12778,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -12723,7 +12786,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -12737,14 +12800,14 @@
 											"min_lifetime_days": {
 												"type": "integer",
 												"maximum": 9007199254740991,
-												"format": "int53",
+												"format": "int64",
 												"minimum": 0,
 												"exclusiveMinimum": true
 											},
 											"max_lifetime_days": {
 												"type": "integer",
 												"maximum": 9007199254740991,
-												"format": "int53",
+												"format": "int64",
 												"minimum": 0,
 												"exclusiveMinimum": true
 											},
@@ -12752,14 +12815,14 @@
 											"renew_threshold_days": {
 												"type": "integer",
 												"maximum": 9007199254740991,
-												"format": "int53",
+												"format": "int64",
 												"minimum": 0,
 												"exclusiveMinimum": true
 											},
 											"renew_window_days": {
 												"type": "integer",
 												"maximum": 9007199254740991,
-												"format": "int53",
+												"format": "int64",
 												"minimum": 0,
 												"exclusiveMinimum": true
 											}
@@ -12871,9 +12934,9 @@
 								"type": "integer",
 								"minimum": 1,
 								"maximum": 9007199254740991,
-								"format": "int53"
+								"format": "int64"
 							},
-							"use_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"},
+							"use_count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"},
 							"revoked_at": {"nullable": true, "type": "string", "format": "date-time"},
 							"approval_required": {"type": "boolean"},
 							"last_used_at": {"nullable": true, "type": "string", "format": "date-time"},
@@ -12982,7 +13045,11 @@
 							"gif": {
 								"nullable": true,
 								"type": "object",
-								"properties": {"klipy_api_key": {"nullable": true, "type": "string", "maxLength": 4096}}
+								"properties": {
+									"provider": {"nullable": true, "enum": ["tenor", "klipy"], "type": "string"},
+									"tenor_api_key": {"nullable": true, "type": "string", "maxLength": 4096},
+									"klipy_api_key": {"nullable": true, "type": "string", "maxLength": 4096}
+								}
 							},
 							"youtube": {
 								"nullable": true,
@@ -13018,8 +13085,7 @@
 											"password": {"nullable": true, "type": "string", "maxLength": 4096},
 											"secure": {"nullable": true, "type": "boolean"}
 										}
-									},
-									"disable_new_ip_authorization": {"nullable": true, "type": "boolean"}
+									}
 								}
 							},
 							"bluesky": {
@@ -13064,7 +13130,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -13072,7 +13138,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -13081,7 +13147,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									},
@@ -13089,7 +13155,7 @@
 										"nullable": true,
 										"type": "integer",
 										"maximum": 9007199254740991,
-										"format": "int53",
+										"format": "int64",
 										"minimum": 0,
 										"exclusiveMinimum": true
 									}
@@ -13296,7 +13362,7 @@
 										},
 										"limits": {
 											"type": "object",
-											"additionalProperties": {"$ref": "#/components/schemas/NonNegativeSafeIntegerType"},
+											"additionalProperties": {"type": "number", "minimum": 0},
 											"description": "Per-limit key values"
 										},
 										"modifiedFields": {"type": "array", "items": {"type": "string"}}
@@ -13352,7 +13418,6 @@
 					"limit_keys"
 				]
 			},
-			"NonNegativeSafeIntegerType": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"},
 			"LimitConfigUpdateRequest": {
 				"type": "object",
 				"properties": {
@@ -13388,7 +13453,7 @@
 										},
 										"limits": {
 											"type": "object",
-											"additionalProperties": {"$ref": "#/components/schemas/NonNegativeSafeIntegerType"},
+											"additionalProperties": {"type": "number", "minimum": 0},
 											"description": "Per-limit key values"
 										}
 									},
@@ -13456,7 +13521,7 @@
 								"content_type": {"nullable": true, "type": "string"},
 								"width": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
 								"height": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
-								"size": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/NonNegativeSafeIntegerType"}]},
+								"size": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
 								"ncmec_status": {
 									"type": "string",
 									"enum": ["not_submitted", "submitted", "failed"],
@@ -14125,8 +14190,8 @@
 					"size": {
 						"type": "integer",
 						"minimum": 0,
-						"maximum": 9007199254740991,
-						"format": "int53",
+						"maximum": 2147483647,
+						"format": "int32",
 						"description": "The size of the attachment in bytes"
 					},
 					"url": {"description": "The URL of the attachment", "nullable": true, "type": "string"},
@@ -14214,7 +14279,8 @@
 					"me": {
 						"description": "Whether the current user has reacted with this emoji",
 						"nullable": true,
-						"type": "boolean"
+						"type": "boolean",
+						"enum": [true]
 					}
 				},
 				"required": ["emoji", "count"]
@@ -14388,7 +14454,7 @@
 						"items": {"$ref": "#/components/schemas/MessageResponseSchema"},
 						"maxItems": 100
 					},
-					"total": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+					"total": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 				},
 				"required": ["messages", "total"]
 			},
@@ -14406,7 +14472,7 @@
 				"properties": {
 					"success": {"type": "boolean", "enum": [true]},
 					"job_id": {"type": "string"},
-					"requested": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+					"requested": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 				},
 				"required": ["success", "job_id"]
 			},
@@ -14559,10 +14625,7 @@
 											"content_type": {"nullable": true, "type": "string"},
 											"width": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
 											"height": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
-											"size": {
-												"nullable": true,
-												"allOf": [{"$ref": "#/components/schemas/NonNegativeSafeIntegerType"}]
-											},
+											"size": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/Int32Type"}]},
 											"ncmec_status": {
 												"type": "string",
 												"enum": ["not_submitted", "submitted", "failed"],
@@ -14668,7 +14731,7 @@
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991,
-						"format": "int53",
+						"format": "int64",
 						"description": "Number of reports to skip"
 					}
 				}
@@ -14682,6 +14745,21 @@
 					"public_comment": {"nullable": true, "type": "string"}
 				},
 				"required": ["report_id", "status", "resolved_at", "public_comment"]
+			},
+			"DeleteReportResponse": {
+				"type": "object",
+				"properties": {
+					"report_id": {"$ref": "#/components/schemas/SnowflakeType"},
+					"deleted": {"type": "boolean"}
+				},
+				"required": ["report_id", "deleted"]
+			},
+			"DeleteReportRequest": {
+				"type": "object",
+				"properties": {
+					"report_id": {"$ref": "#/components/schemas/SnowflakeType"}
+				},
+				"required": ["report_id"]
 			},
 			"ResolveReportRequest": {
 				"type": "object",
@@ -14716,7 +14794,7 @@
 						"type": "integer",
 						"minimum": 0,
 						"maximum": 9007199254740991,
-						"format": "int53",
+						"format": "int64",
 						"description": "Number of entries to skip"
 					},
 					"reporter_id": {"$ref": "#/components/schemas/SnowflakeType"},
@@ -15021,12 +15099,11 @@
 				"properties": {
 					"user_id": {"$ref": "#/components/schemas/SnowflakeType"},
 					"username": {"$ref": "#/components/schemas/UsernameType"},
-					"discriminator": {"$ref": "#/components/schemas/DiscriminatorType"}
+					"discriminator": {"$ref": "#/components/schemas/Int32Type"}
 				},
 				"required": ["user_id", "username"]
 			},
 			"UsernameType": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[a-zA-Z0-9_]+$"},
-			"DiscriminatorType": {"type": "string", "pattern": "^\\d{1,4}$"},
 			"ClearUserFieldsRequest": {
 				"type": "object",
 				"properties": {
@@ -15439,7 +15516,7 @@
 					"email": {"type": "string"},
 					"last_active_ip": {"type": "string"},
 					"limit": {"type": "integer", "minimum": 1, "maximum": 200, "format": "int32"},
-					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int53"}
+					"offset": {"type": "integer", "minimum": 0, "maximum": 9007199254740991, "format": "int64"}
 				}
 			},
 			"SendPasswordResetRequest": {

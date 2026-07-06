@@ -22,6 +22,7 @@ import {useLocation} from '@app/features/platform/components/router/RouterReact'
 import {Button} from '@app/features/ui/button/Button';
 import {useUsernameSuggestions} from '@app/features/user/hooks/useUsernameSuggestions';
 import type {ThemeType} from '@fluxer/constants/src/UserConstants';
+import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
 import {AnimatePresence, motion} from 'framer-motion';
@@ -44,8 +45,8 @@ const USERNAME_MUST_BE_CHARACTERS_OR_LESS_DESCRIPTOR = msg({
 	message: 'Username must be {maxUsernameLength} characters or less',
 	comment: 'Registration form validation error when the username exceeds the maximum length. Limit is interpolated.',
 });
-const ONLY_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR = msg({
-	message: 'Only letters, numbers, and underscores',
+const ONLY_LOWERCASE_LETTERS_NUMBERS_UNDERSCORES_PERIODS_DESCRIPTOR = msg({
+	message: 'Only lowercase letters, numbers, underscores (_), and periods (.)',
 	comment: 'Short label in the authentication auth register form core. Keep the tone plain and specific.',
 });
 const DISPLAY_NAME_OPTIONAL_DESCRIPTOR = msg({
@@ -56,13 +57,13 @@ const WHAT_SHOULD_PEOPLE_CALL_YOU_DESCRIPTOR = msg({
 	message: 'What should people call you?',
 	comment: 'Question prompt in the authentication auth register form core. Keep the tone plain and specific.',
 });
-const USERNAME_OPTIONAL_DESCRIPTOR = msg({
-	message: 'Username (optional)',
+const USERNAME_DESCRIPTOR = msg({
+	message: 'Username',
 	comment: 'Short label in the authentication auth register form core. Keep the tone plain and specific.',
 });
-const LEAVE_BLANK_FOR_A_RANDOM_USERNAME_DESCRIPTOR = msg({
-	message: 'Leave blank for a random username',
-	comment: 'Short label in the authentication auth register form core. Keep the tone plain and specific.',
+const USERNAME_FORMAT_PLACEHOLDER_DESCRIPTOR = msg({
+	message: 'e.g. jane.doe or john_smith',
+	comment: 'Placeholder in the username field showing the accepted format: lowercase, numbers, underscores, periods.',
 });
 const MAX_USERNAME_LENGTH = 32;
 
@@ -201,7 +202,7 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 				: undefined;
 		const response = await AuthenticationCommands.register({
 			global_name: values.global_name || undefined,
-			username: values.username || undefined,
+			username: values.username,
 			email: showEmail ? values.email : undefined,
 			password: showPassword ? values.password : undefined,
 			date_of_birth: dateOfBirth,
@@ -254,6 +255,9 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 		if (showEmail && !form.getValue('email')) {
 			missing.push({key: 'email', label: i18n._(EMAIL_DESCRIPTOR)});
 		}
+		if (!form.getValue('username')) {
+			missing.push({key: 'username', label: i18n._(USERNAME_DESCRIPTOR)});
+		}
 		if (showPassword && !form.getValue('password')) {
 			missing.push({key: 'password', label: i18n._(PASSWORD_DESCRIPTOR)});
 		}
@@ -286,11 +290,14 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 					message: i18n._(USERNAME_MUST_BE_CHARACTERS_OR_LESS_DESCRIPTOR, {maxUsernameLength: MAX_USERNAME_LENGTH}),
 				};
 			}
-			if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-				return {type: 'error', message: i18n._(ONLY_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR)};
+			if (!hasValidUsernameFormat(trimmed)) {
+				return {
+					type: 'error',
+					message: i18n._(ONLY_LOWERCASE_LETTERS_NUMBERS_UNDERSCORES_PERIODS_DESCRIPTOR),
+				};
 			}
 		}
-		if (trimmed.length === 0 && suggestions.length === 1) {
+		if (trimmed.length === 0 && suggestions.length > 0) {
 			return {type: 'suggestion', username: suggestions[0]};
 		}
 		return null;
@@ -352,8 +359,9 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 					name="username"
 					type="text"
 					autoComplete="username"
-					label={i18n._(USERNAME_OPTIONAL_DESCRIPTOR)}
-					placeholder={i18n._(LEAVE_BLANK_FOR_A_RANDOM_USERNAME_DESCRIPTOR)}
+					required
+					label={i18n._(USERNAME_DESCRIPTOR)}
+					placeholder={i18n._(USERNAME_FORMAT_PLACEHOLDER_DESCRIPTOR)}
 					value={usernameValue}
 					onChange={(value) => setDraftedFormValue('username', value)}
 					error={form.getError('username') || fieldErrors?.username}

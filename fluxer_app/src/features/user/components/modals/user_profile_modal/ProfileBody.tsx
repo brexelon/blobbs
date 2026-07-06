@@ -22,12 +22,16 @@ import {MutualFriendItem} from '@app/features/user/components/modals/user_profil
 import {MutualGroupItem} from '@app/features/user/components/modals/user_profile_modal/MutualGroupItem';
 import {MutualGuildItem} from '@app/features/user/components/modals/user_profile_modal/MutualGuildItem';
 import {
-	getMutualItemsDescriptor,
+	getMutualFriendsTabLabelDescriptor,
+	getMutualItemsTabLabelDescriptor,
 	NO_MUTUAL_COMMUNITIES_FOUND_DESCRIPTOR,
 } from '@app/features/user/components/modals/user_profile_modal/MutualItemsDescriptors';
 import {
 	getMutualCommunityDisplayItems,
 	getMutualGroupChannels,
+	getSortedMutualCommunityDisplayItems,
+	getSortedMutualFriends,
+	getSortedMutualGroupChannels,
 } from '@app/features/user/components/modals/user_profile_modal/MutualItemsUtils';
 import {ProfileContent} from '@app/features/user/components/modals/user_profile_modal/ProfileContent';
 import {
@@ -39,7 +43,6 @@ import {
 import {UserInfo} from '@app/features/user/components/modals/user_profile_modal/UserProfileModalUserInfo';
 import {User} from '@app/features/user/models/User';
 import {ME} from '@fluxer/constants/src/AppConstants';
-import type {UserPartial} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
 import {UsersThreeIcon} from '@phosphor-icons/react';
@@ -47,10 +50,6 @@ import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 
-const MUTUAL_FRIENDS_DESCRIPTOR = msg({
-	message: 'Mutual friends ({count})',
-	comment: 'Short label in the user profile modal. Keep it concise. Preserve {count}; it is inserted by code.',
-});
 const OVERVIEW_DESCRIPTOR = msg({
 	message: 'Overview',
 	comment: 'Short label in the user profile modal. Keep it concise.',
@@ -83,10 +82,10 @@ function measureUnwrappedTablistWidth(tablist: HTMLElement): number {
 }
 
 export const ProfileBody: React.FC<ProfileBodyProps> = observer(
-	({profile, user, userNote, autoFocusNote, noteRef, showProfileDataWarning}) => {
+	({profile, user, userNote, autoFocusNote, noteRef, showProfileDataWarning, initialTab}) => {
 		const {i18n} = useLingui();
 		const showMutualFriendsTab = !user.bot;
-		const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
+		const [activeTab, setActiveTab] = useState<ProfileTab>(() => initialTab ?? 'overview');
 		const handleTabChange = useCallback((tab: ProfileTab) => {
 			setActiveTab(tab);
 		}, []);
@@ -94,6 +93,12 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 		const profileMutualGuilds = profile?.mutualGuilds ?? [];
 		const mutualGroups = getMutualGroupChannels(user.id);
 		const mutualCommunityDisplayItems = getMutualCommunityDisplayItems(profileMutualGuilds);
+		const sortedMutualFriends = useMemo(() => getSortedMutualFriends(mutualFriends), [mutualFriends]);
+		const sortedMutualGroups = useMemo(() => getSortedMutualGroupChannels(user.id), [user.id]);
+		const sortedMutualCommunities = useMemo(
+			() => getSortedMutualCommunityDisplayItems(profileMutualGuilds),
+			[profileMutualGuilds],
+		);
 		const mutualCommunitiesCount = mutualCommunityDisplayItems.length;
 		const mutualGroupsCount = mutualGroups.length;
 		const mutualCommunitiesGroupsCount = mutualGroupsCount + mutualCommunitiesCount;
@@ -104,23 +109,35 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 			[contextMenuTarget],
 		);
 		const tabs = useMemo(() => {
+			const placesCount =
+				mutualCommunitiesCount > 0 && mutualGroupsCount > 0
+					? mutualCommunitiesGroupsCount
+					: mutualGroupsCount > 0
+						? mutualGroupsCount
+						: mutualCommunitiesCount;
 			const items: Array<{key: ProfileTab; label: string}> = [{key: 'overview', label: i18n._(OVERVIEW_DESCRIPTOR)}];
 			if (showMutualFriendsTab) {
+				const mutualFriendsCount = mutualFriends.length;
+				const friendsLabelDescriptor = getMutualFriendsTabLabelDescriptor(mutualFriendsCount);
 				items.push({
 					key: 'mutual_friends',
-					label: i18n._(MUTUAL_FRIENDS_DESCRIPTOR, {count: mutualFriends.length}),
+					label:
+						mutualFriendsCount === 0
+							? i18n._(friendsLabelDescriptor)
+							: i18n._(friendsLabelDescriptor, {count: mutualFriendsCount}),
 				});
 			}
+			const placesLabelDescriptor = getMutualItemsTabLabelDescriptor({
+				mutualCommunitiesCount,
+				mutualGroupsCount,
+				count: placesCount,
+			});
 			items.push({
 				key: 'mutual_communities_groups',
-				label: i18n._(
-					getMutualItemsDescriptor({
-						mutualCommunitiesCount,
-						mutualGroupsCount,
-						includeCount: true,
-					}),
-					{count: mutualCommunitiesGroupsCount},
-				),
+				label:
+					placesCount === 0
+						? i18n._(placesLabelDescriptor)
+						: i18n._(placesLabelDescriptor, {count: placesCount}),
 			});
 			return items;
 		}, [
@@ -259,9 +276,7 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 				className={userProfileModalStyles.mutualFriendsList}
 				data-flx="user.user-profile-modal.render-mutual-friends-list.div"
 			>
-				{mutualFriends.map((friend: UserPartial) => {
-					const friendRecord = new User(friend);
-					return (
+				{sortedMutualFriends.map((friendRecord) => (
 						<MutualFriendItem
 							key={friendRecord.id}
 							user={friendRecord}
@@ -271,9 +286,8 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 							isContextMenuOpen={isContextMenuOpenFor}
 							data-flx="user.user-profile-modal.render-mutual-friends-list.mutual-friend-item.mutual-friend-click"
 						/>
-					);
-				})}
-				{mutualFriends.length === 0 && (
+					))}
+				{sortedMutualFriends.length === 0 && (
 					<div
 						className={userProfileModalStyles.emptyState}
 						data-flx="user.user-profile-modal.render-mutual-friends-list.div--2"
@@ -292,7 +306,7 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 				className={userProfileModalStyles.mutualFriendsList}
 				data-flx="user.user-profile-modal.render-mutual-communities-groups-list.div"
 			>
-				{mutualGroups.map((group) => (
+				{sortedMutualGroups.map((group) => (
 					<MutualGroupItem
 						key={group.id}
 						group={group}
@@ -302,13 +316,13 @@ export const ProfileBody: React.FC<ProfileBodyProps> = observer(
 						data-flx="user.user-profile-modal.render-mutual-communities-groups-list.mutual-group-item.group-click"
 					/>
 				))}
-				{mutualGroups.length > 0 && mutualCommunityDisplayItems.length > 0 && (
+				{sortedMutualGroups.length > 0 && sortedMutualCommunities.length > 0 && (
 					<div
 						className={userProfileModalStyles.mutualSectionDivider}
 						data-flx="user.user-profile-modal.render-mutual-communities-groups-list.section-divider"
 					/>
 				)}
-				{mutualCommunityDisplayItems.map(({guild, nick}) => (
+				{sortedMutualCommunities.map(({guild, nick}) => (
 					<MutualGuildItem
 						key={guild.id}
 						guild={guild}

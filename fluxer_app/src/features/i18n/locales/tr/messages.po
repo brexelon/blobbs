@@ -345,8 +345,8 @@ msgstr "{count, plural, one {# ek} other {# ek}}"
 msgid "{count, plural, one {# blocked message} other {# blocked messages}}"
 msgstr "{count, plural, one {# engellenen mesaj} other {# engellenen mesaj}}"
 
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:51
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:76
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:50
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:83
 msgid "{count, plural, one {# bookmark} other {# bookmarks}}"
 msgstr "{count, plural, one {# yer işareti} other {# yer işaretleri}}"
 
@@ -420,8 +420,8 @@ msgstr "{count, plural, one {# tepki} other {# tepki}}"
 msgid "{count, plural, one {# reactor} other {# reactors}}"
 msgstr "{count, plural, one {# tepki} other {# tepki}}"
 
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:45
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:79
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:44
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:82
 msgid "{count, plural, one {# saved media item} other {# saved media items}}"
 msgstr "{count, plural, one {# kaydedilmiş medya öğesi} other {# kaydedilmiş medya öğesi}}"
 
@@ -500,7 +500,7 @@ msgstr "{count, plural, one {# cihazdan çıkış yap} other {# cihazdan çıkı
 msgid "{count, plural, one {Used # time.} other {Used # times.}}"
 msgstr "{count, plural, one {# kez kullanıldı.} other {# kez kullanıldı.}}"
 
-#: src/features/messaging/components/alerts/TooManyAttachmentsModal.tsx:20
+#: src/features/messaging/components/alerts/TooManyAttachmentsModal.tsx:21
 msgid "{count, plural, one {You can only upload # file at a time. Try again with fewer files.} other {You can only upload # files at a time. Try again with fewer files.}}"
 msgstr "{count, plural, one {Aynı anda yalnızca # dosya yükleyebilirsiniz. Daha az dosyayla tekrar deneyin.} other {Aynı anda yalnızca # dosya yükleyebilirsiniz. Daha az dosyayla tekrar deneyin.}}"
 
@@ -525,7 +525,7 @@ msgstr "{count, plural, one {Bu sesli kanala zaten # başka cihazdan bağlısın
 msgid "{count, plural, one {You're already using the one allowed connection for this voice channel. Switch to this device or cancel.} other {You're already using all # allowed connections for this voice channel. Switch to this device or cancel.}}"
 msgstr "{count, plural, one {Bu sesli kanal için izin verilen tek bağlantıyı zaten kullanıyorsunuz. Bu cihaza geçin veya iptal edin.} other {Bu sesli kanal için izin verilen tüm # bağlantıları zaten kullanıyorsunuz. Bu cihaza geçin veya iptal edin.}}"
 
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:62
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:65
 msgid "{count, plural, one {You're at the cap of # saved media item. Remove one to add another.} other {You're at the cap of # saved media items. Remove one to add another.}}"
 msgstr "{count, plural, one {Kaydedilen medya öğesi sınırına ulaştınız. Başka bir tane eklemek için birini kaldırın.} other {Kaydedilen medya öğesi sınırına ulaştınız. Başka bir tane eklemek için birini kaldırın.}}"
 
@@ -545,7 +545,7 @@ msgstr "{count, plural, one {Yüklü çıkartma paketi sınırına ulaştınız.
 msgid "{count, plural, one {You're at the limit of # sticker pack. Delete one to create another.} other {You're at the limit of # sticker packs. Delete one to create another.}}"
 msgstr "{count, plural, one {1 çıkartma paketi sınırına ulaştınız. Yeni bir tane oluşturmak için birini silin.} other {# çıkartma paketi sınırına ulaştınız. Yeni bir tane oluşturmak için birini silin.}}"
 
-#: src/features/guild/components/alerts/MaxGuildsModal.tsx:24
+#: src/features/guild/components/alerts/MaxGuildsModal.tsx:25
 msgid "{count, plural, one {You've reached the maximum number of communities you can join (# community). Leave a community before joining another one.} other {You've reached the maximum number of communities you can join (# communities). Leave a community before joining another one.}}"
 msgstr "{count, plural, one {Katılabileceğiniz maksimum topluluk sayısına ulaştınız (# topluluk). Başka bir topluluğa katılmadan önce bir topluluktan ayrılın.} other {Katılabileceğiniz maksimum topluluk sayısına ulaştınız (# topluluk). Başka bir topluluğa katılmadan önce bir topluluktan ayrılın.}}"
 
@@ -1124,22 +1124,22 @@ msgid "{productName} member since"
 msgstr "{productName} üyesi (katılma tarihi)"
 
 #. Body of the camera-permission-denied modal on web. {productName} is Fluxer.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:39
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:40
 msgid "{productName} needs access to your camera to enable video chat. Grant camera permission in your browser settings and try again."
 msgstr "{productName} görüntülü sohbeti etkinleştirmek için kameranıza erişim izni istiyor. Tarayıcı ayarlarınızdan kamera izni verin ve tekrar deneyin."
 
 #. Body of the camera-permission-denied modal on Windows and Linux. {productName} is Fluxer.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:34
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:35
 msgid "{productName} needs access to your camera. Allow camera access in your operating system privacy settings and restart the app."
 msgstr "{productName} kameranıza erişmek istiyor. İşletim sisteminizin gizlilik ayarlarından kamera erişimine izin verin ve uygulamayı yeniden başlatın."
 
 #. Body of the microphone-permission-denied modal on web. {productName} is Fluxer.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:29
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:30
 msgid "{productName} needs access to your microphone to enable voice chat. Grant microphone permission in your browser settings and try again."
 msgstr "Sesli sohbeti etkinleştirmek için {productName} mikrofonunuza erişim istiyor. Tarayıcı ayarlarınızdan mikrofon izni verin ve tekrar deneyin."
 
 #. Body of the microphone-permission-denied modal on Windows and Linux. {productName} is Fluxer.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:24
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:25
 msgid "{productName} needs access to your microphone. Allow microphone access in your operating system privacy settings and restart the app."
 msgstr "{productName} mikrofonunuza erişmek istiyor. İşletim sisteminizin gizlilik ayarlarından mikrofon erişimine izin verin ve uygulamayı yeniden başlatın."
 
@@ -1154,7 +1154,7 @@ msgid "{productName} needs microphone access to list your devices."
 msgstr "Cihazlarınızı listelemek için {productName} uygulamasının mikrofon erişimine ihtiyacı var."
 
 #. Body of the screen-permission-denied modal on non-mac desktop platforms. {productName} is Fluxer.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:44
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:45
 msgid "{productName} needs screen recording access. Allow screen recording in your operating system privacy settings and restart the app."
 msgstr "{productName} ekran kaydı erişimi gerektiriyor. İşletim sisteminizin gizlilik ayarlarından ekran kaydına izin verin ve uygulamayı yeniden başlatın."
 
@@ -1179,7 +1179,7 @@ msgid "{productName} spellcheck settings…"
 msgstr "{productName} yazım denetimi ayarları…"
 
 #. Label in the invites disabled modal.
-#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:13
+#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:14
 msgid "{productName} spotted a possible raid here. Invites are paused — try again later."
 msgstr "{productName} burada olası bir baskın tespit etti. Davetler duraklatıldı, daha sonra tekrar deneyin."
 
@@ -2247,7 +2247,7 @@ msgid "Action"
 msgstr "Eylem"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:307
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:283
 msgid "Action bar"
 msgstr "İşlem çubuğu"
 
@@ -2844,7 +2844,7 @@ msgid "Administrator"
 msgstr "Yönetici"
 
 #. Error message in the invites disabled modal.
-#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:17
+#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:18
 msgid "Admins paused invites — you can't join right now."
 msgstr "Yöneticiler davetleri duraklattı; şu anda katılamazsınız."
 
@@ -3253,7 +3253,7 @@ msgid "Already set to cancel"
 msgstr "Zaten iptal edilecek şekilde ayarlanmış"
 
 #. Toggle-switch label in the moderator delete-message confirmation dialog. When enabled, the message is reported (category: other) before being deleted. {productName} is the product name (e.g., Fluxer).
-#: src/features/messaging/commands/MessageCommands.tsx:76
+#: src/features/messaging/commands/MessageCommands.tsx:75
 msgid "Also report this message to the {productName} Safety Team"
 msgstr "Bu mesajı {productName} Güvenlik Ekibi'ne de bildir"
 
@@ -3423,12 +3423,12 @@ msgstr "ve 1 diğer arama"
 msgid "Animate on interaction"
 msgstr "Etkileşimde canlandır"
 
-#: src/features/expressions/utils/AnimatedAvifModalUtils.tsx:26
+#: src/features/expressions/utils/AnimatedAvifModalUtils.tsx:27
 msgid "Animated {AVIF_FORMAT_LABEL} files aren't supported. Upload a static {AVIF_FORMAT_LABEL} file instead."
 msgstr "Hareketli {AVIF_FORMAT_LABEL} dosyaları desteklenmiyor. Bunun yerine statik bir {AVIF_FORMAT_LABEL} dosyası yükleyin."
 
 #. Modal title shown when an animated AVIF upload is rejected by the client.
-#: src/features/expressions/utils/AnimatedAvifModalUtils.tsx:11
+#: src/features/expressions/utils/AnimatedAvifModalUtils.tsx:12
 msgid "Animated {avifFormatLabel} not supported"
 msgstr "Hareketli {avifFormatLabel} desteklenmiyor"
 
@@ -3476,7 +3476,7 @@ msgid "Animated emoji"
 msgstr "Hareketli emojiler"
 
 #. Section heading for animated emoji in community emoji settings.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:105
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:104
 msgid "Animated emoji ({emojiCount})"
 msgstr "Hareketli emojiler ({emojiCount})"
 
@@ -3861,7 +3861,7 @@ msgid "Apply theme"
 msgstr "Temayı uygula"
 
 #. Short confirmation button label in advanced settings.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:144
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:140
 msgid "Apply to all communities"
 msgstr "Tüm topluluklara uygula"
 
@@ -4019,7 +4019,7 @@ msgid "asc or desc"
 msgstr "artan veya azalan"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:375
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:351
 msgid "ASCII smileys"
 msgstr "ASCII emojileri"
 
@@ -4119,7 +4119,7 @@ msgid "Attachment upload"
 msgstr "Ek yükleme"
 
 #. Short label in the attachment upload connectivity modal. Keep it concise.
-#: src/features/messaging/components/alerts/AttachmentUploadConnectivityModal.tsx:12
+#: src/features/messaging/components/alerts/AttachmentUploadConnectivityModal.tsx:13
 msgid "Attachment upload unavailable"
 msgstr "Ek yükleme kullanılamıyor"
 
@@ -4619,7 +4619,7 @@ msgid "Automatically remove tracking parameters (like utm_source, fbclid, gclid)
 msgstr "Gönderdiğiniz mesajlardaki URL'lerden izleme parametrelerini (utm_source, fbclid, gclid gibi) otomatik olarak kaldırın. Bağlantıyı başkalarına ulaşmadan önce temizler."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:191
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:167
 msgid "Automatically remove tracking parameters from URLs in messages you send"
 msgstr "Gönderdiğiniz mesajlardaki URL'lerden izleme parametrelerini otomatik olarak kaldırın"
 
@@ -4685,8 +4685,8 @@ msgstr "Masaüstü uygulamasında mevcut."
 #. Form label for a webhook avatar image.
 #. Settings search entry label. Also used as a search synonym in the settings search bar.
 #: src/features/ui/components/BaseAvatar.tsx:17
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:372
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:420
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:374
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:422
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:13
 #: src/features/webhook/components/WebhookListItem.tsx:251
 msgid "Avatar"
@@ -5273,7 +5273,7 @@ msgid "Bookmark"
 msgstr "Yer işareti"
 
 #. Short label in the max bookmarks modal.
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:16
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:15
 msgid "Bookmark limit reached"
 msgstr "Yer işareti sınırına ulaşıldı"
 
@@ -5761,7 +5761,7 @@ msgid "Camera on"
 msgstr "Kamera açık"
 
 #. Title of the modal shown when camera permission is denied. Keep tone plain.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:16
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:17
 msgid "Camera permission required"
 msgstr "Kamera izni gerekli"
 
@@ -5805,12 +5805,12 @@ msgid "Can't access that email?"
 msgstr "E-postanıza erişemiyor musunuz?"
 
 #. Error message in the attachment permission denied modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:9
+#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:12
 msgid "Can't paste image here"
 msgstr "Görsel buraya yapıştırılamıyor"
 
 #. Error message in the attachment permission denied modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:13
+#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:16
 msgid "Can't upload files here"
 msgstr "Buraya dosya yüklenemiyor"
 
@@ -5872,7 +5872,7 @@ msgstr "Kanarya test kullanıcısı CTA nagbar'ı"
 #: src/features/user/components/modals/EmailChangeModal.tsx:289
 #: src/features/user/components/modals/EmailChangeModal.tsx:311
 #: src/features/user/components/modals/EmailChangeModal.tsx:326
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:394
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:389
 #: src/features/user/components/modals/PasswordChangeModal.tsx:226
 #: src/features/user/components/modals/PasswordChangeModal.tsx:237
 #: src/features/user/components/modals/PasswordChangeModal.tsx:255
@@ -5899,7 +5899,7 @@ msgstr "Zamanlanmış mesaj düzenlemeyi iptal et"
 msgid "Cancel friend request"
 msgstr "Arkadaşlık isteğini iptal et"
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:145
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:144
 msgid "Cancel if you want to choose a different username instead."
 msgstr "Bunun yerine farklı bir kullanıcı adı seçmek istersen iptal et."
 
@@ -6142,8 +6142,8 @@ msgstr "Ortalanmış"
 
 #. Title of the modal where the user picks an avatar source (file upload or GIF provider). Keep it concise.
 #: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:110
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:394
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:430
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:396
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:432
 msgid "Change avatar"
 msgstr "Avatarı değiştir"
 
@@ -6289,7 +6289,7 @@ msgid "Change username"
 msgstr "Kullanıcı adını değiştir"
 
 #. Short label in the FluxerTag change modal. Keep it concise.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:48
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:47
 msgid "Change username form"
 msgstr "Kullanıcı adı değiştirme formu"
 
@@ -6339,7 +6339,7 @@ msgstr "Profil resminizi değiştirin"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
 #. Short label in the FluxerTag change modal. Keep it concise.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:52
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:51
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:77
 msgid "Change your username"
 msgstr "Kullanıcı adını değiştir"
@@ -6851,7 +6851,7 @@ msgid "Choose hCaptcha or Cloudflare Turnstile for signup challenges."
 msgstr "Kayıt zorlukları için hCaptcha veya Cloudflare Turnstile seçin."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:427
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:403
 msgid "Choose how chat moves after you send a message"
 msgstr "Bir mesaj gönderdikten sonra sohbetin nasıl ilerleyeceğini seçin"
 
@@ -7139,7 +7139,7 @@ msgid "Claiming to be another person, brand, or organization."
 msgstr "Başka biri, marka veya kuruluş gibi davranmak."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:175
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:151
 msgid "Clean link"
 msgstr "Bağlantıyı temizle"
 
@@ -7687,7 +7687,7 @@ msgstr "İki nokta üst üste"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:347
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:323
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:154
 msgid "Colon autocomplete"
 msgstr "İki nokta üst üste otomatik tamamlama"
@@ -7829,7 +7829,7 @@ msgid "Community"
 msgstr "Topluluk"
 
 #. Short label in the guild at capacity modal. Keep it concise.
-#: src/features/guild/components/alerts/GuildAtCapacityModal.tsx:8
+#: src/features/guild/components/alerts/GuildAtCapacityModal.tsx:9
 msgid "Community at capacity"
 msgstr "Topluluk kapasiteye ulaştı"
 
@@ -8042,7 +8042,7 @@ msgid "Community-wide"
 msgstr "Community-wide"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:271
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:276
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:242
 msgid "Compact"
 msgstr "Sıkı"
@@ -8126,7 +8126,7 @@ msgstr "Oluşturucu düğmesi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:395
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:371
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:190
 msgid "Composer buttons"
 msgstr "Yazma alanı düğmeleri"
@@ -8138,7 +8138,7 @@ msgstr "Yazma alanı odağı"
 
 #. Button label that opens a dedicated advanced settings modal for configuring screen-share encoder controls.
 #. Button label that opens a dedicated advanced settings modal.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:160
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:156
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedVideoControls.tsx:162
 msgid "Configure"
 msgstr "Yapılandır"
@@ -8179,7 +8179,7 @@ msgid "Configure role settings and permissions"
 msgstr "Rol ayarlarını ve izinlerini yapılandırın"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:263
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:239
 msgid "Configure search engines used from selected text"
 msgstr "Seçili metinden kullanılacak arama motorlarını yapılandırın"
 
@@ -8189,7 +8189,7 @@ msgid "Configure spellcheck, dictionaries, and personal words"
 msgstr "Yazım denetimi, sözlükler ve kişisel kelimeleri yapılandırın"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:295
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:271
 msgid "Configure translator providers used from selected text"
 msgstr "Seçilen metinden kullanılan çeviri sağlayıcılarını yapılandırın"
 
@@ -8212,7 +8212,7 @@ msgstr "Profil rozetinizi yapılandırın"
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/channel/components/MentionEveryonePopout.tsx:180
 #: src/features/user/components/modals/EmailChangeModal.tsx:340
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:443
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:419
 msgid "Confirm"
 msgstr "Onayla"
 
@@ -8264,7 +8264,7 @@ msgid "Confirm voice join"
 msgstr "Sesli katılıma onayla"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:439
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:415
 msgid "Confirmation"
 msgstr "Onay"
 
@@ -8449,7 +8449,7 @@ msgid "Contact support"
 msgstr "Destekle iletişime geçin"
 
 #. Short label in the authentication content blocked handler. Keep the tone plain and specific.
-#: src/features/auth/components/ContentBlockedHandler.tsx:10
+#: src/features/auth/components/ContentBlockedHandler.tsx:11
 msgid "Content blocked"
 msgstr "İçerik engellendi"
 
@@ -8515,7 +8515,7 @@ msgstr "İçerik menüleri sol tıklama (düğmelerde) veya sağ tıklama (diğe
 #: src/features/auth/flow/HandoffApprovalFlow.tsx:118
 #: src/features/connection/components/modals/AddConnectionModal.tsx:383
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:711
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:397
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:392
 #: src/features/user/components/modals/tabs/AuthorizedAppsTab.tsx:181
 msgid "Continue"
 msgstr "Devam et"
@@ -9000,7 +9000,7 @@ msgid "Could not load this page"
 msgstr "Bu sayfa yüklenemedi"
 
 #. Body of the modal shown when a screen share attempt fails. Advises the user to try sharing the full screen.
-#: src/features/voice/components/alerts/ScreenShareFailedModal.tsx:12
+#: src/features/voice/components/alerts/ScreenShareFailedModal.tsx:13
 msgid "Could not start the screen share. The selected source may no longer be available or may have blocked capture. Try sharing your entire screen or monitor instead of a specific window."
 msgstr "Ekran paylaşımı başlatılamadı. Seçilen kaynak artık kullanılamıyor veya yakalamayı engellemiş olabilir. Belirli bir pencere yerine tüm ekranınızı veya monitörünüzü paylaşmayı deneyin."
 
@@ -9558,7 +9558,7 @@ msgid "Cover"
 msgstr "Kapak"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:262
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:267
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:246
 msgid "Cozy"
 msgstr "Rahat"
@@ -10034,7 +10034,7 @@ msgid "Custom date range"
 msgstr "Özel tarih aralığı"
 
 #. Error message in the FluxerTag change modal.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:65
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:64
 msgid "Custom discriminators are not available on this instance"
 msgstr "Özel ayrıştırıcılar bu örnekte kullanılamaz"
 
@@ -10099,7 +10099,7 @@ msgid "Custom ringtone"
 msgstr "Özel zil sesi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:243
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:219
 msgid "Custom search engine"
 msgstr "Özel arama motoru"
 
@@ -10168,7 +10168,7 @@ msgid "Custom title bar"
 msgstr "Özel başlık çubuğu"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:259
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:235
 msgid "Custom translator"
 msgstr "Özel çevirmen"
 
@@ -10227,7 +10227,7 @@ msgid "Customize interface elements and behaviors."
 msgstr "Arayüz öğelerini ve davranışlarını özelleştirin."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:339
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:315
 msgid "Customize the action bar that appears when hovering over messages"
 msgstr "Mesajların üzerine gelindiğinde görünen işlem çubuğunu özelleştirin"
 
@@ -10251,7 +10251,7 @@ msgstr "Profil başlığınızı özelleştirin"
 msgid "Customize your tag ({discriminatorLabel}) to your liking with {premiumProductName}"
 msgstr "{premiumProductName} ile etiketini ({discriminatorLabel}) dilediğin gibi özelleştir"
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:386
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:381
 msgid "Customize your tag or keep it when changing your username"
 msgstr "Etiketini özelleştir veya kullanıcı adını değiştirirken mevcut etiketini koru"
 
@@ -10663,7 +10663,7 @@ msgstr "Pil ömrünü ve veri kullanımını korumak için mobil cihazlarda vars
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:203
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:215
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:34
-#: src/features/messaging/commands/MessageCommands.tsx:72
+#: src/features/messaging/commands/MessageCommands.tsx:71
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:135
 #: src/features/theme_studio/sections/LibrarySection.tsx:514
 #: src/features/user/components/modals/tabs/account_security_tab/SecurityTab.tsx:399
@@ -10908,7 +10908,7 @@ msgid "Delete this message"
 msgstr "Bu mesajı sil"
 
 #. Error message in the messaging commands. Keep the tone plain and specific.
-#: src/features/messaging/commands/MessageCommands.tsx:68
+#: src/features/messaging/commands/MessageCommands.tsx:67
 msgid "Delete this message? Can't be undone."
 msgstr "Bu mesajı silmek istiyor musunuz? Geri alınamaz."
 
@@ -12197,7 +12197,7 @@ msgstr "Taslak"
 msgid "Drag and drop"
 msgstr "Sürükle ve bırak"
 
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:290
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:295
 msgid "Drag and drop a sticker file here (one at a time)"
 msgstr "Bir çıkartma dosyasını buraya sürükleyip bırakın (tek seferde bir tane)"
 
@@ -12206,7 +12206,7 @@ msgstr "Bir çıkartma dosyasını buraya sürükleyip bırakın (tek seferde bi
 msgid "Drag and drop area for file upload"
 msgstr "Dosya yüklemek için sürükleyip bırakma alanı"
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:470
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:471
 msgid "Drag and drop emoji files here"
 msgstr "Emoji dosyalarını buraya sürükleyip bırakın"
 
@@ -12808,12 +12808,12 @@ msgid "Emoji & sticker packs"
 msgstr "Emoji ve çıkartma paketleri"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:351
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:327
 msgid "Emoji autocomplete"
 msgstr "Emoji otomatik tamamlama"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:403
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:379
 msgid "Emoji button"
 msgstr "Emoji düğmesi"
 
@@ -12848,7 +12848,7 @@ msgid "Emoji name must be at most 32 characters long"
 msgstr "Emoji adı en fazla 32 karakter uzunluğunda olmalıdır"
 
 #. Description in the community emoji upload section. {maxSize} is the formatted size limit.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:96
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:95
 msgid "Emoji names need at least 2 characters and can use letters, numbers, and underscores. Emojis must be under {maxSize}. Static images are resized to 128x128 pixels and compressed automatically. Animated emojis and SVGs must already fit the limit."
 msgstr "Emoji adları en az 2 karakter içermelidir ve harf, sayı ve alt çizgi kullanılabilir. Emojiler {maxSize}'dan küçük olmalıdır. Statik resimler otomatik olarak 128x128 piksele yeniden boyutlandırılır ve sıkıştırılır. Animasyonlu emojiler ve SVG'lerin zaten limite uygun olması gerekir."
 
@@ -12896,7 +12896,7 @@ msgstr "Emoji paketleri"
 msgid "Emoji picker"
 msgstr "Emoji seçici"
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:450
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:451
 msgid "Emoji slots"
 msgstr "Emoji yuvaları"
 
@@ -12921,13 +12921,13 @@ msgid "Emojis"
 msgstr "Emojiler"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:371
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:347
 msgid "Emoticon"
 msgstr "Emoji"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:367
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:343
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:142
 msgid "Emoticons"
 msgstr "Emojiler"
@@ -13337,11 +13337,6 @@ msgstr "Gelişmiş"
 msgctxt "noise-suppression-option"
 msgid "Enhanced"
 msgstr "Gelişmiş"
-
-#. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:147
-msgid "Ensures file messages appear in the order you sent them"
-msgstr "Gönderdiğiniz dosya mesajlarının gönderilme sırasına göre görünmesini sağlar"
 
 #. Keyboard key label for confirming a mass-mention warning.
 #. Keyboard shortcut keycap label for Enter. Keep it short.
@@ -13821,7 +13816,7 @@ msgid "Expand"
 msgstr "Genişlet"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:327
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:303
 msgid "Expand action bar"
 msgstr "İşlem çubuğunu genişlet"
 
@@ -14024,7 +14019,7 @@ msgstr "Profil ayarlarında yalnızca çalışanlara özel zaman dilimi bölüm�
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:343
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:319
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:158
 msgid "Expression autocomplete"
 msgstr "İfade otomatik tamamlama"
@@ -14078,7 +14073,7 @@ msgstr "Harici"
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Warning text in the external link warning modal. Keep the tone plain and specific.
 #: src/features/messaging/components/modals/ExternalLinkWarningModal.tsx:17
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:215
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:191
 msgid "External link warning"
 msgstr "Harici bağlantı uyarısı"
 
@@ -14224,7 +14219,7 @@ msgstr "Yüklenemedi"
 msgid "Failed to load authorized applications"
 msgstr "Yetkili uygulamalar yüklenemedi"
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:443
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:444
 msgid "Failed to load emojis. Try again later."
 msgstr "Emojiler yüklenemedi. Daha sonra tekrar deneyin."
 
@@ -14248,7 +14243,7 @@ msgid "Failed to load shareable sources."
 msgstr "Paylaşılabilir kaynaklar yüklenemedi."
 
 #. Error message in the guild stickers tab.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:71
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:74
 msgid "Failed to load stickers"
 msgstr "Çıkartmalar yüklenemedi"
 
@@ -14298,7 +14293,7 @@ msgid "Failed to pin message"
 msgstr "Mesaj sabitlenemedi"
 
 #. Error message in the guild emoji tab.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:55
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:54
 msgid "Failed to prepare emojis"
 msgstr "Emojiler hazırlanırken bir sorun oluştu"
 
@@ -14444,12 +14439,12 @@ msgid "Failed to upload custom sound"
 msgstr "Özel ses yüklenemedi"
 
 #. Error message in the emoji upload failure modal. startLabel is a chunk label like "#1"; errorMsg is the server error.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:63
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:62
 msgid "Failed to upload emojis starting at {startLabel}: {errorMsg}"
 msgstr "{startLabel} ile başlayan emojiler yüklenemedi: {errorMsg}"
 
 #. Error message in the guild emoji tab.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:59
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:58
 msgid "Failed to upload emojis. Try again."
 msgstr "Emojiler yüklenemedi. Tekrar deneyin."
 
@@ -14543,7 +14538,7 @@ msgid "Feature"
 msgstr "Özellik"
 
 #. Short label in the feature temporarily disabled modal.
-#: src/features/app/components/alerts/FeatureTemporarilyDisabledModal.tsx:8
+#: src/features/app/components/alerts/FeatureTemporarilyDisabledModal.tsx:9
 msgid "Feature temporarily disabled"
 msgstr "Özellik geçici olarak devre dışı bırakıldı"
 
@@ -14585,18 +14580,13 @@ msgstr "Dosya çok büyük. Maksimum boyut {maxSize}."
 msgid "File options"
 msgstr "Dosya seçenekleri"
 
-#. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:135
-msgid "File ordering"
-msgstr "Dosya sıralaması"
-
 #. Title of the file-too-large alert variant that offers a Plutonium upsell.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:35
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:38
 msgid "File size limit exceeded"
 msgstr "Dosya boyutu sınırı aşıldı"
 
 #. Title of the file-too-large alert.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:31
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:34
 msgid "File size too large"
 msgstr "Dosya boyutu çok büyük"
 
@@ -15446,7 +15436,7 @@ msgid "Gap"
 msgstr "Boşluk"
 
 #. Short label in the temporary invite requires presence modal.
-#: src/features/app/components/alerts/TemporaryInviteRequiresPresenceModal.tsx:8
+#: src/features/app/components/alerts/TemporaryInviteRequiresPresenceModal.tsx:9
 msgid "Gateway connection required"
 msgstr "Ağ geçidi bağlantısı gerekli"
 
@@ -15522,7 +15512,7 @@ msgid "Get {premiumProductName} to customize your tag"
 msgstr "Etiketini özelleştirmek için {premiumProductName} edinin"
 
 #. Description text in the FluxerTag change modal. Preserve {premiumProductName}; it is inserted by code. Keep the tone plain and specific.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:56
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:55
 msgid "Get {premiumProductName} to customize your tag or keep it when changing your username"
 msgstr "Etiketini özelleştirmek veya kullanıcı adını değiştirirken korumak için {premiumProductName} edin"
 
@@ -15560,7 +15550,7 @@ msgid "GIF"
 msgstr "GIF"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:399
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:375
 msgid "GIF button"
 msgstr "GIF düğmesi"
 
@@ -15763,7 +15753,7 @@ msgid "Give everyone on this instance the highest premium limits."
 msgstr "Bu örnekteki herkese en yüksek premium limitleri ver."
 
 #. Modal body shown when the role-edit form is submitted with an empty role name.
-#: src/features/app/components/alerts/RoleNameBlankModal.tsx:12
+#: src/features/app/components/alerts/RoleNameBlankModal.tsx:13
 msgid "Give the role a name before saving."
 msgstr "Kaydetmeden önce role bir ad verin."
 
@@ -15894,7 +15884,7 @@ msgid "Go to third community"
 msgstr "Üçüncü topluluğa git"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:287
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:263
 msgid "Google lens"
 msgstr "Google Lens"
 
@@ -16405,7 +16395,7 @@ msgid "Hide avatars"
 msgstr "Avatarları gizle"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:479
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:455
 msgid "Hide channels you've muted from community sidebars"
 msgstr "Susturduğunuz kanalları topluluk kenar çubuklarından gizleyin"
 
@@ -16457,7 +16447,7 @@ msgid "Hide members"
 msgstr "Üyeleri gizle"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:471
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:447
 msgid "Hide muted"
 msgstr "Sessize alınmışları gizle"
 
@@ -16468,13 +16458,13 @@ msgstr "Sessize alınmış kanalları gizle"
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #. Short label for an advanced sidebar preference.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:136
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:459
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:132
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:435
 msgid "Hide muted channels by default"
 msgstr "Sessize alınmış kanalları varsayılan olarak gizle"
 
 #. Confirmation prompt in advanced settings.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:140
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:136
 msgid "Hide muted channels by default?"
 msgstr "Sessize alınan kanalları varsayılan olarak gizle?"
 
@@ -16647,7 +16637,7 @@ msgid "Hours"
 msgstr "Saat"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:315
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:291
 msgid "Hover buttons"
 msgstr "Üzerine gelince çıkan düğmeler"
 
@@ -16920,11 +16910,11 @@ msgstr "PLN ile kartla ödeme yapsanız bile, satın alma işleminin geçerli sa
 msgid "If you prefer, you can switch to standard USD pricing instead."
 msgstr "İsterseniz standart USD fiyatlandırmasına geçebilirsiniz."
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:354
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:349
 msgid "If you save this username, your tag will reroll randomly when your {PREMIUM_PRODUCT_NAME} expires on <0>{premiumExpiresAtLabel}</0>, unless it renews."
 msgstr "Bu kullanıcı adını kaydederseniz, {PREMIUM_PRODUCT_NAME} aboneliğiniz <0>{premiumExpiresAtLabel}</0> tarihinde sona erdiğinde (yenilenmediği takdirde) etiketiniz rastgele yeniden belirlenecektir."
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:361
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:356
 msgid "If you save this username, your tag will reroll randomly when your {PREMIUM_PRODUCT_NAME} expires, unless it renews."
 msgstr "Bu kullanıcı adını kaydederseniz, {PREMIUM_PRODUCT_NAME} süreniz dolduğunda (yenilenmezse) etiketiniz rastgele yeniden belirlenecektir."
 
@@ -17055,7 +17045,7 @@ msgid "Image dimensions must be between {min}x{min2} and {max}x{max2} pixels."
 msgstr "Görsel boyutları {min}x{min2} ile {max}x{max2} piksel arasında olmalıdır."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:283
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:259
 msgid "Image lookup"
 msgstr "Görsel arama"
 
@@ -17070,12 +17060,12 @@ msgid "Image preview"
 msgstr "Görsel önizlemesi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:275
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:251
 msgid "Image search"
 msgstr "Görsel arama"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:291
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:267
 msgid "Image search provider"
 msgstr "Görsel arama sağlayıcısı"
 
@@ -17098,7 +17088,7 @@ msgstr "Görsel yükleme"
 msgid "Images"
 msgstr "Görseller"
 
-#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:35
+#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:38
 msgid "Images pasted from your clipboard are sent as attachments, and you don't have permission to attach files in this channel."
 msgstr "Panodan yapıştırdığınız görseller ek olarak gönderilir ve bu kanalda dosya ekleme izniniz yok."
 
@@ -18024,7 +18014,7 @@ msgstr "Davetler devre dışı bırakıldı bildirim çubuğu"
 
 #. Button or menu action label in the invite accept modal. Keep it concise.
 #. Button or menu action label in the invites disabled modal. Keep it concise.
-#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:9
+#: src/features/invite/components/alerts/InvitesDisabledModal.tsx:10
 #: src/features/invite/components/modals/InviteAcceptModal.tsx:49
 msgid "Invites paused"
 msgstr "Davetler duraklatıldı"
@@ -18964,7 +18954,7 @@ msgid "Link underline"
 msgstr "Bağlantı altı çizili"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:219
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:195
 msgid "Link warnings"
 msgstr "Bağlantı uyarıları"
 
@@ -19521,7 +19511,7 @@ msgstr "Masaüstü uygulamasını manuel güncelle"
 #. Action label in the inbox popout overflow menu. Marks every inbox channel as read.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/messaging/components/popouts/InboxPopout.tsx:42
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:435
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:411
 msgid "Mark all as read"
 msgstr "Tümünü okundu olarak işaretle"
 
@@ -19543,7 +19533,7 @@ msgid "Mark all inbox channels as read"
 msgstr "Tüm gelen kutusu kanallarını okundu olarak işaretle"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:455
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:431
 msgid "Mark all unread inbox channels as read immediately, without asking to confirm"
 msgstr "Tüm okunmamış gelen kutusu kanallarını onay sormadan hemen okundu olarak işaretle"
 
@@ -19644,7 +19634,7 @@ msgid "Markers below slider"
 msgstr "Kaydırıcının altındaki işaretleyiciler"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:167
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:143
 msgid "Marketing parameters"
 msgstr "Pazarlama parametreleri"
 
@@ -19751,7 +19741,7 @@ msgid "Mature content media gate"
 msgstr "Yetişkinlere uygun içerik medya geçidi"
 
 #. Error message in the mature content rejected modal.
-#: src/features/moderation/components/alerts/MatureContentRejectedModal.tsx:8
+#: src/features/moderation/components/alerts/MatureContentRejectedModal.tsx:9
 msgid "Mature content not allowed"
 msgstr "Yetişkinlere uygun içeriklere izin verilmiyor"
 
@@ -19847,7 +19837,7 @@ msgid "Maximum screen share bitrate"
 msgstr "Ekran paylaşımı maksimum bit hızı"
 
 #. Short label in the max favorite memes modal.
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:34
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:33
 #: src/features/expressions/components/modals/GiftAcceptModal.tsx:220
 #: src/features/expressions/components/modals/GiftAcceptModal.tsx:277
 msgid "Maybe later"
@@ -20231,7 +20221,7 @@ msgid "Message @"
 msgstr "Mesaj @"
 
 #. Settings search entry label. Also used as a search synonym in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:303
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:279
 msgid "Message action bar"
 msgstr "Mesaj işlem çubuğu"
 
@@ -20253,7 +20243,7 @@ msgid "Message badge"
 msgstr "Mesaj rozeti"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:335
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:311
 msgid "Message buttons"
 msgstr "Mesaj düğmeleri"
 
@@ -20329,7 +20319,7 @@ msgid "Message history threshold updated"
 msgstr "Mesaj geçmişi eşiği güncellendi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:311
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:287
 msgid "Message hover"
 msgstr "Mesajın üzerine gelindiğinde"
 
@@ -20342,7 +20332,7 @@ msgstr "Mesaj girişi"
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:391
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:367
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:194
 msgid "Message input buttons"
 msgstr "Mesaj giriş düğmeleri"
@@ -20543,7 +20533,7 @@ msgid "Microphone gain"
 msgstr "Mikrofon kazancı"
 
 #. Title of the modal shown when microphone permission is denied. Keep tone plain.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:12
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:13
 msgid "Microphone permission required"
 msgstr "Mikrofon izni gerekli"
 
@@ -20831,7 +20821,7 @@ msgid "More actions for {displayName}"
 msgstr "{displayName} için diğer işlemler"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:331
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:307
 msgid "More button"
 msgstr "Daha fazla düğmesi"
 
@@ -21180,7 +21170,7 @@ msgstr "sessiz"
 #: src/features/app/components/layout/sidebar_nav/GuildListItem.tsx:80
 #: src/features/app/components/layout/VoiceStateIcons.tsx:19
 #: src/features/ui/avatars/AvatarWithPresence.tsx:15
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:463
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:439
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:73
 #: src/features/voice/components/voice_participant_tile/shared.ts:75
 #: src/lib/overlay/OverlayContextMenu.tsx:24
@@ -21194,7 +21184,7 @@ msgstr "Moderatörler tarafından sesi kapatıldı"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:467
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:443
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:69
 msgid "Muted channels"
 msgstr "Sessize alınmış kanallar"
@@ -21549,7 +21539,7 @@ msgid "NEW"
 msgstr "NEW"
 
 #. Description text in the new account guild limit modal.
-#: src/features/guild/components/alerts/NewAccountGuildLimitModal.tsx:12
+#: src/features/guild/components/alerts/NewAccountGuildLimitModal.tsx:13
 msgid "New accounts can join up to 10 communities in the first 24 hours. Try again later."
 msgstr "Yeni hesaplar ilk 24 saat içinde en fazla 10 topluluğa katılabilir. Daha sonra tekrar deneyin."
 
@@ -21566,20 +21556,20 @@ msgid "New category"
 msgstr "Yeni kategori"
 
 #. Short confirmation button label in advanced settings.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:148
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:144
 msgid "New communities only"
 msgstr "Yalnızca yeni topluluklar"
 
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:635
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:618
 msgid "New communities you join will automatically have muted channels hidden. Would you also like to apply this setting to all your existing communities?"
 msgstr "Katıldığınız yeni topluluklarda kanallar otomatik olarak sessize alınır ve gizlenir. Bu ayarı mevcut tüm topluluklarınıza da uygulamak ister misiniz?"
 
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:666
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:649
 msgid "New communities you join will no longer have muted channels hidden automatically. Would you also like to show muted channels in all your existing communities?"
 msgstr "Katıldığınız yeni topluluklarda artık sessize alınmış kanallar otomatik olarak gizlenmeyecek. Mevcut tüm topluluklarınızdaki sessize alınmış kanalları da göstermek ister misiniz?"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:475
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:451
 msgid "New community muted"
 msgstr "Yeni topluluk sessize alındı"
 
@@ -21912,11 +21902,11 @@ msgid "No embeds returned"
 msgstr "Gömme içerik bulunamadı"
 
 #. Empty-state text in the guild emoji tab.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:47
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:46
 msgid "No emoji slots available"
 msgstr "Kullanılabilir emoji alanı yok"
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:478
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:479
 msgid "No emojis found matching your search."
 msgstr "Aramanızla eşleşen emoji bulunamadı."
 
@@ -22167,7 +22157,7 @@ msgid "No scheduled messages"
 msgstr "Zamanlanmış mesaj yok"
 
 #. Body of the screen-share-unsupported modal shown when xdg-desktop-portal returns no capturable sources.
-#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:18
+#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:19
 msgid "No screens or windows were returned by the Linux screen sharing portal. Try again after checking that your desktop environment allows screen capture."
 msgstr "Linux ekran paylaşımı portalı tarafından hiçbir ekran veya pencere döndürülmedi. Masaüstü ortamınızın ekran yakalamasına izin verdiğinden emin olduktan sonra tekrar deneyin."
 
@@ -22195,17 +22185,17 @@ msgid "No specific scopes requested."
 msgstr "Belirli bir kapsam istenmedi."
 
 #. Empty-state text in the guild stickers tab.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:58
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:61
 msgid "No sticker slots available"
 msgstr "Kullanılabilir çıkartma alanı yok"
 
 #. Empty-state text in the guild stickers tab.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:54
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:57
 msgid "No stickers found"
 msgstr "Çıkartma bulunamadı"
 
 #. Empty-state text in the guild stickers tab.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:67
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:70
 msgid "No stickers found matching your search."
 msgstr "Aramanızla eşleşen çıkartma bulunamadı."
 
@@ -22332,7 +22322,7 @@ msgid "Noise suppression: {noiseSuppressionLabel}"
 msgstr "Gürültü engelleme: {noiseSuppressionLabel}"
 
 #. Section heading for static emoji in community emoji settings.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:101
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:100
 msgid "Non-animated emoji ({emojiCount})"
 msgstr "Animasyonsuz emojiler ({emojiCount})"
 
@@ -22650,7 +22640,7 @@ msgid "One or more attachments couldn't be read or uploaded. The file may have b
 msgstr "Bir veya daha fazla ek okunamadı veya yüklenemedi. Dosya taşınmış veya silinmiş olabilir. Lütfen tekrar ekleyip yeniden deneyin."
 
 #. Body of the file-too-large alert for ambiguous count (single or multiple) over the per-file size limit.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:27
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:30
 msgid "One or more files you're trying to upload exceed the maximum size limit of {maxSizeFormatted} per file."
 msgstr "Yüklemeye çalıştığınız bir veya daha fazla dosya, dosya başına {maxSizeFormatted} olan maksimum boyut sınırını aşıyor."
 
@@ -23383,11 +23373,6 @@ msgstr "veya hediye bağlantısını bir arkadaşına gönder:"
 msgid "Ordered"
 msgstr "Sıralı"
 
-#. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:139
-msgid "Ordered upload"
-msgstr "Sıralı yükleme"
-
 #. Error message in the channel and chat reply preview.
 #: src/features/channel/components/ReplyPreview.tsx:29
 msgid "Original message failed to load"
@@ -24093,12 +24078,12 @@ msgid "Pick the rule to review."
 msgstr "İncelemek için kuralı seçin."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:359
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:335
 msgid "Pick what appears when you type a colon in the message input"
 msgstr "Mesaj giriş alanında iki nokta üst üste yazdığınızda neyin görünmesini istediğinizi seçin"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:411
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:387
 msgid "Pick which buttons show in the message input"
 msgstr "Mesaj girişinde hangi düğmelerin gösterileceğini seçin"
 
@@ -24936,7 +24921,7 @@ msgid "Promotion or instructions encouraging self-harm or eating disorders."
 msgstr "Kendine zarar vermeyi veya yeme bozukluklarını teşvik eden tanıtım veya talimatlar."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:447
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:423
 msgid "Prompt"
 msgstr "İstem"
 
@@ -25212,7 +25197,7 @@ msgid "Quick CSS replaced from {fileName}."
 msgstr "Hızlı CSS, {fileName} dosyasından değiştirildi."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:319
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:295
 msgid "Quick reactions"
 msgstr "Hızlı tepkiler"
 
@@ -25636,7 +25621,7 @@ msgid "Reference copied."
 msgstr "Referans kopyalandı."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:171
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:147
 msgid "Referral parameters"
 msgstr "Yönlendirme parametreleri"
 
@@ -25933,8 +25918,8 @@ msgstr "Eki kaldır"
 msgid "Remove authenticator app"
 msgstr "Kimlik doğrulayıcı uygulamayı kaldır"
 
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:404
-#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:440
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:406
+#: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:442
 msgid "Remove avatar"
 msgstr "Profil fotoğrafını kaldır"
 
@@ -26953,14 +26938,14 @@ msgid "Reverify your phone number to continue using {productName}."
 msgstr "{productName} uygulamasını kullanmaya devam etmek için telefon numaranızı yeniden doğrulayın."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:271
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:247
 msgid "Reverse image"
 msgstr "Görseli tersine ara"
 
 #. Generic action label that runs a reverse-image search on the selected media.
 #. Settings search entry label. Also used as a search synonym in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:603
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:267
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:243
 msgid "Reverse image search"
 msgstr "Görselle arama"
 
@@ -26970,7 +26955,7 @@ msgid "Reverse image search provider"
 msgstr "Görsel arama sağlayıcısını tersine çevir"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:299
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:275
 msgid "Reverse image search providers"
 msgstr "Tersine görsel arama sağlayıcıları"
 
@@ -27035,7 +27020,7 @@ msgid "Review the permissions {productName} uses for voice, video, screen sharin
 msgstr "{productName} uygulamasının ses, video, ekran paylaşımı ve kısayollar için kullandığı izinleri gözden geçirin."
 
 #. Intro text in the error modal shown after some emoji uploads fail.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:72
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:71
 msgid "Review these files and try again with smaller or simpler images."
 msgstr "Bu dosyaları inceleyin ve daha küçük veya daha basit görsellerle tekrar deneyin."
 
@@ -27206,7 +27191,7 @@ msgid "Role name"
 msgstr "Rol adı"
 
 #. Validation modal title when the role-edit form is submitted with an empty role name.
-#: src/features/app/components/alerts/RoleNameBlankModal.tsx:8
+#: src/features/app/components/alerts/RoleNameBlankModal.tsx:9
 msgid "Role name is required"
 msgstr "Rol adı gerekli"
 
@@ -27315,7 +27300,7 @@ msgid "Same time as you"
 msgstr "Sizinle aynı saat diliminde"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:179
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:155
 msgid "Sanitize link"
 msgstr "Bağlantıyı temizle"
 
@@ -27436,7 +27421,7 @@ msgid "Saved media autocomplete"
 msgstr "Kaydedilen medyayı otomatik tamamlama"
 
 #. Short label in the max favorite memes modal.
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:16
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:15
 msgid "Saved media limit reached"
 msgstr "Kaydedilen medya sınırına ulaşıldı"
 
@@ -27543,7 +27528,7 @@ msgstr "Ekran okuyucu duyuruları"
 
 #. Heading in the screen-share picker when macOS screen recording permission is missing.
 #. Title of the modal shown when screen recording permission is denied. Keep tone plain.
-#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:20
+#: src/features/permissions/system/components/MediaPermissionBlockedModal.tsx:21
 #: src/features/voice/components/modals/screen_share_picker_modal/ScreenSharePickerDisplayPermissionPrompt.tsx:18
 msgid "Screen recording permission required"
 msgstr "Ekran kaydı izni gerekli"
@@ -27576,7 +27561,7 @@ msgid "Screen share encoder controls"
 msgstr "Ekran paylaşımı kodlayıcı ayarları"
 
 #. Title of a modal shown when an active screen share stops unexpectedly.
-#: src/features/voice/engine/v2/VoiceEngineV2AppScreenShareExecutionAdapter.tsx:110
+#: src/features/voice/engine/v2/VoiceEngineV2AppScreenShareExecutionAdapter.tsx:111
 msgctxt "screen-share"
 msgid "Screen share ended"
 msgstr "Ekran paylaşımı sona erdi"
@@ -27663,17 +27648,17 @@ msgid "Screen sharing codec"
 msgstr "Ekran paylaşımı kodeği"
 
 #. Title of the modal shown when a screen share attempt fails due to a video source error.
-#: src/features/voice/components/alerts/ScreenShareFailedModal.tsx:8
+#: src/features/voice/components/alerts/ScreenShareFailedModal.tsx:9
 msgid "Screen sharing failed"
 msgstr "Ekran paylaşımı başarısız oldu"
 
 #. Body of the screen-share-unsupported modal. Mentions specific browsers and OSes; keep all proper nouns intact.
-#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:12
+#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:13
 msgid "Screen sharing is not supported on this device or browser. This feature requires a desktop browser that supports screen sharing, such as Chrome, Firefox, or Edge on Windows, macOS, or Linux."
 msgstr "Ekran paylaşımı bu cihazda veya tarayıcıda desteklenmiyor. Bu özellik için Windows, macOS veya Linux'ta Chrome, Firefox ya da Edge gibi ekran paylaşımını destekleyen bir masaüstü tarayıcı gerekir."
 
 #. Title of the modal shown when screen sharing is not supported on the current device / browser.
-#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:8
+#: src/features/voice/components/alerts/ScreenShareUnsupportedModal.tsx:9
 msgid "Screen sharing not supported"
 msgstr "Ekran paylaşımı desteklenmiyor"
 
@@ -27713,15 +27698,15 @@ msgstr "{premiumProductName} ile gelen tüm avantajları görmek için aşağı 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short label in the whats new modal.
 #: src/features/app/components/whats_new/WhatsNewModal.tsx:28
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:419
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:395
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:178
 msgid "Scroll to bottom"
 msgstr "Aşağı kaydır"
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #. Short label for an advanced message input preference.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:128
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:415
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:124
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:391
 msgid "Scroll to bottom when sending a message"
 msgstr "Mesaj gönderirken en alta kaydır"
 
@@ -27773,7 +27758,7 @@ msgid "Search bans"
 msgstr "Yasaklıları ara"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:279
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:255
 msgid "Search by image"
 msgstr "Görselle ara"
 
@@ -27810,17 +27795,17 @@ msgid "Search countries…"
 msgstr "Ülkeleri ara…"
 
 #. Button or menu action label in the guild emoji tab. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:92
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:91
 msgid "Search emojis"
 msgstr "Emojileri ara"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:231
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:207
 msgid "Search engine"
 msgstr "Arama motoru"
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:227
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:203
 msgid "Search engines"
 msgstr "Arama motorları"
 
@@ -27950,7 +27935,7 @@ msgid "Search scope: {label}"
 msgstr "Arama kapsamı: {label}"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:239
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:215
 msgid "Search selected text"
 msgstr "Seçili metni ara"
 
@@ -27975,7 +27960,7 @@ msgid "Search shortcuts…"
 msgstr "Kısayolları ara…"
 
 #. Button or menu action label in the guild stickers tab. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:46
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:49
 msgid "Search stickers"
 msgstr "Çıkartma ara"
 
@@ -28438,7 +28423,7 @@ msgstr "Başka bir rapor gönder"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:407
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:383
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:170
 msgid "Send button"
 msgstr "Gönder düğmesi"
@@ -28453,13 +28438,6 @@ msgstr "Kod gönder"
 #: src/features/moderation/components/report/ReportStepDetails.tsx:302
 msgid "Send DSA report"
 msgstr "DSA raporu gönder"
-
-#. Settings search entry label. Names the settings search entry in the settings UI.
-#. Short label for an advanced message input preference.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:112
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:127
-msgid "Send file messages in order"
-msgstr "Dosya mesajlarını sırayla gönder"
 
 #. Button or menu action label in the user profile mobile sheet. Keep it concise.
 #. Button or menu action label in the user profile modal. Keep it concise.
@@ -28653,20 +28631,10 @@ msgstr "bir yerleştirme gönderdi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:423
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:399
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:182
 msgid "Sent messages"
 msgstr "Gönderilen mesajlar"
-
-#. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:131
-msgid "Sequential send"
-msgstr "Ardışık gönderim"
-
-#. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:143
-msgid "Serial send"
-msgstr "Seri gönder"
 
 #: src/features/connection/components/modals/AddConnectionModal.tsx:326
 msgid "Serve the token file"
@@ -29130,7 +29098,7 @@ msgid "Shift"
 msgstr "Vardiya"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:323
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:299
 msgid "Shift expand"
 msgstr "Genişletmeyi kaydır"
 
@@ -29331,7 +29299,7 @@ msgstr "Gömülü içerikleri ve web sitesi bağlantılarını önizle"
 #. Short label for an advanced message input preference.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
 #: src/features/channel/components/textarea/TextareaPlusMenu.tsx:55
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:120
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:116
 msgid "Show emoji button"
 msgstr "Emoji düğmesini göster"
 
@@ -29385,7 +29353,7 @@ msgid "Show icon when collapsed"
 msgstr "Daraltıldığında simgeyi göster"
 
 #. Short confirmation button label in advanced settings.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:156
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:152
 msgid "Show in all communities"
 msgstr "Tüm topluluklarda göster"
 
@@ -29575,7 +29543,7 @@ msgstr "Kaydedilen medyayı ifade otomatik tamamlamada göster"
 #. Short label for an advanced message input preference.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
 #: src/features/channel/components/textarea/TextareaPlusMenu.tsx:59
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:124
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:120
 msgid "Show send button"
 msgstr "Gönder düğmesini göster"
 
@@ -29587,7 +29555,7 @@ msgstr "Tıklandığında spoiler içeriğini göster"
 #. Short label for an advanced message input preference.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
 #: src/features/channel/components/textarea/TextareaPlusMenu.tsx:51
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:116
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:112
 msgid "Show stickers button"
 msgstr "Çıkartma düğmesini göster"
 
@@ -29892,14 +29860,14 @@ msgid "Size selection"
 msgstr "Boyut seçimi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:451
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:427
 msgid "Skip"
 msgstr "Atla"
 
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #. Short label for an advanced inbox preference.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:132
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:431
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:128
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:407
 msgid "Skip \"Mark all as read\" confirmation"
 msgstr "\"Tümünü okundu olarak işaretle\" onayını atla"
 
@@ -29913,7 +29881,7 @@ msgid "Skip external link warnings. Less secure."
 msgstr "Harici bağlantı uyarılarını atla. Daha az güvenli."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:223
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:199
 msgid "Skip the external link warning for all domains"
 msgstr "Tüm alan adları için harici bağlantı uyarısını atla"
 
@@ -29986,7 +29954,7 @@ msgid "Slow attachment upload"
 msgstr "Yavaş ek yükleme"
 
 #. Short label in the new account guild limit modal. Keep it concise.
-#: src/features/guild/components/alerts/NewAccountGuildLimitModal.tsx:8
+#: src/features/guild/components/alerts/NewAccountGuildLimitModal.tsx:9
 msgid "Slow down"
 msgstr "Yavaşla"
 
@@ -30036,7 +30004,7 @@ msgstr "Yavaş mod · {remaining} bekle"
 #. Developer tools debug menu label. Internal-only surface for developers; translators may keep this terse.
 #. Short label in the slowmode rate limited modal. Keep it concise.
 #: src/features/channel/components/channel_header_components/developer_tools/DeveloperOptionLabels.ts:249
-#: src/features/slowmode/components/alerts/SlowmodeRateLimitedModal.tsx:13
+#: src/features/slowmode/components/alerts/SlowmodeRateLimitedModal.tsx:14
 msgid "Slowmode active"
 msgstr "Yavaş mod etkin"
 
@@ -30051,7 +30019,7 @@ msgid "Slowmode is enabled, but you are immune."
 msgstr "Yavaş mod açık ama sen etkilenmiyorsun."
 
 #. Modal body shown when slowmode blocks sending a message. {duration} is a localized short duration such as "2 minutes".
-#: src/features/slowmode/components/alerts/SlowmodeRateLimitedModal.tsx:17
+#: src/features/slowmode/components/alerts/SlowmodeRateLimitedModal.tsx:18
 msgid "Slowmode is on — wait {duration} before sending another."
 msgstr "Yavaş mod açık — başka bir mesaj göndermeden önce {duration} bekle."
 
@@ -30119,7 +30087,7 @@ msgid "Smaller media size"
 msgstr "Daha küçük medya boyutu"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:379
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:355
 msgid "Smiley face"
 msgstr "Gülümseyen yüz"
 
@@ -30182,12 +30150,12 @@ msgid "Sold out"
 msgstr "Tükendi"
 
 #. Title of the error modal shown after some emoji uploads fail.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:68
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:67
 msgid "Some emojis couldn't be added"
 msgstr "Bazı emojiler eklenemedi"
 
 #. Body of the file-too-large alert when multiple files exceed the per-file size limit. maxSizeFormatted is the limit formatted with units.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:18
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:21
 msgid "Some files you're trying to upload exceed the maximum size limit of {maxSizeFormatted} per file."
 msgstr "Yüklemeye çalıştığınız bazı dosyalar, dosya başına {maxSizeFormatted} olan maksimum boyut sınırını aşıyor."
 
@@ -30826,7 +30794,7 @@ msgid "Start searches with <0>{peoplePrefix}</0> <1>{textChannelPrefix}</1> <2>{
 msgstr "Aramalara <0>{peoplePrefix}</0>, <1>{textChannelPrefix}</1>, <2>{voiceChannelPrefix}</2> ve <3>{communityPrefix}</3> ile başlayarak sonuçları daraltın."
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:151
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:127
 msgid "Start uploading attachments as soon as they are added to the message input"
 msgstr "Mesaj girişine eklenen dosyalar yüklemeye hemen başlar"
 
@@ -30955,7 +30923,7 @@ msgid "Sticker attached to the message"
 msgstr "Mesaja çıkartma eklendi"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:355
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:331
 msgid "Sticker autocomplete"
 msgstr "Çıkartma otomatik tamamlama"
 
@@ -30980,7 +30948,7 @@ msgid "Sticker deleted"
 msgstr "Çıkartma silindi"
 
 #. Short label in the guild stickers tab. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:50
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:53
 msgid "Sticker density"
 msgstr "Çıkartma yoğunluğu"
 
@@ -31028,7 +30996,7 @@ msgstr "Çıkartma paketi sınırına ulaşıldı"
 msgid "Sticker packs"
 msgstr "Çıkartma paketleri"
 
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:278
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:283
 msgid "Sticker slots"
 msgstr "Çıkartma yuvaları"
 
@@ -31064,7 +31032,7 @@ msgid "Stickers"
 msgstr "Sticker'lar"
 
 #. Description in the community sticker upload section. {maxSize} is the formatted size limit.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:79
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:82
 msgid "Stickers are saved at 320x320 pixels and must be under {maxSize}. Static images are resized and compressed automatically. Animated stickers and SVGs must already fit the limit."
 msgstr "Etiketler 320x320 piksel boyutunda kaydedilir ve {maxSize}'dan küçük olmalıdır. Statik resimler otomatik olarak yeniden boyutlandırılır ve sıkıştırılır. Animasyonlu etiketlerin ve SVG'lerin zaten limite uygun olması gerekir."
 
@@ -31109,7 +31077,7 @@ msgid "Stop"
 msgstr "Durdur"
 
 #. Confirmation prompt in advanced settings.
-#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:152
+#: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:148
 msgid "Stop hiding muted channels by default?"
 msgstr "Sessize alınmış kanalları gizlemeyi durdurulsun mu?"
 
@@ -31260,19 +31228,19 @@ msgid "Strikethrough"
 msgstr "Üstü çizili"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:187
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:163
 msgid "Strip parameters"
 msgstr "Parametreleri kaldır"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:183
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:159
 msgid "Strip tracking"
 msgstr "İzlemeyi kaldır"
 
 #. Label in the links tab.
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #: src/features/user/components/modals/tabs/chat_settings_tab/ChatSettingsTabLinksTab.tsx:43
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:155
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:131
 msgid "Strip tracking parameters from URLs"
 msgstr "URL'lerden izleme parametrelerini kaldır"
 
@@ -31435,7 +31403,7 @@ msgid "SVC mode"
 msgstr "SVC modu"
 
 #. Settings search entry description. One-line summary of what the settings search entry controls.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:387
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:363
 msgid "Swap common text faces such as :) and <3 for emoji when sending messages"
 msgstr "Mesaj gönderirken :) ve <3 gibi yaygın metin ifadelerini emojilerle değiştirin"
 
@@ -31786,7 +31754,7 @@ msgstr "Sekme"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short label in the FluxerTag change modal. Keep it concise.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:61
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:60
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:73
 msgid "Tag"
 msgstr "Etiket"
@@ -31894,7 +31862,7 @@ msgid "temporarily unavailable"
 msgstr "geçici olarak kullanılamıyor"
 
 #. Modal body shown when the user tries to accept a temporary invite while the realtime connection is offline.
-#: src/features/app/components/alerts/TemporaryInviteRequiresPresenceModal.tsx:12
+#: src/features/app/components/alerts/TemporaryInviteRequiresPresenceModal.tsx:13
 msgid "Temporary invites need a live connection. Check yours and try again."
 msgstr "Geçici davetler canlı bağlantı gerektirir. Bağlantınızı kontrol edip tekrar deneyin."
 
@@ -31975,7 +31943,7 @@ msgstr "Metin biçimlendirme"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:383
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:359
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:150
 msgid "Text replacement"
 msgstr "Metin değiştirme"
@@ -32014,12 +31982,12 @@ msgid "Text-to-speech"
 msgstr "Text-to-speech"
 
 #. Body of the TTS-unsupported modal. Mentions specific browsers; keep Chrome, Firefox, Edge, and Brave as literal proper nouns.
-#: src/features/voice/components/alerts/TtsUnsupportedModal.tsx:12
+#: src/features/voice/components/alerts/TtsUnsupportedModal.tsx:13
 msgid "Text-to-speech is not supported by your browser. Some browsers like Brave block this feature for privacy reasons. Try using Chrome, Firefox, or Edge, or adjust your browser's privacy settings."
 msgstr "Tarayıcınız metin okuma özelliğini desteklemiyor. Brave gibi bazı tarayıcılar gizlilik nedeniyle bu özelliği engeller. Chrome, Firefox veya Edge kullanmayı deneyin ya da tarayıcınızın gizlilik ayarlarını düzenleyin."
 
 #. Title of the modal shown when the browser does not support text-to-speech.
-#: src/features/voice/components/alerts/TtsUnsupportedModal.tsx:8
+#: src/features/voice/components/alerts/TtsUnsupportedModal.tsx:9
 msgid "Text-to-speech not supported"
 msgstr "Metin okuma desteklenmiyor"
 
@@ -32122,7 +32090,7 @@ msgid "That's everything in the queue."
 msgstr "Sıradaki her şey bu kadar."
 
 #. Description text in the FluxerTag change modal.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:69
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:68
 msgid "The #0000 tag is reserved for Visionary subscribers. Visionary is no longer available for purchase."
 msgstr "#0000 etiketi Visionary abonelerine özeldir. Visionary artık satın alınamaz."
 
@@ -32180,7 +32148,7 @@ msgid "The file contains the verification token we will fetch from <0>{dnsUrl}</
 msgstr "Dosya, <0>{dnsUrl}</0> adresinden alacağımız doğrulama jetonunu içeriyor."
 
 #. Body of the file-too-large alert when a single file exceeds the per-file size limit.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:23
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:26
 msgid "The file you're trying to upload exceeds the maximum size limit of {maxSizeFormatted}."
 msgstr "Yüklemeye çalıştığınız dosya, {maxSizeFormatted} olan maksimum boyut sınırını aşıyor."
 
@@ -32230,7 +32198,7 @@ msgid "The provided redirect_uri must use HTTP or HTTPS."
 msgstr "Sağlanan redirect_uri HTTP veya HTTPS kullanmalıdır."
 
 #. Body of a modal shown when a browser screen share track ends outside the app, for example from the browser sharing controls.
-#: src/features/voice/engine/v2/VoiceEngineV2AppScreenShareExecutionAdapter.tsx:115
+#: src/features/voice/engine/v2/VoiceEngineV2AppScreenShareExecutionAdapter.tsx:116
 msgctxt "screen-share"
 msgid "The screen share source stopped sending video, so your screen share was stopped."
 msgstr "Ekran paylaşımı kaynağı video göndermeyi durdurdu, bu nedenle ekran paylaşımınız durduruldu."
@@ -32257,7 +32225,7 @@ msgstr "Yükleme hizmeti bu çıkartmayı {maxSize} boyutundan büyük olduğu i
 msgid "The URL of the {productName} instance you want to sign in to."
 msgstr "Oturum açmak istediğiniz {productName} örneğinin URL'si."
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:135
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:134
 msgid "The username <0>{fluxerTag}</0> is already taken. Continuing will reroll your tag automatically."
 msgstr "<0>{fluxerTag}</0> kullanıcı adı zaten alınmış. Devam ederseniz etiketiniz otomatik olarak yeniden belirlenecektir."
 
@@ -32402,7 +32370,7 @@ msgid "There was an error loading the invites. Try again."
 msgstr "Davetiyeler yüklenirken bir hata oluştu. Lütfen tekrar deneyin."
 
 #. Error message in the guild stickers tab.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:75
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:78
 msgid "There was an error loading the stickers. Try again."
 msgstr "Çıkartmalar yüklenirken bir hata oluştu. Tekrar deneyin."
 
@@ -32548,7 +32516,7 @@ msgid "This channel is marked for mature content and may contain material that m
 msgstr "Bu kanal yetişkinlere yönelik içerik barındırmaktadır ve bazı kullanıcılar için uygunsuz olabilecek materyaller içerebilir."
 
 #. Label in the mature content rejected modal.
-#: src/features/moderation/components/alerts/MatureContentRejectedModal.tsx:12
+#: src/features/moderation/components/alerts/MatureContentRejectedModal.tsx:13
 msgid "This channel is not marked for mature content. Mature content can only be sent in channels marked for mature content. Ask a moderator to update this channel if appropriate."
 msgstr "Bu kanal yetişkinlere yönelik içerik için işaretlenmemiş. Yetişkinlere yönelik içerik yalnızca yetişkinlere yönelik olarak işaretlenmiş kanallarda gönderilebilir. Uygunsa bir moderatörden bu kanalı güncellemesini isteyin."
 
@@ -32611,7 +32579,7 @@ msgid "This community has paused invites. You can try again later."
 msgstr "Bu topluluk davetleri duraklattı. Daha sonra tekrar deneyebilirsin."
 
 #. Description text in the guild at capacity modal.
-#: src/features/guild/components/alerts/GuildAtCapacityModal.tsx:12
+#: src/features/guild/components/alerts/GuildAtCapacityModal.tsx:13
 msgid "This community has reached its maximum member limit and is not accepting new members at this time."
 msgstr "Bu topluluk maksimum üye sınırına ulaştı ve şu anda yeni üye kabul etmiyor."
 
@@ -32689,7 +32657,7 @@ msgid "This doesn't look like a valid template response. Make sure you copied th
 msgstr "Bu geçerli bir şablon yanıtı gibi görünmüyor. JSON belgesinin tamamını kopyaladığınızdan emin olun."
 
 #. Generic per-file error text shown when preparing an emoji upload fails.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:88
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:87
 msgid "This emoji could not be prepared. Try another file or try again in a moment."
 msgstr "Bu ifade hazırlanamadı. Başka bir dosya deneyin veya bir süre sonra tekrar deneyin."
 
@@ -32706,7 +32674,7 @@ msgid "This expression is gone"
 msgstr "Bu ifade artık yok"
 
 #. Modal body shown when an instance admin has temporarily disabled a feature. Keep plain.
-#: src/features/app/components/alerts/FeatureTemporarilyDisabledModal.tsx:12
+#: src/features/app/components/alerts/FeatureTemporarilyDisabledModal.tsx:13
 msgid "This feature is paused. Try again later."
 msgstr "Bu özellik duraklatıldı. Lütfen daha sonra tekrar deneyin."
 
@@ -32716,7 +32684,7 @@ msgid "This field has an error"
 msgstr "Bu alanda bir hata var"
 
 #. Error text for animated emoji or SVG uploads that exceed the file size limit. {fileSize} and {maxSize} are formatted file sizes.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:76
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:75
 msgid "This file is {fileSize}, over the {maxSize} limit. Animated emojis and SVGs must already be small enough to upload. Choose a smaller file or shorten the animation."
 msgstr "Bu dosya {fileSize} boyutunda ve {maxSize} sınırını aşıyor. Hareketli emojiler ve SVG'ler zaten yüklenebilecek kadar küçük olmalıdır. Daha küçük bir dosya seçin veya animasyonu kısaltın."
 
@@ -32865,7 +32833,7 @@ msgid "This is not the community you're looking for."
 msgstr "Aradığınız topluluk bu değil."
 
 #. Description text in the too many reactions modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/TooManyReactionsModal.tsx:12
+#: src/features/messaging/components/alerts/TooManyReactionsModal.tsx:13
 msgid "This is one heavy message. Some reactions need to be removed before you can add more."
 msgstr "Bu çok fazla tepki almış bir mesaj. Daha fazla ekleyebilmek için bazı tepkileri kaldırman gerekiyor."
 
@@ -32887,7 +32855,7 @@ msgid "This is the third option description"
 msgstr "Bu, üçüncü seçenek açıklamasıdır"
 
 #. Extra file-too-large alert sentence shown when premium upload-limit upgrades are unavailable.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:39
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:42
 msgid "This limit is configured by your instance administrator."
 msgstr "Bu sınır, yöneticiniz tarafından yapılandırılmıştır."
 
@@ -33602,7 +33570,7 @@ msgid "Too many attempts. Wait a bit, then try again."
 msgstr "Çok fazla deneme yaptınız. Biraz bekleyip tekrar deneyin."
 
 #. Error message in the max guilds modal.
-#: src/features/guild/components/alerts/MaxGuildsModal.tsx:9
+#: src/features/guild/components/alerts/MaxGuildsModal.tsx:10
 msgid "Too many communities"
 msgstr "Çok fazla topluluk"
 
@@ -33659,12 +33627,12 @@ msgid "Track moderator actions across the community."
 msgstr "Topluluk genelindeki moderatör eylemlerini takip edin."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:159
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:135
 msgid "Tracking"
 msgstr "Takip"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:163
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:139
 msgid "Tracking parameters"
 msgstr "İzleme parametreleri"
 
@@ -33697,7 +33665,7 @@ msgstr "Sahiplik {0} kişisine aktarıldı."
 #. Generic action label that translates a message body.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:583
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:255
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:231
 msgid "Translate"
 msgstr "Çevir"
 
@@ -33716,12 +33684,12 @@ msgid "Translations are automated. Help improve localization by emailing <0>{I18
 msgstr "Çeviriler otomatiktir. Yerelleştirmeyi iyileştirmeye yardımcı olmak için <0>{I18N_EMAIL}</0> adresine e-posta gönderin."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:247
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:223
 msgid "Translator"
 msgstr "Çevirmen"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:251
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:227
 msgid "Translators"
 msgstr "Çevirmenler"
 
@@ -33778,14 +33746,14 @@ msgstr "doğru veya yanlış"
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short label in the links tab. Keep it concise.
 #: src/features/user/components/modals/tabs/chat_settings_tab/ChatSettingsTabLinksTab.tsx:27
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:199
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:175
 msgid "Trust all"
 msgstr "Tümüne güven"
 
 #. Label in the links tab.
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #: src/features/user/components/modals/tabs/chat_settings_tab/ChatSettingsTabLinksTab.tsx:39
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:195
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:171
 msgid "Trust all external links"
 msgstr "Tüm harici bağlantılara güven"
 
@@ -33795,17 +33763,17 @@ msgid "Trust all external links?"
 msgstr "Tüm harici bağlantılara güvenilsin mi?"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:203
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:179
 msgid "Trust all links"
 msgstr "Tüm bağlantılara güven"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:211
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:187
 msgid "Trust domain"
 msgstr "Güvenilen alan adı"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:207
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:183
 msgid "Trusted domains"
 msgstr "Güvenilen alan adları"
 
@@ -34032,7 +34000,7 @@ msgstr "Yayın gizliliğini aç"
 #. Label in the input tab.
 #. Settings search entry label. Names the settings search entry in the settings UI.
 #: src/features/user/components/modals/tabs/chat_settings_tab/ChatSettingsTabInputTab.tsx:10
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:363
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:339
 msgid "Turn text smileys into emoji"
 msgstr "Metin gülümsemelerini emojilere dönüştür"
 
@@ -34231,8 +34199,8 @@ msgstr "Önizleme yüklenemiyor."
 msgid "Unable to load profile banner, badges, and bio."
 msgstr "Profil başlığı, rozetler ve biyografi yüklenemiyor."
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:271
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:327
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:272
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:328
 msgid "Unable to prepare any emojis for upload. The following errors occurred:"
 msgstr "Yükleme için hiçbir emoji hazırlanamadı. Şu hatalar oluştu:"
 
@@ -34964,7 +34932,7 @@ msgid "Unsupported icon format"
 msgstr "Desteklenmeyen simge biçimi"
 
 #. Title of the error modal shown when an unsupported sticker file type is selected.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:84
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:87
 msgid "Unsupported sticker file"
 msgstr "Desteklenmeyen çıkartma dosyası"
 
@@ -35167,8 +35135,8 @@ msgstr "Şimdi yükselt"
 
 #. Short label in the max bookmarks modal. Preserve {premiumProductName}; it is inserted by code.
 #. Short label in the max favorite memes modal. Preserve {premiumProductName}; it is inserted by code.
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:36
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:30
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:35
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:29
 msgid "Upgrade to {premiumProductName}"
 msgstr "{premiumProductName} sürümüne yükseltin"
 
@@ -35240,7 +35208,7 @@ msgstr "{label} için özel ses yükle"
 msgid "Upload directly to {displayName}"
 msgstr "Doğrudan {displayName} kişisine yükle"
 
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:453
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:454
 msgid "Upload emoji"
 msgstr "Emoji yükle"
 
@@ -35284,7 +35252,7 @@ msgstr "Ekran paylaşımı için önizleme kareleri yükle."
 msgid "Upload sound"
 msgstr "Ses yükle"
 
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:281
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:286
 msgid "Upload sticker"
 msgstr "Çıkartma yükle"
 
@@ -35889,7 +35857,7 @@ msgstr "kullanıcı, bot veya webhook"
 #. Settings search entry label. Also used as a search synonym in the settings search bar.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:952
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:567
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:218
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:217
 #: src/features/user/components/modals/tabs/my_profile_tab/MyProfileTabUsernameSection.tsx:55
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:53
 msgid "Username"
@@ -35901,7 +35869,7 @@ msgid "Username (optional)"
 msgstr "Kullanıcı adı (isteğe bağlı)"
 
 #. Short label in the FluxerTag change modal. Keep it concise.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:40
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:39
 msgid "Username already taken"
 msgstr "Kullanıcı adı zaten alınmış"
 
@@ -35931,11 +35899,11 @@ msgid "Username must be at most 32 characters"
 msgstr "Kullanıcı adı en fazla 32 karakter olmalı"
 
 #. Short label in the FluxerTag change modal. Keep it concise.
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:44
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:43
 msgid "Username updated"
 msgstr "Kullanıcı adı güncellendi"
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:211
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:210
 msgid "Usernames can only contain letters (a-z, A-Z), numbers (0-9), and underscores. Usernames are case-insensitive."
 msgstr "Kullanıcı adları yalnızca harf (a-z, A-Z), rakam (0-9) ve alt çizgi içerebilir. Kullanıcı adlarında büyük/küçük harf duyarlılığı yoktur."
 
@@ -37028,7 +36996,7 @@ msgid "Volume sliders"
 msgstr "Ses kaydırıcıları"
 
 #. Description text in the message delete too quick modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:12
+#: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:13
 msgid "Wait a moment before deleting more messages."
 msgstr "Daha fazla mesaj silmeden önce bir dakika bekleyin."
 
@@ -37180,7 +37148,7 @@ msgstr "Şu anda mesajı iletemedik."
 msgid "We couldn't import that theme library file."
 msgstr "Bu tema kitaplığı dosyası içe aktarılamadı."
 
-#: src/features/messaging/components/alerts/AttachmentUploadConnectivityModal.tsx:23
+#: src/features/messaging/components/alerts/AttachmentUploadConnectivityModal.tsx:24
 msgid "We couldn't reach the attachment upload service. {PRODUCT_NAME} can fall back to the standard upload path for messages up to {fallbackSizeFormatted} total, but these attachments exceed that combined limit and can't be sent until connectivity is restored. Try again later or contact <0>{SUPPORT_EMAIL}</0> if this keeps happening."
 msgstr "Ek yükleme hizmetine ulaşılamadı. {PRODUCT_NAME}, toplamda {fallbackSizeFormatted} boyutuna kadar olan mesajlar için standart yükleme yoluna geri dönebilir ancak bu ekler birleşik sınırı aşıyor ve bağlantı yeniden sağlanana kadar gönderilemez. Daha sonra tekrar deneyin veya bu durum devam ederse <0>{SUPPORT_EMAIL}</0> ile iletişime geçin."
 
@@ -37223,7 +37191,7 @@ msgid "We recommend saving these codes now so that you don't get locked out of y
 msgstr "Hesabınızdan kilitlenmemek için bu kodları şimdi kaydetmenizi öneririz."
 
 #. Error text for static emoji uploads that still exceed the file size limit after resizing. {fileSize} and {maxSize} are formatted file sizes.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:82
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:81
 msgid "We resized and compressed this emoji to 128x128 pixels, but it is still {fileSize}. The limit is {maxSize}. Try a simpler image, fewer colors, or a smaller source file."
 msgstr "Bu emojiyi 128x128 piksele yeniden boyutlandırıp sıkıştırdık, ancak boyutu hala {fileSize}. Limit {maxSize}. Daha basit bir görsel, daha az renk veya daha küçük bir kaynak dosya deneyin."
 
@@ -37343,7 +37311,7 @@ msgid "Web authentication"
 msgstr "Web kimlik doğrulaması"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:235
+#: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:211
 msgid "Web search"
 msgstr "Web araması"
 
@@ -37689,8 +37657,8 @@ msgstr "Vay canına, tam bir yazma çılgınlığı"
 
 #. Label in the too many attachments modal.
 #. Label in the too many reactions modal.
-#: src/features/messaging/components/alerts/TooManyAttachmentsModal.tsx:9
-#: src/features/messaging/components/alerts/TooManyReactionsModal.tsx:8
+#: src/features/messaging/components/alerts/TooManyAttachmentsModal.tsx:10
+#: src/features/messaging/components/alerts/TooManyReactionsModal.tsx:9
 msgid "Whoa, this is heavy"
 msgstr "Ooo, bu çok fazla"
 
@@ -37773,7 +37741,7 @@ msgid "With {PREMIUM_PRODUCT_NAME}, you can use animated avatars ({ANIMATED_AVAT
 msgstr "{PREMIUM_PRODUCT_NAME} ile, animasyonlu avatarlar ({ANIMATED_AVATAR_FORMATS}), profil başlıkları kullanabilir, etiketlerinizi özelleştirebilir ve diğer birçok {PREMIUM_PRODUCT_NAME} avantajının kilidini açabilirsiniz."
 
 #. Premium upsell sentence in the file-too-large alert. premiumProductName is the paid product name; fileSizeLimit is a localized file size.
-#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:43
+#: src/features/messaging/components/alerts/FileSizeTooLargeModal.tsx:46
 msgid "With {premiumProductName}, your per-file upload limit increases to {fileSizeLimit}, plus animated avatars, longer messages, and many other {premiumProductName} perks."
 msgstr "{premiumProductName} ile dosya başına yükleme limitiniz {fileSizeLimit}'e yükselir, ayrıca animasyonlu avatarlar, daha uzun mesajlar ve diğer birçok {premiumProductName} avantajı elde edersiniz."
 
@@ -37903,7 +37871,7 @@ msgid "You are about to transfer ownership of this community to <0>{0}</0>. This
 msgstr "Bu topluluğun sahipliğini <0>{0}</0> kişisine devretmek üzeresiniz. Bu eylem <1>geri alınamaz</1> ve tüm sahip ayrıcalıklarınızı kaybedersiniz."
 
 #. Error message in the user banned from guild modal. Keep the tone plain and specific.
-#: src/features/moderation/components/alerts/UserBannedFromGuildModal.tsx:12
+#: src/features/moderation/components/alerts/UserBannedFromGuildModal.tsx:13
 msgid "You are banned from this community and cannot join."
 msgstr "Bu topluluktan yasaklandınız ve katılamazsınız."
 
@@ -38026,7 +37994,7 @@ msgid "You can't add new reactions while you're on timeout."
 msgstr "Zaman aşımındayken yeni tepkiler ekleyemezsin."
 
 #. Description text in the attachment permission denied modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:17
+#: src/features/messaging/components/alerts/AttachmentPermissionDeniedModal.tsx:20
 msgid "You can't attach files in this channel."
 msgstr "Bu kanalda dosya ekleyemezsiniz."
 
@@ -38212,11 +38180,11 @@ msgstr "Bu izni kaldıramazsınız çünkü kendinizden de kaldırmış olursunu
 msgid "You changed your nickname in this community from **{previousNickname}** to **{newNickname}**."
 msgstr "Bu toplulukta görünen adınızı **{previousNickname}** olarak değiştirdiniz. Yeni adınız: **{newNickname}**."
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:367
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:362
 msgid "You changed your tag while on {PREMIUM_PRODUCT_NAME}. It will reroll randomly when your {PREMIUM_PRODUCT_NAME} expires on <0>{premiumExpiresAtLabel}</0>, unless it renews."
 msgstr "{PREMIUM_PRODUCT_NAME} aboneliğiniz varken etiketinizi değiştirdiniz. Yenilenmezse, {PREMIUM_PRODUCT_NAME} aboneliğinizin süresi <0>{premiumExpiresAtLabel}</0> tarihinde dolduğunda etiketiniz rastgele yeniden belirlenecektir."
 
-#: src/features/user/components/modals/FluxerTagChangeModal.tsx:374
+#: src/features/user/components/modals/FluxerTagChangeModal.tsx:369
 msgid "You changed your tag while on {PREMIUM_PRODUCT_NAME}. It will reroll randomly when your {PREMIUM_PRODUCT_NAME} expires, unless it renews."
 msgstr "{PREMIUM_PRODUCT_NAME} aboneliğiniz varken etiketinizi değiştirdiniz. Yenilenmediği takdirde, {PREMIUM_PRODUCT_NAME} aboneliğiniz sona erdiğinde etiketiniz rastgele yeniden belirlenecektir."
 
@@ -38534,17 +38502,17 @@ msgid "You're already Visionary"
 msgstr "Zaten Visionary'sin"
 
 #. Modal body shown when the bookmarks limit is reached on a self-hosted instance with no upgrade path. Limit count is interpolated.
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:20
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:19
 msgid "You're at {bookmarksText} — your instance admin sets this cap. Remove one to add another."
 msgstr "{bookmarksText} sınırına ulaştınız. Bu sınırı yöneticiniz belirler. Yeni bir tane eklemek için birini kaldırın."
 
 #. Modal body shown when the bookmarks limit is reached and Plutonium is unavailable on this instance. Limit count is interpolated.
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:25
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:24
 msgid "You're at {bookmarksText}. Remove one to add another."
 msgstr "{bookmarksText} sınırına ulaştınız. Yeni bir tane eklemek için birini kaldırın."
 
 #. Modal body shown when the favorite-memes limit is reached on a self-hosted instance with no Plutonium upgrade path. Limit text is interpolated.
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:20
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:19
 msgid "You're at the cap of {freeItemsText} — your instance admin sets this limit."
 msgstr "{freeItemsText} sınırına ulaştınız. Bu sınırı sunucu yöneticiniz belirler."
 
@@ -38556,12 +38524,12 @@ msgid "You're at the creation limit. Delete one to create another."
 msgstr "Oluşturma sınırına ulaştınız. Yeni bir tane oluşturmak için birini silin."
 
 #. Modal body shown when the free bookmarks limit is reached and Plutonium would increase it. Free and Plutonium limits are interpolated.
-#: src/features/app/components/alerts/MaxBookmarksModal.tsx:30
+#: src/features/app/components/alerts/MaxBookmarksModal.tsx:29
 msgid "You're at the free cap of {bookmarksText}. {premiumProductName} bumps you up to {premiumBookmarksText} — or remove one to add another."
 msgstr "{bookmarksText} olan ücretsiz sınıra ulaştınız. {premiumProductName} sizi {premiumBookmarksText} seviyesine yükseltir veya yeni bir tane eklemek için birini kaldırın."
 
 #. Modal body shown when the free favorite-memes limit is reached and Plutonium would increase it. Free and Plutonium limits are interpolated.
-#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:25
+#: src/features/app/components/alerts/MaxFavoriteMemesModal.tsx:24
 msgid "You're at the free cap of {freeItemsText}. {premiumProductName} bumps you up to {premiumItemsText}."
 msgstr "{freeItemsText} ücretsiz sınırına ulaştınız. {premiumProductName} ile bu sınırı {premiumItemsText} olarak yükseltin."
 
@@ -38573,7 +38541,7 @@ msgid "You're at the install limit. Remove one to add another."
 msgstr "Yükleme sınırına ulaştınız. Başka bir tane eklemek için birini kaldırın."
 
 #. Short label in the user banned from guild modal. Keep it concise. Keep the tone plain and specific.
-#: src/features/moderation/components/alerts/UserBannedFromGuildModal.tsx:8
+#: src/features/moderation/components/alerts/UserBannedFromGuildModal.tsx:9
 msgid "You're banned"
 msgstr "Yasaklandınız"
 
@@ -38598,7 +38566,7 @@ msgid "You're deafened"
 msgstr "Sessizdesiniz."
 
 #. Label in the message delete too quick modal. Keep the tone plain and specific.
-#: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:8
+#: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:9
 msgid "You're deleting messages too quickly"
 msgstr "Mesajları çok hızlı siliyorsunuz"
 
@@ -38757,12 +38725,12 @@ msgid "You've reached the group DM limit"
 msgstr "Grup DM sınırına ulaştınız"
 
 #. Emoji upload limit message in community emoji settings. Do not suggest that communities can be upgraded.
-#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:51
+#: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:50
 msgid "You've reached the maximum number of emojis. Delete some existing emojis to make room."
 msgstr "Maksimum emoji sayısına ulaştınız. Yer açmak için mevcut emojilerden bazılarını silin."
 
 #. Sticker upload limit message in community sticker settings. Do not suggest that communities can be upgraded.
-#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:62
+#: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:65
 msgid "You've reached the maximum number of stickers. Delete some existing stickers to make room."
 msgstr "Çıkartma sınırına ulaştınız. Yer açmak için mevcut çıkartmalardan bazılarını silin."
 
@@ -38835,7 +38803,7 @@ msgid "Your account requires multi-factor authentication, but no supported metho
 msgstr "Hesabınız çok faktörlü kimlik doğrulama gerektiriyor ancak bu cihazda desteklenen bir yöntem ayarlanmamış. Kimlik doğrulayıcı uygulamanızın veya güvenlik anahtarınızın olduğu bir cihazdan oturum açın ya da destek ekibiyle iletişime geçin."
 
 #. Modal body shown when the safety system blocks the requested action. Keep plain and calm; offer support path.
-#: src/features/auth/components/ContentBlockedHandler.tsx:14
+#: src/features/auth/components/ContentBlockedHandler.tsx:15
 msgid "Your action could not be completed because it was flagged by our safety systems. If you believe this is a mistake, please contact support."
 msgstr "İşleminiz güvenlik sistemlerimiz tarafından işaretlendiği için tamamlanamadı. Bunun bir hata olduğunu düşünüyorsanız lütfen destek ekibiyle iletişime geçin."
 
@@ -38960,12 +38928,12 @@ msgid "Your IP address has been successfully authorized."
 msgstr "IP adresinize başarıyla yetki verildi."
 
 #. Error message in the user ip banned from guild modal. Keep the tone plain and specific.
-#: src/features/moderation/components/alerts/UserIpBannedFromGuildModal.tsx:12
+#: src/features/moderation/components/alerts/UserIpBannedFromGuildModal.tsx:13
 msgid "Your IP address is banned from this community and you cannot join."
 msgstr "IP adresiniz bu topluluktan yasaklandı ve katılamazsınız."
 
 #. Label in the user ip banned from guild modal. Keep the tone plain and specific.
-#: src/features/moderation/components/alerts/UserIpBannedFromGuildModal.tsx:8
+#: src/features/moderation/components/alerts/UserIpBannedFromGuildModal.tsx:9
 msgid "Your IP is banned"
 msgstr "IP adresiniz yasaklandı"
 

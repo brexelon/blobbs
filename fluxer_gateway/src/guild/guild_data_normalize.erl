@@ -10,13 +10,16 @@
     channel/1
 ]).
 
--spec guild_data(term()) -> term().
+-spec guild_data
+    (map()) -> map();
+    (term()) -> term().
 guild_data(Data) when is_map(Data) ->
     normalize_nested_map(<<"guild">>, fun guild/1, Data);
 guild_data(Data) ->
     Data.
-
--spec member(term()) -> term().
+-spec member
+    (map()) -> map();
+    (term()) -> term().
 member(Member) when is_map(Member) ->
     Member1 = normalize_nested_map(<<"user">>, fun user/1, Member),
     Member2 = normalize_snowflake_list_field(<<"roles">>, Member1),
@@ -27,7 +30,9 @@ member(Member) when is_map(Member) ->
 member(Member) ->
     Member.
 
--spec role(term()) -> term().
+-spec role
+    (map()) -> map();
+    (term()) -> term().
 role(Role) when is_map(Role) ->
     Role1 = normalize_required_snowflake_field(<<"id">>, Role),
     Role2 = normalize_permission_field(<<"permissions">>, Role1),
@@ -39,7 +44,9 @@ role(Role) when is_map(Role) ->
 role(Role) ->
     Role.
 
--spec channel(term()) -> term().
+-spec channel
+    (map()) -> map();
+    (term()) -> term().
 channel(Channel) when is_map(Channel) ->
     Channel1 = normalize_required_snowflake_field(<<"id">>, Channel),
     Channel2 = normalize_optional_snowflake_field(<<"guild_id">>, Channel1),

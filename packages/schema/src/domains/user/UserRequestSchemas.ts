@@ -52,7 +52,6 @@ import {
 	UserNotificationSettingsSchema,
 } from '@fluxer/schema/src/primitives/UserSettingsValidators';
 import {
-	DiscriminatorType,
 	EmailType,
 	GlobalNameType,
 	PasswordType,
@@ -63,7 +62,6 @@ import {z} from 'zod';
 export const UserUpdateRequest = z
 	.object({
 		username: UsernameType.describe('The username for the account (1-32 characters)'),
-		discriminator: DiscriminatorType.describe('The 4-digit discriminator tag'),
 		global_name: GlobalNameType.nullish().describe('The display name shown to other users'),
 		email: EmailType.describe('The email address for the account'),
 		new_password: PasswordType.describe('The new password to set'),
@@ -187,7 +185,6 @@ export type PasswordChangeCompleteRequest = z.infer<typeof PasswordChangeComplet
 
 export const FriendRequestByTagRequest = z.object({
 	username: UsernameType.describe('Username of the user to send friend request'),
-	discriminator: DiscriminatorType.describe('Discriminator tag of the user'),
 });
 
 export type FriendRequestByTagRequest = z.infer<typeof FriendRequestByTagRequest>;
@@ -272,13 +269,9 @@ export const CreatePrivateChannelRequest = z
 			.optional()
 			.describe(`Array of user IDs for creating a group DM (max ${MAX_GROUP_DM_OTHER_RECIPIENTS})`),
 	})
-	.refine(
-		(data) =>
-			(data.recipient_id != null && data.recipients == null) || (data.recipient_id == null && data.recipients != null),
-		{
-			message: 'Either recipient_id or recipients must be provided, but not both',
-		},
-	);
+	.refine((data) => (data.recipient_id && !data.recipients) || (!data.recipient_id && data.recipients), {
+		message: 'Either recipient_id or recipients must be provided, but not both',
+	});
 
 export type CreatePrivateChannelRequest = z.infer<typeof CreatePrivateChannelRequest>;
 
@@ -457,7 +450,6 @@ export type EmptyBodyRequest = z.infer<typeof EmptyBodyRequest>;
 
 export const UserTagCheckQueryRequest = z.object({
 	username: UsernameType.describe('The username to check'),
-	discriminator: DiscriminatorType.describe('The discriminator to check'),
 });
 
 export type UserTagCheckQueryRequest = z.infer<typeof UserTagCheckQueryRequest>;

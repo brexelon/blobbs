@@ -30,19 +30,19 @@ pub fn user_profile_badges(
             tooltip: "Fluxer Staff".into(),
         });
     }
-    if !is_self_hosted && flags & user_flag_bits::CTP_MEMBER != 0 {
+    if flags & user_flag_bits::CTP_MEMBER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/ctp.svg"),
             tooltip: "Fluxer Community Team".into(),
         });
     }
-    if !is_self_hosted && flags & user_flag_bits::PARTNER != 0 {
+    if flags & user_flag_bits::PARTNER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/partner.svg"),
             tooltip: "Fluxer Partner".into(),
         });
     }
-    if !is_self_hosted && flags & user_flag_bits::BUG_HUNTER != 0 {
+    if flags & user_flag_bits::BUG_HUNTER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/bug-hunter.svg"),
             tooltip: "Fluxer Bug Hunter".into(),

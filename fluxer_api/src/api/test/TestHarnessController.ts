@@ -349,49 +349,6 @@ export function TestHarnessController(app: HonoApp) {
 		await userRepository.patchUpsert(userId, {premium_flags: Number(premiumFlags)}, user.toRow());
 		return ctx.json({success: true});
 	});
-	app.patch('/test/users/:userId/discriminator', async (ctx) => {
-		ensureHarnessAccess(ctx);
-		const params = ctx.req.param() as {
-			userId?: string;
-		};
-		const userIdParam = typeof params === 'object' && params !== null ? params.userId : undefined;
-		if (!userIdParam || userIdParam === 'undefined') {
-			throw new Error(
-				`Missing userId parameter. path=${ctx.req.path}, paramsType=${typeof params}, params=${JSON.stringify(params)}`,
-			);
-		}
-		const userId = createUserID(BigInt(userIdParam));
-		const body = (await ctx.req.json()) as {
-			discriminator?: unknown;
-		};
-		const raw = body.discriminator;
-		if (raw === undefined || raw === null) {
-			throw InputValidationError.fromCode('discriminator', ValidationErrorCodes.DISCRIMINATOR_INVALID_FORMAT);
-		}
-		let discriminator: number;
-		if (typeof raw === 'number') {
-			discriminator = raw;
-		} else if (typeof raw === 'string') {
-			if (!/^\d{1,4}$/.test(raw)) {
-				throw InputValidationError.fromCode('discriminator', ValidationErrorCodes.DISCRIMINATOR_INVALID_FORMAT);
-			}
-			discriminator = Number.parseInt(raw, 10);
-		} else {
-			throw InputValidationError.fromCode('discriminator', ValidationErrorCodes.DISCRIMINATOR_INVALID_FORMAT);
-		}
-		if (!Number.isInteger(discriminator) || discriminator < 0 || discriminator > 9999) {
-			throw InputValidationError.fromCode('discriminator', ValidationErrorCodes.DISCRIMINATOR_OUT_OF_RANGE);
-		}
-		const userRepository = ctx.get('userRepository');
-		const user = await userRepository.findUnique(userId);
-		if (!user) {
-			throw new UnknownUserError();
-		}
-		await userRepository.patchUpsert(userId, {discriminator}, user.toRow());
-		const userCacheService = ctx.get('userCacheService');
-		await userCacheService.invalidateUserCache(userId);
-		return ctx.json({success: true, discriminator});
-	});
 	app.post('/test/users/:userId/acls', async (ctx) => {
 		ensureHarnessAccess(ctx);
 		const params = ctx.req.param() as {

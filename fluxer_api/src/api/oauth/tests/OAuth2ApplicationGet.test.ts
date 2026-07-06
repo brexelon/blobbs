@@ -27,7 +27,7 @@ describe('OAuth2 Application Get', () => {
 		expect(application.bot).toBeDefined();
 		expect(application.bot?.id).toBeTruthy();
 		expect(application.bot?.username).toBeTruthy();
-		expect(application.bot?.discriminator).toBeTruthy();
+		expect(application.bot?.discriminator).toBe('0');
 		expect(application.bot?.token).toBeUndefined();
 		expect(application.client_secret).toBeUndefined();
 	});

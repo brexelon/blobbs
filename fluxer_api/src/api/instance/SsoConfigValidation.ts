@@ -86,7 +86,7 @@ export function normalizeSsoAllowedEmailDomains(domains: Array<string>): Array<s
 	return Array.from(normalized);
 }
 
-export async function validateSsoPublicOutboundUrl(rawUrl: string, fieldName: string): Promise<string> {
+export async function validateSsoPublicOutboundUrl(rawUrl: string, fieldName: string): Promise<URL> {
 	let parsedUrl: URL;
 	try {
 		parsedUrl = new URL(rawUrl);
@@ -104,10 +104,7 @@ export async function validateSsoPublicOutboundUrl(rawUrl: string, fieldName: st
 	} catch {
 		throw InputValidationError.fromCode(fieldName, ValidationErrorCodes.INVALID_URL_FORMAT);
 	}
-	// Return the caller's exact input rather than parsedUrl.toString(), which would normalize
-	// the URL (e.g. appending a trailing slash) and break exact-match comparisons such as the
-	// OIDC issuer check in jwtVerify. Invalid URLs have already thrown above.
-	return rawUrl;
+	return parsedUrl;
 }
 
 async function normalizeOptionalSsoUrl(
@@ -119,7 +116,8 @@ async function normalizeOptionalSsoUrl(
 	if (!normalized || skipValidation) {
 		return normalized;
 	}
-	return validateSsoPublicOutboundUrl(normalized, fieldName);
+	const validUrl = await validateSsoPublicOutboundUrl(normalized, fieldName);
+	return validUrl.toString();
 }
 
 function resolveSsoReadiness(config: SsoConfigValidationInput, isTestProvider: boolean): boolean {

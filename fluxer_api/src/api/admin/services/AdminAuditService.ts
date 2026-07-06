@@ -384,7 +384,7 @@ function mapUserSummary(user: User | null): AuditLogUserSummary | null {
 	return {
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: String(user.discriminator).padStart(4, '0'),
+		discriminator: '0',
 		global_name: user.globalName,
 	};
 }

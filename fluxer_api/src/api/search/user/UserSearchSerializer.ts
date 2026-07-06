@@ -12,7 +12,6 @@ export function convertToSearchableUser(user: User): SearchableUser {
 	return {
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: user.discriminator,
 		email: user.email,
 		isBot: user.isBot,
 		isSystem: user.isSystem,

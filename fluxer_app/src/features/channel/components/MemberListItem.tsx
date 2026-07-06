@@ -19,6 +19,7 @@ import {useTextOverflow} from '@app/features/ui/hooks/useTextOverflow';
 import ContextMenu from '@app/features/ui/state/ContextMenu';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import type {User} from '@app/features/user/models/User';
+import Users from '@app/features/user/state/Users';
 import type {CustomStatus} from '@app/features/user/state/CustomStatus';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
@@ -94,6 +95,7 @@ export const MemberListItem: React.FC<MemberListItemProps> = observer((props) =>
 		enabled: guildId !== undefined && providedCustomStatus === undefined,
 	});
 	const memberListCustomStatus = providedCustomStatus !== undefined ? providedCustomStatus : hookCustomStatus;
+	const resolvedUser = Users.getUser(user.id) ?? user;
 	const [contextMenuOpen, setContextMenuOpen] = useState(false);
 	const isCurrentUser = user.id === Authentication.currentUserId;
 	const isTyping = TypingIndicator.isMemberListTyping(channelId, user.id, Authentication.currentUserId);
@@ -155,26 +157,26 @@ export const MemberListItem: React.FC<MemberListItemProps> = observer((props) =>
 		}
 		return AvatarUtils.getGuildMemberDisplayAvatarURL({
 			guildId,
-			user,
+			user: resolvedUser,
 			memberAvatar: guildMember.avatar,
 			avatarUnset: guildMember.isAvatarUnset(),
 			animated: false,
 			size: avatarMediaSize,
 		});
-	}, [avatarMediaSize, guildId, guildMember, user]);
+	}, [avatarMediaSize, guildId, guildMember, resolvedUser]);
 	const memberHoverAvatarUrl = useMemo(() => {
 		if (!guildId || !guildMember) {
 			return undefined;
 		}
 		return AvatarUtils.getGuildMemberDisplayAvatarURL({
 			guildId,
-			user,
+			user: resolvedUser,
 			memberAvatar: guildMember.avatar,
 			avatarUnset: guildMember.isAvatarUnset(),
 			animated: true,
 			size: avatarMediaSize,
 		});
-	}, [avatarMediaSize, guildId, guildMember, user]);
+	}, [avatarMediaSize, guildId, guildMember, resolvedUser]);
 	const nameContent = (
 		<span
 			ref={nameRef}
@@ -205,7 +207,7 @@ export const MemberListItem: React.FC<MemberListItemProps> = observer((props) =>
 					<span className={styles.content} data-flx="channel.member-list-item.content">
 						<div className={styles.avatarContainer} data-flx="channel.member-list-item.avatar-container">
 							<ListStatusAwareAvatar
-								user={user}
+								user={resolvedUser}
 								size={32}
 								isTyping={isTyping}
 								showOffline={isCurrentUser || isTyping}

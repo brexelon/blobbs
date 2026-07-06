@@ -61,7 +61,7 @@ export class AdminApplicationService {
 		const ownerDisplay: UserDisplay = {
 			username: owner.username,
 			global_name: owner.globalName ?? null,
-			discriminator: String(owner.discriminator).padStart(4, '0'),
+			discriminator: '0',
 		};
 		const botUserIds = applications.map((app) => app.botUserId).filter((id): id is UserID => id !== null);
 		const botDisplays = await this.loadUserDisplays(botUserIds);
@@ -160,7 +160,7 @@ export class AdminApplicationService {
 			map.set(id.toString(), {
 				username: user.username,
 				global_name: user.globalName ?? null,
-				discriminator: String(user.discriminator).padStart(4, '0'),
+				discriminator: '0',
 			});
 		}
 		return map;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {GenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModal';
 import type {User} from '@app/features/user/models/User';
 import {msg, plural} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
+import {GenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModal';
 
 const TOO_MANY_COMMUNITIES_DESCRIPTOR = msg({
 	message: 'Too many communities',

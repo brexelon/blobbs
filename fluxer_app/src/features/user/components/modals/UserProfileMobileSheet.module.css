@@ -139,6 +139,14 @@
 	color: var(--text-tertiary);
 }
 
+.usernameSeparator {
+	color: var(--text-tertiary);
+}
+
+.pronounsInline {
+	color: var(--text-tertiary);
+}
+
 .tagBadgeRow {
 	display: flex;
 	align-items: center;

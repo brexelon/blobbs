@@ -19,12 +19,13 @@ import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import {RelationshipTypes} from '@fluxer/constants/src/UserConstants';
+import * as SnowflakeUtils from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
 import {MagnifyingGlassIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {useMemo, useRef, useState} from 'react';
+import {useMemo, useState} from 'react';
 
 const GROUP_DM_DESCRIPTOR = msg({
 	message: 'Group DM',
@@ -39,12 +40,38 @@ export interface RecipientItem {
 	channelName?: string;
 }
 
+function getRecipientActivitySnowflake(item: RecipientItem): string | null {
+	if (item.channelId) {
+		const channel = Channels.getChannel(item.channelId);
+		if (channel) {
+			return channel.lastMessageId ?? channel.id;
+		}
+	}
+	return null;
+}
+
+function compareRecipientsByActivity(a: RecipientItem, b: RecipientItem): number {
+	const aSnowflake = getRecipientActivitySnowflake(a);
+	const bSnowflake = getRecipientActivitySnowflake(b);
+	if (aSnowflake && bSnowflake) {
+		const activityDiff = SnowflakeUtils.compare(bSnowflake, aSnowflake);
+		if (activityDiff !== 0) {
+			return activityDiff;
+		}
+	}
+	if (aSnowflake && !bSnowflake) {
+		return -1;
+	}
+	if (!aSnowflake && bSnowflake) {
+		return 1;
+	}
+	return NicknameUtils.getNickname(a.user).localeCompare(NicknameUtils.getNickname(b.user));
+}
+
 export const useRecipientItems = () => {
-	const {i18n} = useLingui();
 	const relationships = Relationships.getRelationships();
 	const dmChannels = Channels.dmChannels;
 	const usersSnapshot = Users.usersList;
-	const initialOrderRef = useRef<Array<string> | null>(null);
 	return useMemo(() => {
 		const recipients: Array<RecipientItem> = [];
 		const friends = relationships.filter((r) => r.type === RelationshipTypes.FRIEND);
@@ -90,24 +117,8 @@ export const useRecipientItems = () => {
 				});
 			}
 		});
-		if (initialOrderRef.current === null) {
-			initialOrderRef.current = recipients.map((r) => r.id);
-			return recipients;
-		}
-		const orderMap = new Map(initialOrderRef.current.map((id, index) => [id, index]));
-		const existingIds = new Set(initialOrderRef.current);
-		const sorted = recipients.sort((a, b) => {
-			const aInOrder = existingIds.has(a.id);
-			const bInOrder = existingIds.has(b.id);
-			if (aInOrder && bInOrder) {
-				return (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0);
-			}
-			if (aInOrder) return -1;
-			if (bInOrder) return 1;
-			return 0;
-		});
-		return sorted;
-	}, [relationships, dmChannels, usersSnapshot, i18n.locale]);
+		return recipients.sort(compareRecipientsByActivity);
+	}, [relationships, dmChannels, usersSnapshot]);
 };
 
 interface RecipientListProps {

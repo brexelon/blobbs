@@ -13,3 +13,15 @@
 	flex: 0 0 auto;
 	width: 100%;
 }
+
+.fillParent {
+	flex: 1;
+	min-height: 0;
+	height: 100%;
+}
+
+.fillParentPane {
+	flex: 1;
+	min-height: 0;
+	height: 100%;
+}

@@ -3,7 +3,7 @@
 .contentSection {
 	display: flex;
 	flex-direction: column;
-	gap: 0.5rem;
+	gap: var(--profile-card-section-gap, 0.625rem);
 	padding-top: 0.5rem;
 	padding-left: 1rem;
 	padding-right: 1rem;

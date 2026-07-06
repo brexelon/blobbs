@@ -105,7 +105,6 @@ export interface GuildSearchFilters {
 export interface SearchableUser {
 	id: string;
 	username: string;
-	discriminator: number;
 	email: string | null;
 	isBot: boolean;
 	isSystem: boolean;

@@ -309,7 +309,7 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 		const packActionLabel =
 			pack.type === 'emoji' ? i18n._(INSTALL_EMOJI_PACK_DESCRIPTOR) : i18n._(INSTALL_STICKER_PACK_DESCRIPTOR);
 		const inviterTag = invite.inviter
-			? NicknameUtils.formatTagForStreamerMode(`${invite.inviter.username}#${invite.inviter.discriminator}`)
+			? NicknameUtils.formatTagForStreamerMode(invite.inviter.username)
 			: null;
 		const handleAcceptInvite = () => InviteCommands.acceptAndTransitionToChannel(invite.code, i18n);
 		content = (

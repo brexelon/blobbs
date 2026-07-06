@@ -11,11 +11,13 @@ import memberItemStyles from '@app/features/channel/components/MemberListItem.mo
 import {MemberListUnavailableFallback} from '@app/features/channel/components/shared/MemberListUnavailableFallback';
 import type {Channel} from '@app/features/channel/models/Channel';
 import type {Guild} from '@app/features/guild/models/Guild';
+import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import {OFFLINE_DESCRIPTOR, ONLINE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {resolveMemberListCustomStatus} from '@app/features/member/hooks/useMemberListCustomStatus';
 import {resolveMemberListPresence} from '@app/features/member/hooks/useMemberListPresence';
 import {useMemberListSubscription} from '@app/features/member/hooks/useMemberListSubscription';
 import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
+import GuildMembers from '@app/features/member/state/GuildMembers';
 import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import {
 	buildMemberListLayout,
@@ -44,6 +46,8 @@ import type {CustomStatus} from '@app/features/user/state/CustomStatus';
 import Users from '@app/features/user/state/Users';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
+import Window from '@app/features/window/state/Window';
+import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MEMBER_LIST_RANGE_MAX_SPAN} from '@fluxer/constants/src/GatewayConstants';
 import {GuildFeatures, GuildOperations} from '@fluxer/constants/src/GuildConstants';
@@ -53,6 +57,7 @@ import {useLingui as useLinguiRuntime} from '@lingui/react';
 import {useLingui} from '@lingui/react/macro';
 import {CrownIcon} from '@phosphor-icons/react';
 import clsx from 'clsx';
+import {reaction} from 'mobx';
 import {observer} from 'mobx-react-lite';
 import type {CSSProperties, ReactNode, RefObject, UIEvent} from 'react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -68,7 +73,7 @@ const SUBSCRIPTION_BUFFER_ROWS = 12;
 const SUBSCRIPTION_OVERSCAN_PAGES = 0;
 const RENDER_BUFFER_ROWS = 6;
 const AVATAR_DEFER_AFTER_SCROLL_IDLE_MS = 180;
-const MEMBER_LIST_AVATAR_MEDIA_SIZE = 64;
+const MEMBER_LIST_AVATAR_MEDIA_SIZE = MEDIA_PROXY_AVATAR_SIZE_DEFAULT;
 
 type FrozenMemberListRow =
 	| {
@@ -87,6 +92,7 @@ type FrozenMemberListRow =
 	| {
 			type: 'member';
 			key: string;
+			userId: string;
 			avatarUrl: string;
 			bot: boolean;
 			customStatus: CustomStatus | null;
@@ -174,6 +180,7 @@ function FrozenMemberListItem({row}: {row: Extract<FrozenMemberListRow, {type: '
 						<BaseAvatar
 							size={32}
 							avatarUrl={row.avatarUrl}
+							fallbackAvatarUrl={AvatarUtils.getUserAvatarURL({id: row.userId, avatar: null}, false)}
 							status={row.status}
 							showOffline={row.isCurrentUser}
 							userTag={row.userTag}
@@ -228,13 +235,53 @@ function FrozenMemberListItem({row}: {row: Extract<FrozenMemberListRow, {type: '
 	);
 }
 
+const FrozenMemberListInteractiveItem = observer(function FrozenMemberListInteractiveItem({
+	row,
+	guild,
+	channel,
+}: {
+	row: Extract<FrozenMemberListRow, {type: 'member'}>;
+	guild: Guild;
+	channel: Channel;
+}) {
+	const user = Users.getUser(row.userId);
+	const guildMember = GuildMembers.getMember(guild.id, row.userId);
+	if (!user || !guildMember) {
+		return <FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />;
+	}
+	return (
+		<MemberListItem
+			user={user}
+			channelId={channel.id}
+			guildId={guild.id}
+			guildMember={guildMember}
+			status={row.status}
+			customStatus={row.customStatus}
+			isOwner={guild.isOwner(user.id)}
+			roleColor={row.roleColor}
+			displayName={row.displayName}
+			disableBackdrop={true}
+			avatarMediaSize={MEMBER_LIST_AVATAR_MEDIA_SIZE}
+			data-flx="channel.channel-members.frozen-member-list-interactive-item.member-list-item"
+		/>
+	);
+});
+
+interface FrozenMemberListProps {
+	snapshot: FrozenMemberListSnapshot;
+	scrollerRef: RefObject<ScrollerHandle | null>;
+	guild: Guild;
+	channel: Channel;
+	interactive?: boolean;
+}
+
 const FrozenMemberList = memo(function FrozenMemberList({
 	snapshot,
 	scrollerRef,
-}: {
-	snapshot: FrozenMemberListSnapshot;
-	scrollerRef: RefObject<ScrollerHandle | null>;
-}) {
+	guild,
+	channel,
+	interactive = false,
+}: FrozenMemberListProps) {
 	return (
 		<MemberListContainer
 			channelId={snapshot.channelId}
@@ -280,6 +327,13 @@ const FrozenMemberList = memo(function FrozenMemberList({
 									{row.count}
 								</span>
 							</>
+						) : interactive ? (
+							<FrozenMemberListInteractiveItem
+								row={row}
+								guild={guild}
+								channel={channel}
+								data-flx="channel.channel-members.frozen-member-list.frozen-member-list-interactive-item"
+							/>
 						) : (
 							<FrozenMemberListItem
 								row={row}
@@ -339,16 +393,15 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	const pendingScrollMetricsRef = useRef<{scrollTop: number; clientHeight: number} | null>(null);
 	const scrollerRef = useRef<ScrollerHandle | null>(null);
 	const frozenSnapshotRef = useRef<FrozenMemberListSnapshot | null>(null);
-	const wasSubscriptionPausedRef = useRef(false);
+	const wasPausedRef = useRef(false);
 	const [renderWindowRanges, setRenderWindowRanges] = useState<NormalizedMemberListRanges>(INITIAL_RENDER_RANGES);
 	const [deferAvatarLoad, setDeferAvatarLoad] = useState(false);
-	const [keepFrozenAfterResume, setKeepFrozenAfterResume] = useState(false);
 	const memberListIdentityKey = MemberSidebar.getListIdentityKey(guild.id, channel.id);
 	const memberListUpdatesDisabled = (guild.disabledOperations & GuildOperations.MEMBER_LIST_UPDATES) !== 0;
 	const currentUserId = Authentication.currentUserId;
 	const lacksMemberViewPermission =
 		currentUserId != null && !PermissionUtils.can(Permissions.VIEW_CHANNEL_MEMBERS, currentUserId, channel.toJSON());
-	const {subscribe, isPaused: isSubscriptionPaused} = useMemberListSubscription({
+	const {subscribe, forceSubscribe, resubscribe, isPaused: isSubscriptionPaused} = useMemberListSubscription({
 		guildId: guild.id,
 		channelId: channel.id,
 		enabled: !memberListUpdatesDisabled && !lacksMemberViewPermission,
@@ -397,16 +450,17 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		[memberListState?.hasReceivedInitialPayload, renderWindowRanges, subscribedRanges, totalRows],
 	);
 	const {isInitialLoading, renderRanges} = viewportModel;
-	const canThawFrozenMemberList =
+	const hasLoadedVisibleMembers =
 		!isSubscriptionPaused &&
 		memberListState != null &&
-		memberListState.hasReceivedInitialPayload &&
-		areNormalizedMemberListRangesCovered(subscriptionRangesRef.current, subscribedRanges);
-	const shouldStartResumeFreeze =
+		MemberSidebar.areItemsLoadedForRanges(guild.id, channel.id, subscriptionRangesRef.current);
+	const resyncFrozenSnapshot =
+		frozenSnapshotRef.current?.channelId === memberListIdentityKey ? frozenSnapshotRef.current : null;
+	const shouldShowResyncFrozenList =
 		!isSubscriptionPaused &&
-		wasSubscriptionPausedRef.current &&
-		frozenSnapshotRef.current?.channelId === memberListIdentityKey;
-	const shouldKeepFrozenAfterResume = (keepFrozenAfterResume || shouldStartResumeFreeze) && !canThawFrozenMemberList;
+		!hasLoadedVisibleMembers &&
+		resyncFrozenSnapshot != null &&
+		resyncFrozenSnapshot.rows.some((row) => row.type === 'member');
 	const getGroupName = useCallback(
 		(groupId: string) => {
 			if (groupId === 'online') {
@@ -462,17 +516,16 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		setDeferAvatarLoad(false);
 	}, []);
 	const markAvatarLoadingDeferred = useCallback(() => {
-		if (!deferAvatarLoad) {
-			setDeferAvatarLoad(true);
-		}
+		setDeferAvatarLoad(true);
 		avatarDeferDeadlineRef.current = performance.now() + AVATAR_DEFER_AFTER_SCROLL_IDLE_MS;
-		if (avatarDeferTimerRef.current == null) {
-			avatarDeferTimerRef.current = window.setTimeout(
-				finishAvatarLoadingDeferralAfterIdle,
-				AVATAR_DEFER_AFTER_SCROLL_IDLE_MS,
-			);
+		if (avatarDeferTimerRef.current != null) {
+			window.clearTimeout(avatarDeferTimerRef.current);
 		}
-	}, [deferAvatarLoad, finishAvatarLoadingDeferralAfterIdle]);
+		avatarDeferTimerRef.current = window.setTimeout(
+			finishAvatarLoadingDeferralAfterIdle,
+			AVATAR_DEFER_AFTER_SCROLL_IDLE_MS,
+		);
+	}, [finishAvatarLoadingDeferralAfterIdle]);
 	const flushScrollRangeUpdate = useCallback(() => {
 		scrollFrameRef.current = null;
 		const metrics = pendingScrollMetricsRef.current;
@@ -499,6 +552,51 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		}
 		scheduleRangeUpdate(scrollerState.scrollTop, scrollerState.offsetHeight);
 	}, [scheduleRangeUpdate]);
+	const refreshVisibleMemberList = useCallback(
+		(options?: {force?: boolean}) => {
+		const scrollerState = scrollerRef.current?.getScrollerState();
+		if (!scrollerState) {
+			forceSubscribe(
+				subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
+			);
+			return;
+		}
+			const scrollTop = scrollerState.scrollTop;
+			const clientHeight = scrollerState.offsetHeight;
+			const nextSubscriptionRanges = buildMemberListRangeWindow({
+				scrollTop,
+				clientHeight,
+				rowHeight: scaledMemberItemHeight,
+				rowOffsets,
+				bufferRows: SUBSCRIPTION_BUFFER_ROWS,
+				overscanPages: SUBSCRIPTION_OVERSCAN_PAGES,
+				totalRows: totalRows > 0 ? totalRows : undefined,
+			});
+			const nextRenderRanges = buildMemberListRenderWindow({
+				scrollTop,
+				clientHeight,
+				rowHeight: scaledMemberItemHeight,
+				rowOffsets,
+				bufferRows: RENDER_BUFFER_ROWS,
+				totalRows: totalRows > 0 ? totalRows : undefined,
+			});
+			renderRangesRef.current = nextRenderRanges;
+			setRenderWindowRanges(nextRenderRanges);
+			subscriptionRangesRef.current = nextSubscriptionRanges;
+			if (options?.force) {
+				forceSubscribe(nextSubscriptionRanges);
+				return;
+			}
+			subscribe(nextSubscriptionRanges);
+		},
+		[
+			forceSubscribe,
+			rowOffsets,
+			scaledMemberItemHeight,
+			subscribe,
+			totalRows,
+		],
+	);
 	const handleScroll = useCallback(
 		(event: UIEvent<HTMLDivElement>) => {
 			const target = event.currentTarget;
@@ -515,38 +613,67 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		const initialRenderRanges = INITIAL_RENDER_RANGES;
 		subscriptionRangesRef.current = initialSubscriptionRanges;
 		renderRangesRef.current = initialRenderRanges;
-		wasSubscriptionPausedRef.current = false;
-		setKeepFrozenAfterResume(false);
 		setRenderWindowRanges(initialRenderRanges);
 	}, [memberListIdentityKey, guild.id]);
 	useEffect(() => {
 		if (isSubscriptionPaused) {
+			wasPausedRef.current = true;
 			return;
 		}
-		scheduleRangeUpdateFromScroller();
-	}, [isSubscriptionPaused, scheduleRangeUpdateFromScroller, totalRows]);
-	useEffect(() => {
-		if (isSubscriptionPaused) {
-			wasSubscriptionPausedRef.current = true;
-			setKeepFrozenAfterResume(false);
-			return;
+		if (wasPausedRef.current) {
+			wasPausedRef.current = false;
+			subscriptionRangesRef.current = INITIAL_SUBSCRIPTION_RANGES;
+			renderRangesRef.current = INITIAL_RENDER_RANGES;
+			setRenderWindowRanges(INITIAL_RENDER_RANGES);
 		}
-		if (
-			wasSubscriptionPausedRef.current &&
-			frozenSnapshotRef.current?.channelId === memberListIdentityKey &&
-			!canThawFrozenMemberList
-		) {
-			setKeepFrozenAfterResume(true);
-		}
-		wasSubscriptionPausedRef.current = false;
-	}, [memberListIdentityKey, isSubscriptionPaused, canThawFrozenMemberList]);
-	useEffect(() => {
-		if (keepFrozenAfterResume && canThawFrozenMemberList) {
-			setKeepFrozenAfterResume(false);
-		}
-	}, [keepFrozenAfterResume, canThawFrozenMemberList]);
-	useEffect(() => {
+		let innerFrame: number | null = null;
+		const frame = window.requestAnimationFrame(() => {
+			innerFrame = window.requestAnimationFrame(() => {
+				refreshVisibleMemberList({force: true});
+			});
+		});
 		return () => {
+			window.cancelAnimationFrame(frame);
+			if (innerFrame != null) {
+				window.cancelAnimationFrame(innerFrame);
+			}
+		};
+	}, [isSubscriptionPaused, refreshVisibleMemberList, totalRows]);
+	useEffect(() => {
+		return reaction(
+			() => Window.visible,
+			(active) => {
+				if (!active || isSubscriptionPaused) {
+					return;
+				}
+				MemberSidebar.flushPendingListUpdates();
+				window.requestAnimationFrame(() => {
+					refreshVisibleMemberList({force: true});
+				});
+			},
+		);
+	}, [isSubscriptionPaused, refreshVisibleMemberList]);
+	useEffect(() => {
+		return reaction(
+			() => GatewayConnection.resumeGeneration,
+			() => {
+				if (isSubscriptionPaused) {
+					return;
+				}
+				MemberSidebar.flushPendingListUpdates();
+				refreshVisibleMemberList({force: true});
+			},
+		);
+	}, [isSubscriptionPaused, refreshVisibleMemberList]);
+	useEffect(() => {
+		setDeferAvatarLoad(false);
+		avatarDeferDeadlineRef.current = 0;
+		if (avatarDeferTimerRef.current != null) {
+			window.clearTimeout(avatarDeferTimerRef.current);
+			avatarDeferTimerRef.current = null;
+		}
+		return () => {
+			setDeferAvatarLoad(false);
 			if (scrollFrameRef.current != null) {
 				window.cancelAnimationFrame(scrollFrameRef.current);
 				scrollFrameRef.current = null;
@@ -591,15 +718,20 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			<FrozenMemberList
 				snapshot={currentFrozenSnapshot}
 				scrollerRef={scrollerRef}
+				guild={guild}
+				channel={channel}
 				data-flx="channel.channel-members.lazy-member-list.frozen-member-list"
 			/>
 		);
 	}
-	if (shouldKeepFrozenAfterResume && frozenSnapshotRef.current?.channelId === memberListIdentityKey) {
+	if (shouldShowResyncFrozenList && resyncFrozenSnapshot != null) {
 		return (
 			<FrozenMemberList
-				snapshot={frozenSnapshotRef.current}
+				snapshot={resyncFrozenSnapshot}
 				scrollerRef={scrollerRef}
+				guild={guild}
+				channel={channel}
+				interactive
 				data-flx="channel.channel-members.lazy-member-list.frozen-member-list--2"
 			/>
 		);
@@ -653,7 +785,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				if (!member) {
 					continue;
 				}
-				const user = member.user;
+				const user = Users.getUser(member.user.id) ?? member.user;
 				const displayName = member.nick ?? NicknameUtils.getNickname(user, guild.id);
 				const status = resolveMemberListPresence({guildId: guild.id, channelId: channel.id, userId: user.id});
 				const customStatus = resolveMemberListCustomStatus({
@@ -665,6 +797,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				frozenRows.push({
 					type: 'member',
 					key: `member-${rowIndex}-${user.id}`,
+					userId: user.id,
 					avatarUrl: AvatarUtils.getGuildMemberDisplayAvatarURL({
 						guildId: guild.id,
 						user,
@@ -811,7 +944,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			if (!member) {
 				continue;
 			}
-			const user = member.user;
+			const user = Users.getUser(member.user.id) ?? member.user;
 			const displayName = member.nick ?? NicknameUtils.getNickname(user, guild.id);
 			const status = resolveMemberListPresence({guildId: guild.id, channelId: channel.id, userId: user.id});
 			const customStatus = resolveMemberListCustomStatus({
@@ -823,6 +956,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			frozenRows.push({
 				type: 'member',
 				key: `member-${rowIndex}-${user.id}`,
+				userId: user.id,
 				avatarUrl: AvatarUtils.getGuildMemberDisplayAvatarURL({
 					guildId: guild.id,
 					user,
@@ -870,12 +1004,14 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			);
 		}
 	}
-	frozenSnapshotRef.current = {
-		channelId: memberListIdentityKey,
-		estimatedContentSize: contentHeight,
-		virtualContentHeight,
-		rows: frozenRows,
-	};
+	if (MemberSidebar.areItemsLoadedForRanges(guild.id, channel.id, subscriptionRangesRef.current)) {
+		frozenSnapshotRef.current = {
+			channelId: memberListIdentityKey,
+			estimatedContentSize: contentHeight,
+			virtualContentHeight,
+			rows: frozenRows,
+		};
+	}
 	return (
 		<MemberListContainer
 			channelId={channel.id}

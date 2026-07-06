@@ -99,10 +99,13 @@ interface InstanceServicesPublicConfig {
 	bluesky_enabled: boolean;
 }
 
+export type InstanceGifProvider = 'tenor' | 'klipy';
 export type InstanceCaptchaProvider = 'hcaptcha' | 'turnstile' | 'none';
 type InstanceEmailProvider = 'smtp' | 'none';
 
 interface InstanceGifIntegrationConfig {
+	provider: InstanceGifProvider | null;
+	tenor_api_key: string | null;
 	klipy_api_key: string | null;
 }
 
@@ -158,7 +161,9 @@ interface InstanceIntegrationsConfig {
 	bluesky: InstanceBlueskyIntegrationConfig;
 }
 
-interface InstanceGifEffectiveConfig {
+export interface InstanceGifEffectiveConfig {
+	provider: InstanceGifProvider;
+	tenor_api_key: string | null;
 	klipy_api_key: string | null;
 	active_api_key: string | null;
 	available: boolean;
@@ -175,6 +180,9 @@ export interface InstanceCaptchaEffectiveConfig {
 
 interface InstanceIntegrationsAdminConfig {
 	gif: {
+		provider: InstanceGifProvider | null;
+		effective_provider: InstanceGifProvider;
+		tenor_api_key_set: boolean;
 		klipy_api_key_set: boolean;
 		effective_available: boolean;
 	};
@@ -206,7 +214,6 @@ interface InstanceIntegrationsAdminConfig {
 			secure: boolean | null;
 		};
 		disable_new_ip_authorization: boolean;
-		effective_disable_new_ip_authorization: boolean;
 	};
 	bluesky: {
 		enabled: boolean | null;
@@ -290,7 +297,6 @@ type InstanceRegistrationUrlPublic = Omit<InstanceRegistrationUrl, 'code_hash'>;
 interface InstancePendingRegistration {
 	user_id: string;
 	username: string;
-	discriminator: number;
 	global_name: string | null;
 	email: string | null;
 	requested_at: string;
@@ -433,6 +439,8 @@ function normalizeInstancePolicyConfig(value: unknown): InstancePolicyConfig {
 
 const DEFAULT_INSTANCE_INTEGRATIONS_CONFIG: InstanceIntegrationsConfig = {
 	gif: {
+		provider: null,
+		tenor_api_key: null,
 		klipy_api_key: null,
 	},
 	youtube: {
@@ -485,6 +493,10 @@ const DEFAULT_INSTANCE_ATTACHMENT_DECAY_CONFIG: InstanceAttachmentDecayConfig = 
 const DEFAULT_INSTANCE_MEDIA_CONFIG: InstanceMediaConfig = {
 	attachment_decay: DEFAULT_INSTANCE_ATTACHMENT_DECAY_CONFIG,
 };
+
+function isGifProvider(value: unknown): value is InstanceGifProvider {
+	return value === 'tenor' || value === 'klipy';
+}
 
 function isCaptchaProvider(value: unknown): value is InstanceCaptchaProvider {
 	return value === 'hcaptcha' || value === 'turnstile' || value === 'none';
@@ -551,6 +563,8 @@ function normalizeInstanceIntegrationsConfig(value: unknown): InstanceIntegratio
 		: defaults.bluesky.keys;
 	return {
 		gif: {
+			provider: isGifProvider(gif.provider) ? gif.provider : defaults.gif.provider,
+			tenor_api_key: normalizeSecretString(gif.tenor_api_key),
 			klipy_api_key: normalizeSecretString(gif.klipy_api_key),
 		},
 		youtube: {
@@ -708,7 +722,6 @@ function normalizePendingRegistration(value: unknown): InstancePendingRegistrati
 	return {
 		user_id: value.user_id,
 		username: value.username,
-		discriminator: typeof value.discriminator === 'number' ? value.discriminator : 0,
 		global_name: normalizeNullableString(value.global_name),
 		email: normalizeNullableString(value.email),
 		requested_at: requestedAt,
@@ -1203,17 +1216,27 @@ export class InstanceConfigRepository {
 
 	async getEffectiveGifConfig(): Promise<InstanceGifEffectiveConfig> {
 		const integrations = await this.getInstanceIntegrationsConfig();
+		const provider = integrations.gif.provider ?? Config.gif.provider;
+		const tenorApiKey = integrations.gif.tenor_api_key ?? normalizeSecretString(Config.tenor.apiKey);
 		const klipyApiKey = integrations.gif.klipy_api_key ?? normalizeSecretString(Config.klipy.apiKey);
+		const activeApiKey = provider === 'tenor' ? tenorApiKey : klipyApiKey;
 		return {
+			provider,
+			tenor_api_key: tenorApiKey,
 			klipy_api_key: klipyApiKey,
-			active_api_key: klipyApiKey,
-			available: Boolean(klipyApiKey),
+			active_api_key: activeApiKey,
+			available: Boolean(activeApiKey),
 		};
 	}
 
 	async getEffectiveYoutubeApiKey(): Promise<string | null> {
 		const integrations = await this.getInstanceIntegrationsConfig();
 		return integrations.youtube.api_key ?? normalizeSecretString(Config.youtube.apiKey);
+	}
+
+	async getEffectiveKlipyApiKey(): Promise<string | null> {
+		const integrations = await this.getInstanceIntegrationsConfig();
+		return integrations.gif.klipy_api_key ?? normalizeSecretString(Config.klipy.apiKey);
 	}
 
 	async getEffectiveCaptchaConfig(): Promise<InstanceCaptchaEffectiveConfig> {
@@ -1307,6 +1330,9 @@ export class InstanceConfigRepository {
 		]);
 		return {
 			gif: {
+				provider: integrations.gif.provider,
+				effective_provider: gif.provider,
+				tenor_api_key_set: secretIsSet(integrations.gif.tenor_api_key) || secretIsSet(Config.tenor.apiKey),
 				klipy_api_key_set: secretIsSet(integrations.gif.klipy_api_key) || secretIsSet(Config.klipy.apiKey),
 				effective_available: gif.available,
 			},
@@ -1340,7 +1366,6 @@ export class InstanceConfigRepository {
 					secure: email.smtp?.secure ?? null,
 				},
 				disable_new_ip_authorization: integrations.email.disable_new_ip_authorization ?? false,
-				effective_disable_new_ip_authorization: integrations.email.disable_new_ip_authorization || !email.enabled,
 			},
 			bluesky: {
 				enabled: integrations.bluesky.enabled,

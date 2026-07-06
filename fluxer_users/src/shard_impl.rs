@@ -19,6 +19,7 @@ use scylla::value::MaybeEmpty;
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::warn;
 
 #[cfg(feature = "scylla")]
 type OptionalTimestamp = Option<MaybeEmpty<DateTime<Utc>>>;
@@ -54,7 +55,7 @@ const FULL_USER_COLUMNS: &str = "\
 const USER_BATCH_SIZE: usize = 128;
 const USER_BATCH_CONCURRENCY: usize = 8;
 const FLUXER_SYSTEM_USER_ID: i64 = 0;
-const FLUXER_SYSTEM_USERNAME: &str = "Fluxer";
+const FLUXER_SYSTEM_USERNAME: &str = "ZVLN";
 const FLUXER_SYSTEM_DISCRIMINATOR: i32 = 0;
 const USER_FLAG_STAFF: i64 = 1;
 
@@ -89,7 +90,7 @@ struct ScyllaUsersStorage {
 struct FullUserDbRow {
     user_id: i64,
     username: String,
-    discriminator: i32,
+    discriminator: Option<i32>,
     bot: Option<bool>,
     system: Option<bool>,
     email: Option<String>,
@@ -151,6 +152,7 @@ struct FullUserDbRow {
 struct FullUserKvRow {
     user_id: i64,
     username: String,
+    #[serde(default)]
     discriminator: i32,
     bot: Option<bool>,
     system: Option<bool>,
@@ -292,8 +294,8 @@ impl UsersShard {
             }
             match self.cache.get(&user_id).await {
                 Some(Some(user)) => partials.push(user.to_partial()),
-                Some(None) => {}
-                None => misses.push(user_id),
+                // Re-verify negative cache entries instead of treating them as permanently missing.
+                Some(None) | None => misses.push(user_id),
             }
         }
         if misses.is_empty() {
@@ -308,8 +310,24 @@ impl UsersShard {
             .buffer_unordered(USER_BATCH_CONCURRENCY)
             .collect::<Vec<_>>()
             .await;
+        let mut fetched_user_ids = std::collections::HashSet::new();
         for fetched in fetched_batches {
-            partials.extend(fetched?.into_iter().map(|user| user.to_partial()));
+            match fetched {
+                Ok(batch_users) => {
+                    for user in &batch_users {
+                        fetched_user_ids.insert(user.user_id);
+                    }
+                    partials.extend(batch_users.into_iter().map(|user| user.to_partial()));
+                }
+                Err(error) => {
+                    warn!(error = %error, "failed to fetch user batch; continuing with partial results");
+                }
+            }
+        }
+        for user_id in misses {
+            if !fetched_user_ids.contains(&user_id) {
+                self.cache.insert(user_id, None).await;
+            }
         }
         Ok(partials)
     }
@@ -364,17 +382,8 @@ impl UsersShard {
                 return Ok(users);
             }
         };
-        let found_ids = fetched_users
-            .iter()
-            .map(|user| user.user_id)
-            .collect::<std::collections::HashSet<_>>();
         for user in &fetched_users {
             self.cache.insert(user.user_id, Some(user.clone())).await;
-        }
-        for user_id in user_ids {
-            if !found_ids.contains(&user_id) {
-                self.cache.insert(user_id, None).await;
-            }
         }
         users.extend(fetched_users);
         Ok(users)
@@ -382,12 +391,18 @@ impl UsersShard {
 
     async fn fetch_user_batch_individually(&self, user_ids: Vec<i64>) -> anyhow::Result<Vec<User>> {
         let users = stream::iter(user_ids)
-            .map(|user_id| async move { self.get_full_user(user_id).await })
+            .map(|user_id| async move {
+                match self.get_full_user(user_id).await {
+                    Ok(user) => user,
+                    Err(error) => {
+                        warn!(user_id, error = %error, "failed to fetch user during batch recovery");
+                        None
+                    }
+                }
+            })
             .buffer_unordered(USER_BATCH_CONCURRENCY)
             .collect::<Vec<_>>()
             .await
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .flatten()
             .collect();
@@ -428,9 +443,20 @@ impl PostgresUsersStorage {
             .map(|user_id| postgres::kv_key(&[KeyPart::BigInt(*user_id)]))
             .collect::<anyhow::Result<Vec<_>>>()?;
         let rows = self.kv.get_rows("users", &keys).await?;
-        rows.into_iter()
-            .map(|(_, row)| decode_postgres_user(row))
-            .collect()
+        let mut users = Vec::with_capacity(rows.len());
+        for (row_key, row) in rows {
+            match decode_postgres_user(row) {
+                Ok(user) => users.push(user),
+                Err(error) => {
+                    warn!(
+                        row_key = %row_key,
+                        error = %error,
+                        "failed to decode user row during postgres batch fetch"
+                    );
+                }
+            }
+        }
+        Ok(users)
     }
 }
 
@@ -449,8 +475,16 @@ impl ScyllaUsersStorage {
             .execute_unpaged(&self.stmt_full_batch, (user_ids,))
             .await?;
         let rows = result.into_rows_result()?;
-        let rows: Vec<FullUserDbRow> = rows.rows::<FullUserDbRow>()?.collect::<Result<_, _>>()?;
-        Ok(rows.into_iter().map(User::from).collect::<Vec<_>>())
+        let mut users = Vec::new();
+        for row in rows.rows::<FullUserDbRow>()? {
+            match row {
+                Ok(db_row) => users.push(User::from(db_row)),
+                Err(error) => {
+                    warn!(error = %error, "failed to decode user row during scylla batch fetch");
+                }
+            }
+        }
+        Ok(users)
     }
 }
 
@@ -593,7 +627,7 @@ impl From<FullUserDbRow> for User {
         Self {
             user_id: row.user_id,
             username: row.username,
-            discriminator: row.discriminator,
+            discriminator: row.discriminator.unwrap_or_default(),
             bot: row.bot,
             system: row.system,
             email: row.email,
@@ -749,7 +783,7 @@ mod tests {
         let partial = fluxer_system_user().to_partial();
 
         assert_eq!(partial.user_id, 0);
-        assert_eq!(partial.username, "Fluxer");
+        assert_eq!(partial.username, FLUXER_SYSTEM_USERNAME);
         assert_eq!(partial.discriminator, 0);
         assert_eq!(partial.global_name, None);
         assert_eq!(partial.bot, Some(true));
@@ -785,5 +819,19 @@ mod tests {
         assert_eq!(user.date_of_birth.as_deref(), Some("1815-12-10"));
         assert_eq!(user.premium_since, Some(1_781_526_896_789));
         assert_eq!(user.version, 3);
+    }
+
+    #[test]
+    fn postgres_user_decoder_defaults_missing_discriminator_to_zero() {
+        let user = decode_postgres_user(json!({
+            "user_id": {"__fluxer_type": "bigint", "value": "42"},
+            "username": "ada",
+            "avatar_hash": "avatar_hash",
+            "version": 1
+        }))
+        .unwrap();
+
+        assert_eq!(user.discriminator, 0);
+        assert_eq!(user.avatar_hash.as_deref(), Some("avatar_hash"));
     }
 }

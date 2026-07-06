@@ -22,7 +22,7 @@ export function resolveMemberListPresence({
 	enabled = true,
 }: UseMemberListPresenceOptions): StatusType {
 	const memberListPresence = enabled ? MemberSidebar.getPresence(guildId, channelId, userId) : null;
-	if (memberListPresence !== null) {
+	if (memberListPresence !== null && !isOfflineStatus(memberListPresence)) {
 		return memberListPresence;
 	}
 	const presenceStatus = Presence.getStatus(userId);
@@ -33,7 +33,7 @@ export function resolveMemberListPresence({
 	if (transientStatus !== null && !isOfflineStatus(transientStatus)) {
 		return transientStatus;
 	}
-	return transientStatus ?? StatusTypes.OFFLINE;
+	return memberListPresence ?? transientStatus ?? StatusTypes.OFFLINE;
 }
 
 export function useMemberListPresence({

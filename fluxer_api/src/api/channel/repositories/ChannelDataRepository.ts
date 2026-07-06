@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import type {ChannelID, GuildID, MessageID, UserID} from '../../BrandedTypes';
 import {BatchBuilder, fetchMany, fetchManyInChunks, fetchOne, upsertOne} from '../../database/CassandraQueryExecution';
 import {Db} from '../../database/CassandraTypes';
@@ -187,7 +188,11 @@ export class ChannelDataRepository extends IChannelDataRepository {
 			channel_ids: chunk,
 			soft_deleted: false,
 		}));
-		return channels.map((channel) => new Channel(channel));
+		// Threads live in the channels table but are enumerated via threads_by_parent; exclude them
+		// here so they never count toward channel limits or appear in guild channel ordering.
+		return channels
+			.filter((channel) => channel.type !== ChannelTypes.GUILD_THREAD)
+			.map((channel) => new Channel(channel));
 	}
 
 	async listChannels(channelIds: Array<ChannelID>): Promise<Array<Channel>> {

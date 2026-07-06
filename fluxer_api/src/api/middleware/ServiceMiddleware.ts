@@ -82,7 +82,6 @@ import {UserChannelRequestService} from '../user/services/UserChannelRequestServ
 import {UserContentRequestService} from '../user/services/UserContentRequestService';
 import {UserRelationshipRequestService} from '../user/services/UserRelationshipRequestService';
 import {UserService} from '../user/services/UserService';
-import {resolveRequestClientIp} from '../utils/IpUtils';
 import {VoicePresenceHeartbeatStore} from '../voice/VoicePresenceHeartbeatStore';
 import {VoiceService} from '../voice/VoiceService';
 import {WebhookRequestService} from '../webhook/WebhookRequestService';
@@ -117,7 +116,6 @@ import {
 	getChannelRepository,
 	getConnectionRepository,
 	getContactChangeLogService,
-	getDiscriminatorService,
 	getDonationRepository,
 	getDownloadService,
 	getEmailChangeRepository,
@@ -365,7 +363,7 @@ function getLiveKitWebhookService(): LiveKitWebhookService | null {
 export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => {
 	const apiContext = createApiContext({
 		requestId: ctx.get('requestId') ?? crypto.randomUUID(),
-		clientIp: resolveRequestClientIp(ctx.req.raw),
+		clientIp: ctx.req.header('x-forwarded-for') ?? null,
 		userAgent: ctx.req.header('user-agent') ?? null,
 	});
 	ctx.set('apiContext', apiContext);
@@ -398,7 +396,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	const readStateService = getReadStateService();
 	const guildAuditLogService = getGuildAuditLogService();
 	const botAuthService = getBotAuthService();
-	const discriminatorService = getDiscriminatorService();
 	const userCacheService = createUserCacheService();
 	await ensureVirusScanInitialized();
 	const virusScanService = getVirusScanServiceInstance();
@@ -457,7 +454,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		inviteService,
 		instanceConfigRepository: getInstanceConfigRepository(),
 		singleCommunityService,
-		discriminatorService,
 		kvActivityTracker: getKVActivityTracker(),
 		registrationRiskEvaluator: registrationRiskEvaluator ?? noopRegistrationRiskEvaluator,
 		accountPolicyEvaluator,
@@ -470,7 +466,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	const ssoService = new SsoService(
 		apiContext,
 		getInstanceConfigRepository(),
-		discriminatorService,
 		getKVActivityTracker(),
 	);
 	const desktopHandoffService = new DesktopHandoffService(apiContext);
@@ -514,7 +509,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		channelRepository,
 		guildService,
 		entityAssetService,
-		discriminatorService,
 		guildRepository,
 		userPermissionUtils,
 		getKVAccountDeletionQueue(),
@@ -551,7 +545,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		channelRepository,
 		getAdminRepository(),
 		inviteRepository,
-		discriminatorService,
 		guildService,
 		userCacheService,
 		channelService,
@@ -587,7 +580,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		channelRepository,
 		userCacheService,
 		entityAssetService,
-		discriminatorService,
 		botAuthService,
 	});
 	const oauth2Service = new OAuth2Service(apiContext, {applicationRepository, oauth2TokenRepository});
@@ -698,7 +690,6 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 			readStateService,
 			apiContext,
 			gatewayService,
-			discriminatorService,
 			getFavoriteMemeRepository(),
 			botAuthService,
 			inviteRepository,

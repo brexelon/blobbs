@@ -2,6 +2,8 @@
 
 import {AdminACLs} from '@fluxer/constants/src/AdminACLs';
 import {
+	DeleteReportRequest,
+	DeleteReportResponse,
 	ListReportsRequest,
 	ListReportsResponse,
 	ReportAdminResponseSchema,
@@ -90,6 +92,35 @@ export function ReportAdminController(app: HonoApp) {
 					createReportID(report_id),
 					adminUserId,
 					public_comment || null,
+					auditLogReason,
+				),
+			);
+		},
+	);
+	app.post(
+		'/admin/reports/delete',
+		RateLimitMiddleware(RateLimitConfigs.ADMIN_LOOKUP),
+		requireAdminACL(AdminACLs.REPORT_DELETE),
+		Validator('json', DeleteReportRequest),
+		OpenAPI({
+			operationId: 'delete_report',
+			summary: 'Delete report',
+			description:
+				'Permanently deletes a report from the database and removes it from the search index. Creates an audit log entry. Requires REPORT_DELETE permission.',
+			responseSchema: DeleteReportResponse,
+			statusCode: 200,
+			security: 'adminApiKey',
+			tags: 'Admin',
+		}),
+		async (ctx) => {
+			const adminService = ctx.get('adminService');
+			const adminUserId = ctx.get('adminUserId');
+			const auditLogReason = ctx.get('auditLogReason');
+			const {report_id} = ctx.req.valid('json');
+			return ctx.json(
+				await adminService.reportServiceAggregate.deleteReport(
+					createReportID(report_id),
+					adminUserId,
 					auditLogReason,
 				),
 			);

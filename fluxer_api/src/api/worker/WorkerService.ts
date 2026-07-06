@@ -29,6 +29,20 @@ export class WorkerService implements IWorkerService<WorkerTaskName> {
 		const payloadRecord = payload as Record<string, unknown>;
 		const enrichedPayload = skipLedger ? payloadRecord : {...payloadRecord, __jobId: jobId.toString()};
 		try {
+			const lane = findLaneForTask(taskType);
+			if (!skipLedger) {
+				await this.ledger.createJob({
+					jobId,
+					taskType,
+					payload: payload as Record<string, unknown>,
+					requestedByUserId: options?.requestedByUserId ?? null,
+					auditLogReason: options?.auditLogReason ?? null,
+					maxAttempts: options?.maxAttempts ?? 5,
+					runAt: options?.runAt ?? null,
+					jetStreamLane: lane,
+					jetStreamSeq: null,
+				});
+			}
 			const seq = await this.queue.enqueue(taskType, enrichedPayload, {
 				...(options?.runAt !== undefined && {runAt: options.runAt}),
 				...(options?.maxAttempts !== undefined && {maxAttempts: options.maxAttempts}),
@@ -36,21 +50,10 @@ export class WorkerService implements IWorkerService<WorkerTaskName> {
 				...(options?.jobKey !== undefined && {jobKey: options.jobKey}),
 			});
 			if (!skipLedger) {
-				const lane = findLaneForTask(taskType);
 				try {
-					await this.ledger.createJob({
-						jobId,
-						taskType,
-						payload: payload as Record<string, unknown>,
-						requestedByUserId: options?.requestedByUserId ?? null,
-						auditLogReason: options?.auditLogReason ?? null,
-						maxAttempts: options?.maxAttempts ?? 5,
-						runAt: options?.runAt ?? null,
-						jetStreamLane: lane,
-						jetStreamSeq: seq,
-					});
+					await this.ledger.setJetStreamSeq(jobId, seq);
 				} catch (ledgerErr) {
-					Logger.error({err: ledgerErr, jobId: jobId.toString(), taskType}, 'Failed to write ledger row for job');
+					Logger.error({err: ledgerErr, jobId: jobId.toString(), taskType}, 'Failed to record JetStream seq for job');
 				}
 			}
 			Logger.debug({taskType, jobId: jobId.toString(), seq}, 'Job queued successfully');

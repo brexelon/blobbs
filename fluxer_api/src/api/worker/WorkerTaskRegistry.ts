@@ -12,7 +12,9 @@ import batchGuildAuditLogMessageDeletes from './tasks/BatchGuildAuditLogMessageD
 import bulkDeleteSelfMessagesImmediate from './tasks/BulkDeleteSelfMessagesImmediate';
 import bulkDeleteUserMessages from './tasks/BulkDeleteUserMessages';
 import bulkDeleteUserMessagesScoped from './tasks/BulkDeleteUserMessagesScoped';
+import closeExpiredThreads from './tasks/CloseExpiredThreads';
 import deleteUserMessagesInGuildByTime from './tasks/DeleteUserMessagesInGuildByTime';
+import enqueueGifFeaturedCategoriesRefresh from './tasks/EnqueueGifFeaturedCategoriesRefresh';
 import expireAttachments from './tasks/ExpireAttachments';
 import extractEmbeds from './tasks/ExtractEmbeds';
 import finalizeNcmecAttachmentReport from './tasks/FinalizeNcmecAttachmentReport';
@@ -33,6 +35,7 @@ import processPremiumStateReconciliationQueue from './tasks/ProcessPremiumStateR
 import processStripeWebhook from './tasks/ProcessStripeWebhook';
 import prunePostgresKvTtl from './tasks/PrunePostgresKvTtl';
 import reconcileUserPayments from './tasks/ReconcileUserPayments';
+import refreshGifFeaturedCategories from './tasks/RefreshGifFeaturedCategories';
 import refreshSearchIndex from './tasks/RefreshSearchIndex';
 import revalidateUserConnections from './tasks/RevalidateUserConnections';
 import {sendScheduledMessage} from './tasks/SendScheduledMessage';
@@ -48,6 +51,7 @@ import type {WorkerTaskName} from './WorkerLaneConfig';
 export const workerTasks: Record<WorkerTaskName, WorkerTaskHandler> = {
 	applicationProcessDeletion,
 	batchGuildAuditLogMessageDeletes,
+	closeExpiredThreads,
 	bulkAddGuildMembers: bulkAddGuildMembers,
 	bulkBanFileShas: bulkBanFileShas,
 	bulkDeleteSelfMessagesImmediate,
@@ -58,6 +62,7 @@ export const workerTasks: Record<WorkerTaskName, WorkerTaskHandler> = {
 	bulkUpdateSuspiciousActivityFlags: bulkUpdateSuspiciousActivityFlags,
 	bulkUpdateUserFlags: bulkUpdateUserFlags,
 	deleteUserMessagesInGuildByTime,
+	enqueueGifFeaturedCategoriesRefresh,
 	expireAttachments,
 	extractEmbeds,
 	finalizeNcmecAttachmentReport,
@@ -77,6 +82,7 @@ export const workerTasks: Record<WorkerTaskName, WorkerTaskHandler> = {
 	processPremiumStateReconciliationQueue,
 	reconcileUserPayments,
 	prunePostgresKvTtl,
+	refreshGifFeaturedCategories,
 	refreshSearchIndex,
 	revalidateUserConnections,
 	sendScheduledMessage,

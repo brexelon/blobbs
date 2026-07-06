@@ -658,7 +658,7 @@ class Messages {
 
 	@action
 	handlePresenceUpdate(action: PresenceUpdateAction): boolean {
-		if (!action.presence.user.username && !action.presence.user.avatar && !action.presence.user.discriminator) {
+		if (!action.presence.user.username && !action.presence.user.avatar) {
 			return false;
 		}
 		const userId = action.presence.user.id;

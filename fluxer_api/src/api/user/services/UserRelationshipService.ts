@@ -10,7 +10,6 @@ import {CannotBlockSystemUserError} from '@fluxer/errors/src/domains/user/Cannot
 import {CannotSendFriendRequestToBlockedUserError} from '@fluxer/errors/src/domains/user/CannotSendFriendRequestToBlockedUserError';
 import {CannotSendFriendRequestToSelfError} from '@fluxer/errors/src/domains/user/CannotSendFriendRequestToSelfError';
 import {FriendRequestBlockedError} from '@fluxer/errors/src/domains/user/FriendRequestBlockedError';
-import {InvalidDiscriminatorError} from '@fluxer/errors/src/domains/user/InvalidDiscriminatorError';
 import {MaxRelationshipsError} from '@fluxer/errors/src/domains/user/MaxRelationshipsError';
 import {NoUsersWithFluxertagError} from '@fluxer/errors/src/domains/user/NoUsersWithFluxertagError';
 import {UnclaimedAccountCannotAcceptFriendRequestsError} from '@fluxer/errors/src/domains/user/UnclaimedAccountCannotAcceptFriendRequestsError';
@@ -37,7 +36,7 @@ import type {UserPermissionUtils} from '../../utils/UserPermissionUtils';
 import type {IUserAccountRepository} from '../repositories/IUserAccountRepository';
 import type {IUserRelationshipRepository} from '../repositories/IUserRelationshipRepository';
 import type {IUserSettingsRepository} from '../repositories/IUserSettingsRepository';
-import {getCachedUserPartialResponse} from '../UserCacheHelpers';
+import {getCachedUserPartialResponse, mapUserToPartialResponseWithCache} from '../UserCacheHelpers';
 import {mapRelationshipToResponse} from '../UserMappers';
 import type {DirectMessageSpamMitigationService} from './DirectMessageSpamMitigationService';
 import {createDirectMessageSpamMitigationService} from './DirectMessageSpamMitigationService';
@@ -82,12 +81,8 @@ export class UserRelationshipService {
 		userCacheService: UserCacheService;
 		requestCache: RequestCache;
 	}): Promise<Relationship> {
-		const {username, discriminator} = data;
-		const discrimValue = discriminator;
-		if (!Number.isInteger(discrimValue) || discrimValue < 0 || discrimValue > 9999) {
-			throw new InvalidDiscriminatorError();
-		}
-		const targetUser = await this.userRepository.findByUsernameDiscriminator(username, discrimValue);
+		const {username} = data;
+		const targetUser = await this.userRepository.findByUsername(username.toLowerCase());
 		if (!targetUser) {
 			throw new NoUsersWithFluxertagError();
 		}
@@ -644,6 +639,24 @@ export class UserRelationshipService {
 		}
 	}
 
+	private async seedRelationshipUserPartials(params: {
+		userIds: Array<UserID>;
+		userCacheService: UserCacheService;
+		requestCache: RequestCache;
+	}): Promise<void> {
+		const {userIds, userCacheService, requestCache} = params;
+		const missingUserIds = userIds.filter((userId) => !requestCache.userPartials.has(userId));
+		if (missingUserIds.length === 0) {
+			return;
+		}
+		const users = await Promise.all(missingUserIds.map((userId) => this.userRepository.findUnique(userId)));
+		for (const user of users) {
+			if (user) {
+				await mapUserToPartialResponseWithCache({user, userCacheService, requestCache});
+			}
+		}
+	}
+
 	private async createFriendRequest({
 		userId,
 		targetId,
@@ -655,6 +668,7 @@ export class UserRelationshipService {
 		userCacheService: UserCacheService;
 		requestCache: RequestCache;
 	}): Promise<Relationship> {
+		await this.seedRelationshipUserPartials({userIds: [userId, targetId], userCacheService, requestCache});
 		const now = new Date();
 		const userRelationship = await this.userRepository.upsertRelationship({
 			source_user_id: userId,

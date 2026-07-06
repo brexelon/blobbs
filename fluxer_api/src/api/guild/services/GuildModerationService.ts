@@ -8,7 +8,6 @@ import {MissingPermissionsError} from '@fluxer/errors/src/domains/core/MissingPe
 import {BannedFromGuildError} from '@fluxer/errors/src/domains/guild/BannedFromGuildError';
 import {IpBannedFromGuildError} from '@fluxer/errors/src/domains/guild/IpBannedFromGuildError';
 import {UnknownGuildMemberError} from '@fluxer/errors/src/domains/guild/UnknownGuildMemberError';
-import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
 import {isSameIpDecisionMatch} from '@fluxer/ip_utils/src/IpAddress';
 import type {GuildBanResponse} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import type {IpInfoService} from '@pkgs/geoip/src/IpInfoService';
@@ -27,6 +26,7 @@ import type {GuildAuditLogChange} from '../GuildAuditLogTypes';
 import {mapGuildBansToResponse} from '../GuildModel';
 import type {IGuildRepositoryAggregate} from '../repositories/IGuildRepositoryAggregate';
 import {GuildMemberSearchIndexService} from './member/GuildMemberSearchIndexService';
+import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
 
 export class GuildModerationService {
 	private readonly searchIndexService: GuildMemberSearchIndexService;

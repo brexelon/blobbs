@@ -99,7 +99,6 @@ describe('UserRelationshipStateTransitions', () => {
 				harness,
 				alice.token,
 				bobProfile.username,
-				bobProfile.discriminator,
 			);
 			assertRelationshipType(rel, RelationshipTypes.OUTGOING_REQUEST);
 			expect(rel.user.id).toBe(bob.userId);
@@ -268,19 +267,11 @@ describe('UserRelationshipStateTransitions', () => {
 				.expect(HTTP_STATUS.NOT_FOUND, 'UNKNOWN_USER')
 				.execute();
 		});
-		test('friend request by tag with invalid discriminator', async () => {
-			const alice = await createTestAccount(harness);
-			await createBuilder(harness, alice.token)
-				.post('/users/@me/relationships')
-				.body({username: 'testuser', discriminator: 99999})
-				.expect(HTTP_STATUS.BAD_REQUEST, 'INVALID_FORM_BODY')
-				.execute();
-		});
 		test('friend request by tag with non-existent user', async () => {
 			const alice = await createTestAccount(harness);
 			await createBuilder(harness, alice.token)
 				.post('/users/@me/relationships')
-				.body({username: 'nonexistent_user_xyz', discriminator: 1234})
+				.body({username: 'nonexistent_user_xyz'})
 				.expect(HTTP_STATUS.BAD_REQUEST, 'NO_USERS_WITH_FLUXERTAG_EXIST')
 				.execute();
 		});
@@ -291,10 +282,7 @@ describe('UserRelationshipStateTransitions', () => {
 			await markUserDeleted(harness, bob.userId);
 			await createBuilder(harness, alice.token)
 				.post('/users/@me/relationships')
-				.body({
-					username: bobProfile.username,
-					discriminator: Number.parseInt(bobProfile.discriminator, 10),
-				})
+				.body({username: bobProfile.username})
 				.expect(HTTP_STATUS.BAD_REQUEST, 'FRIEND_REQUEST_BLOCKED')
 				.execute();
 		});
@@ -383,7 +371,7 @@ describe('UserRelationshipStateTransitions', () => {
 			const {json: bobProfile} = await fetchUserMe(harness, bob.token);
 			await createBuilder(harness, alice.token)
 				.post('/users/@me/relationships')
-				.body({username: bobProfile.username, discriminator: parseInt(bobProfile.discriminator, 10)})
+				.body({username: bobProfile.username})
 				.expect(HTTP_STATUS.BAD_REQUEST, 'ALREADY_FRIENDS')
 				.execute();
 		});

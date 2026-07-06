@@ -156,10 +156,7 @@ export const BlockedUsersContent: React.FC = observer(() => {
 											<span className={styles.username} data-flx="user.blocked-users-tab.username">
 												{displayName}
 											</span>
-											<span className={styles.discriminator} data-flx="user.blocked-users-tab.discriminator">
-												#{user.discriminator}
-											</span>
-										</div>
+													</div>
 									</button>
 								</div>
 								<div className={styles.actions} data-flx="user.blocked-users-tab.actions">

@@ -579,7 +579,7 @@ export class NoopGatewayService extends IGatewayService {
 					user: {
 						id: params.userId.toString(),
 						username: 'testuser',
-						discriminator: '0000',
+						discriminator: '0',
 						global_name: null,
 						avatar: null,
 						avatar_color: null,

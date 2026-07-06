@@ -6,7 +6,6 @@ import type {ChannelService} from '../../channel/services/ChannelService';
 import type {IConnectionRepository} from '../../connection/IConnectionRepository';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
 import type {GuildService} from '../../guild/services/GuildService';
-import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '../../infrastructure/EntityAssetService';
 import type {KVAccountDeletionQueueService} from '../../infrastructure/KVAccountDeletionQueueService';
 import type {KVBulkMessageDeletionQueueService} from '../../infrastructure/KVBulkMessageDeletionQueueService';
@@ -32,7 +31,6 @@ export class UserService {
 		channelRepository: IChannelRepository,
 		guildService: GuildService,
 		entityAssetService: EntityAssetService,
-		discriminatorService: IDiscriminatorService,
 		guildRepository: IGuildRepositoryAggregate,
 		userPermissionUtils: UserPermissionUtils,
 		kvDeletionQueue: KVAccountDeletionQueueService,
@@ -47,7 +45,6 @@ export class UserService {
 			guildService,
 			entityAssetService,
 			guildRepository,
-			discriminatorService,
 			kvDeletionQueue,
 			contactChangeLogService,
 			connectionRepository,

@@ -100,7 +100,7 @@ export const UserProfileBadges: React.FC<UserProfileBadgesProps> = observer(
 					url: Routes.careers(),
 				});
 			}
-			if (!selfHosted && user.flags & PublicUserFlags.CTP_MEMBER) {
+			if (user.flags & PublicUserFlags.CTP_MEMBER) {
 				result.push({
 					type: 'icon',
 					key: 'ctp_member',
@@ -108,7 +108,7 @@ export const UserProfileBadges: React.FC<UserProfileBadgesProps> = observer(
 					tooltip: i18n._(COMMUNITY_TEAM_DESCRIPTOR, {productName: PRODUCT_NAME}),
 				});
 			}
-			if (!selfHosted && user.flags & PublicUserFlags.PARTNER) {
+			if (user.flags & PublicUserFlags.PARTNER) {
 				result.push({
 					type: 'icon',
 					key: 'partner',
@@ -117,7 +117,7 @@ export const UserProfileBadges: React.FC<UserProfileBadgesProps> = observer(
 					url: Routes.partners(),
 				});
 			}
-			if (!selfHosted && user.flags & PublicUserFlags.BUG_HUNTER) {
+			if (user.flags & PublicUserFlags.BUG_HUNTER) {
 				result.push({
 					type: 'icon',
 					key: 'bug_hunter',

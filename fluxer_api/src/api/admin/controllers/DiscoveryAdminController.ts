@@ -87,7 +87,7 @@ async function enrichGuilds(
 			owner_id: guild.ownerId.toString(),
 			owner_username: owner?.username ?? null,
 			owner_global_name: owner?.globalName ?? null,
-			owner_discriminator: owner ? String(owner.discriminator).padStart(4, '0') : null,
+			owner_discriminator: owner ? '0' : null,
 			member_count: guild.memberCount,
 			nsfw_level: guild.nsfwLevel,
 			features: mapGuildFeatures(guild.features),

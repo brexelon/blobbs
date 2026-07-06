@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
 .userInfoContainer {
+	display: flex;
+	flex-direction: column;
 	user-select: text;
 	-webkit-user-select: text;
 }
@@ -60,9 +62,14 @@
 	gap: 0.25rem;
 	min-width: 0;
 	overflow: hidden;
+	margin-top: 0.125rem;
 	font-size: 0.875rem;
 	color: var(--text-tertiary);
 	line-height: 1.125rem;
+}
+
+.belowUsernameSlot {
+	margin-top: var(--profile-card-section-gap, 0.625rem);
 }
 
 .usernameButton {
@@ -88,9 +95,17 @@
 	text-decoration: underline;
 }
 
-.pronouns {
-	margin-top: 0.25rem;
-	font-size: 0.8125rem;
+.usernameSeparator {
+	flex-shrink: 0;
+	color: var(--text-tertiary);
+}
+
+.pronounsInline {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	color: var(--text-tertiary);
 }
 

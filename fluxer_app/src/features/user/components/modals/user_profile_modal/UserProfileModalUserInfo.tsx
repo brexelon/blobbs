@@ -62,6 +62,22 @@ export const UserInfo: React.FC<UserInfoProps> = observer(({user, profile, guild
 					<div className={userProfileModalStyles.tagBadgeRow} data-flx="user.user-profile-modal.user-info.div--6">
 						<div className={userProfileModalStyles.usernameRow} data-flx="user.user-profile-modal.user-info.div--7">
 							{NicknameUtils.formatTagForStreamerMode(user.tag)}
+							{effectiveProfile?.pronouns && (
+								<>
+									<span className={userProfileModalStyles.usernameSeparator} aria-hidden="true">
+										•
+									</span>
+									<span
+										className={userProfileModalStyles.pronounsInline}
+										data-flx="user.user-profile-modal.user-info.pronouns-inline"
+									>
+										<span className={userProfileModalStyles.srOnly} data-flx="user.user-profile-modal.user-info.span--2">
+											<Trans>Pronouns: </Trans>
+										</span>
+										{effectiveProfile.pronouns}
+									</span>
+								</>
+							)}
 						</div>
 						<div className={userProfileModalStyles.badgesWrapper} data-flx="user.user-profile-modal.user-info.div--8">
 							<UserProfileBadges
@@ -73,14 +89,6 @@ export const UserInfo: React.FC<UserInfoProps> = observer(({user, profile, guild
 							/>
 						</div>
 					</div>
-					{effectiveProfile?.pronouns && (
-						<div className={userProfileModalStyles.pronouns} data-flx="user.user-profile-modal.user-info.div--9">
-							<span className={userProfileModalStyles.srOnly} data-flx="user.user-profile-modal.user-info.span--2">
-								<Trans>Pronouns: </Trans>
-							</span>
-							{effectiveProfile.pronouns}
-						</div>
-					)}
 					<div className={userProfileModalStyles.customStatusRow} data-flx="user.user-profile-modal.user-info.div--10">
 						<CustomStatusDisplay
 							userId={user.id}

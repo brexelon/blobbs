@@ -34,7 +34,7 @@ export const BanDetailsModal: React.FC<BanDetailsModalProps> = observer(({ban, o
 	const [isRevoking, setIsRevoking] = useState(false);
 	const userDisplayName = NicknameUtils.getDisplayName(ban.user);
 	const userTag = NicknameUtils.formatTagForStreamerMode(
-		ban.user.tag ?? `${ban.user.username}#${(ban.user.discriminator ?? '').padStart(4, '0')}`,
+		ban.user.tag ?? ban.user.username,
 	);
 	const handleRevoke = useCallback(async () => {
 		if (!onRevoke) return;

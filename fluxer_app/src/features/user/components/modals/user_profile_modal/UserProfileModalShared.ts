@@ -57,6 +57,7 @@ export interface ProfileBodyProps {
 	autoFocusNote?: boolean;
 	noteRef?: React.RefObject<HTMLTextAreaElement | null>;
 	showProfileDataWarning?: boolean;
+	initialTab?: ProfileTab;
 }
 
 export interface ProfileModalContentProps {
@@ -68,6 +69,7 @@ export interface ProfileModalContentProps {
 	renderActionButtons: () => React.ReactNode;
 	previewOverrides?: ProfileDisplayUtils.ProfilePreviewOverrides;
 	showProfileDataWarning?: boolean;
+	initialTab?: ProfileTab;
 }
 
 export function isKeyboardContextMenuTrigger(event: React.KeyboardEvent<HTMLElement>): boolean {

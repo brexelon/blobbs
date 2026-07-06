@@ -171,12 +171,6 @@ export const ColorType = z
 	.describe('fluxer:ColorType');
 export const Int32Type = z.number().int().min(0).max(2147483647).describe('fluxer:Int32Type');
 export const SignedInt32Type = z.number().int().min(-2147483648).max(2147483647).describe('fluxer:SignedInt32Type');
-export const NonNegativeSafeIntegerType = z
-	.number()
-	.int()
-	.min(0)
-	.max(Number.MAX_SAFE_INTEGER)
-	.describe('fluxer:NonNegativeSafeIntegerType');
 const INTEGER_STRING_REGEX = /^[+-]?\d+$/;
 
 function coerceNumericStringToNumber(value: unknown): unknown {
@@ -320,11 +314,6 @@ export function createNamedStringLiteralUnion<T extends string>(
 	return z
 		.union(literals as [z.ZodLiteral<T>, z.ZodLiteral<T>, ...Array<z.ZodLiteral<T>>])
 		.describe(`fluxer:EnumValues:${JSON.stringify(entries)}${descPart}`);
-}
-
-export function createNamedObject<T extends z.ZodRawShape>(typeName: string, shape: T, description?: string) {
-	const descPart = description ? ` ${description}` : '';
-	return z.object(shape).describe(`fluxer:NamedObject:${typeName}${descPart}`);
 }
 
 type FlexibleStringLiteralUnionOperand<T extends string> = z.ZodLiteral<T> | z.ZodString;

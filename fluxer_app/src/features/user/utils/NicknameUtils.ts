@@ -28,8 +28,8 @@ export function formatTagForStreamerMode(tag: string): string {
 	return StreamerMode.shouldTruncateUsernames ? truncateStreamerModeName(tag) : tag;
 }
 
-export function formatUserTagForStreamerMode(user: Pick<User, 'tag' | 'username' | 'discriminator'>): string {
-	return formatTagForStreamerMode(user.tag || `${user.username}#${user.discriminator}`);
+export function formatUserTagForStreamerMode(user: Pick<User, 'tag' | 'username'>): string {
+	return formatTagForStreamerMode(user.tag || user.username);
 }
 
 export function getDisplayName(user: UserDisplayNameLike): string {

@@ -79,12 +79,6 @@ export const ChannelInfoHeader: React.FC<ChannelInfoHeaderProps> = ({
 								>
 									{recipientDisplayName}
 								</span>
-								<span
-									className={styles.channelInfoDiscriminator}
-									data-flx="channel.channel-details-bottom-sheet.channel-info-discriminator"
-								>
-									#{recipient.discriminator}
-								</span>
 							</div>
 							{recipient.bot && (
 								<UserTag

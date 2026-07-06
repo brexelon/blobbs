@@ -64,11 +64,11 @@ pub struct JobsListParams<'a> {
     pub current_url: &'a str,
     pub jobs: &'a [serde_json::Value],
     pub next_cursor: Option<&'a serde_json::Value>,
+    pub auto_poll: bool,
 }
 
-pub fn jobs_list_page(config: &AdminConfig, auth: &AuthContext, params: &JobsListParams) -> Markup {
-    let base = &config.base_path;
-    let count_label = format!(
+fn jobs_count_label(params: &JobsListParams) -> String {
+    format!(
         "{} jobs{}",
         params.jobs.len(),
         if params.next_cursor.is_some() {
@@ -76,9 +76,13 @@ pub fn jobs_list_page(config: &AdminConfig, auth: &AuthContext, params: &JobsLis
         } else {
             ""
         }
-    );
+    )
+}
+
+pub fn jobs_list_page(config: &AdminConfig, auth: &AuthContext, params: &JobsListParams) -> Markup {
+    let base = &config.base_path;
     let content = html! {
-        (page_header("Jobs", Some(&count_label)))
+        (page_header("Jobs", Some("Newest jobs first")))
         (filter_bar(base, params))
         (jobs_results(config, params))
     };
@@ -86,13 +90,36 @@ pub fn jobs_list_page(config: &AdminConfig, auth: &AuthContext, params: &JobsLis
 }
 
 pub fn jobs_results(config: &AdminConfig, params: &JobsListParams) -> Markup {
+    let content = jobs_results_body(config, params);
+    if params.auto_poll {
+        html! {
+            div id="jobs-results"
+                hx-get=(params.current_url)
+                hx-trigger="every 3s"
+                hx-target="#jobs-results"
+                hx-swap="outerHTML" {
+                (content)
+            }
+        }
+    } else {
+        html! {
+            div id="jobs-results" {
+                (content)
+            }
+        }
+    }
+}
+
+fn jobs_results_body(config: &AdminConfig, params: &JobsListParams) -> Markup {
     let base = &config.base_path;
+    let count_label = jobs_count_label(params);
     html! {
-        div id="jobs-results"
-            hx-get=(params.current_url)
-            hx-trigger="every 3s"
-            hx-target="#jobs-results"
-            hx-swap="outerHTML" {
+        p class="text-sm text-neutral-500 mb-4" {
+            (count_label)
+            @if params.auto_poll {
+                " · refreshes every 3 seconds"
+            }
+        }
         @if params.jobs.is_empty() {
             (empty_state(
                 "No background jobs match these filters within the lookback window."
@@ -105,7 +132,6 @@ pub fn jobs_results(config: &AdminConfig, params: &JobsListParams) -> Markup {
                     params.requester_filter, params.max_lookback_days,
                 ))
             }
-        }
         }
     }
 }

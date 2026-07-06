@@ -42,7 +42,8 @@ fetch_events(BuildSha) when is_binary(BuildSha) ->
     case erlcass:execute(?STMT_FETCH_EVENTS, [BuildSha]) of
         {ok, _Columns, Rows} -> {ok, normalize_event_rows(Rows)};
         ok -> {ok, []};
-        {error, Reason} -> {error, Reason}
+        {error, Reason} -> {error, Reason};
+        Other -> {error, {unexpected_fetch_result, Other}}
     end.
 
 -spec append_event(binary(), binary(), binary(), binary(), binary()) ->
@@ -98,7 +99,8 @@ execute_append_event(EventId, Params) ->
     case erlcass:execute(?STMT_APPEND_EVENT, Params) of
         ok -> {ok, EventId};
         {ok, _Columns, _Rows} -> {ok, EventId};
-        {error, Reason} -> {error, Reason}
+        {error, Reason} -> {error, Reason};
+        Other -> {error, {unexpected_append_result, Other}}
     end.
 
 -spec audit_applied(binary(), binary(), binary(), map(), ok | {error, term()}) ->
@@ -114,7 +116,8 @@ audit_applied(BuildSha, NodeName, EventId, Summary, Result) when
     case erlcass:execute(?STMT_AUDIT_APPLIED, Params) of
         ok -> ok;
         {ok, _Columns, _Rows} -> ok;
-        {error, Reason} -> {error, Reason}
+        {error, Reason} -> {error, Reason};
+        Other -> {error, {unexpected_audit_result, Other}}
     end.
 
 -spec normalize_event_rows([list()]) -> [map()].

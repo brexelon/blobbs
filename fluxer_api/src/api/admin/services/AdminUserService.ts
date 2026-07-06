@@ -14,7 +14,6 @@ import type {ApiContext} from '../../ApiContext';
 import {createChannelID, createUserID, type UserID} from '../../BrandedTypes';
 import type {IChannelRepository} from '../../channel/IChannelRepository';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
-import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '../../infrastructure/EntityAssetService';
 import type {KVAccountDeletionQueueService} from '../../infrastructure/KVAccountDeletionQueueService';
 import type {KVBulkMessageDeletionQueueService} from '../../infrastructure/KVBulkMessageDeletionQueueService';
@@ -38,7 +37,6 @@ interface AdminUserServiceDeps {
 	apiContext: ApiContext;
 	guildRepository: IGuildRepositoryAggregate;
 	channelRepository: IChannelRepository;
-	discriminatorService: IDiscriminatorService;
 	entityAssetService: EntityAssetService;
 	auditService: AdminAuditService;
 	userCacheService: UserCacheService;
@@ -84,7 +82,6 @@ export class AdminUserService {
 		});
 		this.profileService = new AdminUserProfileService({
 			apiContext: deps.apiContext,
-			discriminatorService: deps.discriminatorService,
 			entityAssetService: deps.entityAssetService,
 			auditService: deps.auditService,
 			updatePropagator: this.updatePropagator,
@@ -207,7 +204,7 @@ export class AdminUserService {
 				results.set(userIds[i], {
 					id: user.id.toString(),
 					username: user.username,
-					discriminator: String(user.discriminator).padStart(4, '0'),
+					discriminator: '0',
 					global_name: user.globalName,
 					avatar: user.avatarHash,
 				});

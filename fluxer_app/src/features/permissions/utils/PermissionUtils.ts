@@ -26,6 +26,8 @@ import {msg} from '@lingui/core/macro';
 
 export const NONE = 0n;
 
+const SYNTHETIC_PERMISSION_USER_ID = '0';
+
 interface PermissionOverwrite {
 	id: string;
 	type: 0 | 1;
@@ -63,6 +65,49 @@ function calculateElevatedPermissions(permissions: bigint, guild: Guild, userId:
 	return permissions;
 }
 
+export function getChannelAccessPermission(_channelType: number): bigint {
+	return Permissions.VIEW_CHANNEL;
+}
+
+export function canUserAccessChannel(
+	userId: string,
+	channel: {guildId: string | null; type: number; toJSON: () => Channel},
+	options?: {allowUnknownMember?: boolean},
+): boolean {
+	if (channel.guildId == null) {
+		return true;
+	}
+	if (GuildMembers.getMember(channel.guildId, userId) == null) {
+		return options?.allowUnknownMember ?? true;
+	}
+	const permission = getChannelAccessPermission(channel.type);
+	return (computePermissions(userId, channel.toJSON(), null, null, false) & permission) === permission;
+}
+
+export function canRoleAccessChannel(
+	roleId: string,
+	channel: {guildId: string | null; type: number; toJSON: () => Channel},
+): boolean {
+	if (channel.guildId == null) {
+		return false;
+	}
+	const guild = Guilds.getGuild(channel.guildId);
+	if (guild == null || guild.roles[roleId] == null) {
+		return false;
+	}
+	const permission = getChannelAccessPermission(channel.type);
+	const memberRoleIds = roleId === channel.guildId ? [] : [roleId];
+	const permissions = computePermissions(
+		SYNTHETIC_PERMISSION_USER_ID,
+		channel.toJSON(),
+		null,
+		null,
+		false,
+		memberRoleIds,
+	);
+	return (permissions & permission) === permission;
+}
+
 export function computePermissions(
 	user:
 		| string
@@ -74,6 +119,7 @@ export function computePermissions(
 	overwrites?: Record<string, PermissionOverwrite> | null,
 	roles?: Record<RoleId, Role> | null,
 	checkElevated = true,
+	memberRoleIds?: ReadonlyArray<string>,
 ): bigint {
 	const userId = typeof user === 'string' ? user : user.id;
 	let guild: Guild | null = null;
@@ -127,10 +173,12 @@ export function computePermissions(
 	}
 	roles = roles != null && guildRoles ? {...guildRoles, ...roles} : (guildRoles ?? roles ?? {});
 	const member = GuildMembers.getMember(guild.id, userId);
+	const effectiveRoleIds =
+		memberRoleIds ?? (member != null ? Array.from(member.roles) : null);
 	const roleEveryone = roles?.[guild.id as keyof typeof roles];
 	let permissions = roleEveryone != null ? roleEveryone.permissions : DEFAULT_PERMISSIONS;
-	if (member != null && roles) {
-		for (const roleId of member.roles) {
+	if (effectiveRoleIds != null && roles) {
+		for (const roleId of effectiveRoleIds) {
 			const role = roles[roleId as keyof typeof roles];
 			if (role !== undefined) {
 				permissions |= role.permissions;
@@ -145,10 +193,10 @@ export function computePermissions(
 			permissions ^= permissions & overwriteEveryone.deny;
 			permissions |= overwriteEveryone.allow;
 		}
-		if (member != null) {
+		if (effectiveRoleIds != null) {
 			let allow = NONE;
 			let deny = NONE;
-			for (const roleId of member.roles) {
+			for (const roleId of effectiveRoleIds) {
 				const overwriteRole = overwrites[roleId as string];
 				if (overwriteRole != null) {
 					allow |= overwriteRole.allow;
@@ -269,6 +317,7 @@ function generateGuildTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.USE_EXTERNAL_STICKERS),
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE),
+			makePermissionEntry(i18n, Permissions.CREATE_THREADS),
 		],
 	};
 }
@@ -344,6 +393,7 @@ export function generateChannelTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.USE_EXTERNAL_STICKERS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE, {scope: 'channel'}),
+			makePermissionEntry(i18n, Permissions.CREATE_THREADS, {scope: 'channel'}),
 		],
 	};
 }

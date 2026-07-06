@@ -42,6 +42,8 @@ RUN OXIDE_VERSION="$(node -p "require('./fluxer_marketing/package.json').optiona
 	&& rm -rf /tmp/tailwind-oxide
 
 ENV FLUXER_BUILD_VERSION="${BUILD_VERSION}"
+ENV CARGO_NET_RETRY=10 \
+	CARGO_HTTP_MULTIPLEXING=false
 
 RUN cargo test -p fluxer_marketing \
 	&& cargo build --release -p fluxer_marketing \

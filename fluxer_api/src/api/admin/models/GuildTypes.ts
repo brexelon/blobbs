@@ -16,7 +16,7 @@ function formatOwnerFields(ownerUser: User | null): {
 	return {
 		owner_username: ownerUser.username,
 		owner_global_name: ownerUser.globalName ?? null,
-		owner_discriminator: String(ownerUser.discriminator).padStart(4, '0'),
+		owner_discriminator: '0',
 	};
 }
 

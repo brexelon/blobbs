@@ -63,6 +63,7 @@ const LANE_CONFIG = {
 	batch: {
 		consumerName: 'workers_batch',
 		tasks: [
+			'enqueueGifFeaturedCategoriesRefresh',
 			'expireAttachments',
 			'indexChannelMessages',
 			'indexGuildMembers',
@@ -73,12 +74,14 @@ const LANE_CONFIG = {
 			'processPendingBulkMessageDeletions',
 			'processPremiumStateReconciliationQueue',
 			'prunePostgresKvTtl',
+			'refreshGifFeaturedCategories',
 			'refreshSearchIndex',
 			'syncDiscoveryIndex',
 			'syncDisposableEmailDomains',
 			'syncUrlBlocklists',
 			'syncFileShaBlocklists',
 			'flushUserActivityBuffer',
+			'closeExpiredThreads',
 		] as const,
 		concurrency: 12,
 		maxAckPending: 100,

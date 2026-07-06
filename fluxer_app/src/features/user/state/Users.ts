@@ -3,6 +3,14 @@
 import {openClaimAccountModal} from '@app/features/auth/components/modals/ClaimAccountModal';
 import Authentication from '@app/features/auth/state/Authentication';
 import {User} from '@app/features/user/models/User';
+import {
+	hydrateUnresolvedUserPlaceholders,
+	queueUserPlaceholderHydration,
+} from '@app/features/user/state/UserPlaceholderHydration';
+import {
+	isDeletedUserPlaceholder,
+	isDeletedUserPlaceholderWire,
+} from '@app/features/user/utils/UserPlaceholderUtils';
 import type {UserPrivate, User as WireUser} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {action, makeAutoObservable, reaction, runInAction} from 'mobx';
 
@@ -21,7 +29,6 @@ const CURRENT_USER_PRIVATE_WIRE_KEYS = [
 	'premium_billing_cycle',
 	'premium_lifetime_sequence',
 	'premium_grace_ends_at',
-	'premium_discriminator',
 	'premium_badge_hidden',
 	'premium_badge_masked',
 	'premium_badge_timestamp_hidden',
@@ -113,6 +120,12 @@ class Users {
 		},
 	): void {
 		const existingUser = this.users[user.id];
+		if (isDeletedUserPlaceholderWire(user) && existingUser && !isDeletedUserPlaceholder(existingUser)) {
+			return;
+		}
+		if (isDeletedUserPlaceholderWire(user)) {
+			queueUserPlaceholderHydration(user.id);
+		}
 		if (
 			user.id === this.currentUserId &&
 			existingUser &&
@@ -134,12 +147,26 @@ class Users {
 		runInAction(() => {
 			for (const user of users) {
 				const existingUser = this.users[user.id];
+				if (isDeletedUserPlaceholderWire(user) && existingUser && !isDeletedUserPlaceholder(existingUser)) {
+					continue;
+				}
+				if (isDeletedUserPlaceholderWire(user)) {
+					queueUserPlaceholderHydration(user.id);
+				}
 				if (user.id === this.currentUserId && existingUser && isPublicOnlyCurrentUserPayload(user)) {
 					continue;
 				}
 				this.users[user.id] = existingUser ? existingUser.withUpdates(user) : new User(user);
 			}
 		});
+	}
+
+	hydrateCachedPlaceholders(): void {
+		hydrateUnresolvedUserPlaceholders(
+			Object.values(this.users)
+				.filter((user) => isDeletedUserPlaceholder(user))
+				.map((user) => user.id),
+		);
 	}
 
 	subscribe(callback: () => void): () => void {

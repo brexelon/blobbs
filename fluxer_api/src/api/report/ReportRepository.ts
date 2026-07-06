@@ -126,6 +126,15 @@ export class ReportRepository implements IReportRepository {
 		};
 	}
 
+	async deleteReport(reportId: ReportID): Promise<IARSubmission> {
+		const report = await this.getReport(reportId);
+		if (!report) {
+			throw new UnknownReportError();
+		}
+		await IARSubmissions.deleteByPk({report_id: reportId});
+		return report;
+	}
+
 	private mapRowToSubmission(row: IARSubmissionRow): IARSubmission {
 		return {
 			reportId: createReportID(row.report_id),

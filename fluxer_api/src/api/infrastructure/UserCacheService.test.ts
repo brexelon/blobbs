@@ -41,7 +41,7 @@ function createPartial(userId: UserID, username: string): UserPartialResponse {
 	return {
 		id: userId.toString(),
 		username,
-		discriminator: '0001',
+		discriminator: '0',
 		global_name: null,
 		avatar: null,
 		avatar_color: null,
@@ -54,7 +54,6 @@ function createUser(userId: UserID, username: string): User {
 		...EMPTY_USER_ROW,
 		user_id: userId,
 		username,
-		discriminator: 42,
 		global_name: `${username} Global`,
 		bot: true,
 		flags: 0n,

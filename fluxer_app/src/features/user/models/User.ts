@@ -163,7 +163,6 @@ export class User {
 	private readonly _premiumBillingCycle: string | null | undefined;
 	private readonly _premiumLifetimeSequence: number | null | undefined;
 	private readonly _premiumGraceEndsAt: Date | null | undefined;
-	private readonly _premiumDiscriminator: boolean | undefined;
 	readonly premiumBadgeHidden: boolean | undefined;
 	readonly premiumBadgeMasked: boolean | undefined;
 	readonly premiumBadgeTimestampHidden: boolean | undefined;
@@ -228,7 +227,6 @@ export class User {
 		this._premiumLifetimeSequence = hasKey(user, 'premium_lifetime_sequence')
 			? (user.premium_lifetime_sequence ?? null)
 			: undefined;
-		this._premiumDiscriminator = hasKey(user, 'premium_discriminator') ? user.premium_discriminator : undefined;
 		this.premiumBadgeHidden = hasKey(user, 'premium_badge_hidden') ? user.premium_badge_hidden : undefined;
 		this.premiumBadgeMasked = hasKey(user, 'premium_badge_masked') ? user.premium_badge_masked : undefined;
 		this.premiumBadgeTimestampHidden = hasKey(user, 'premium_badge_timestamp_hidden')
@@ -329,10 +327,6 @@ export class User {
 		return override != null ? override : this._premiumWillCancel;
 	}
 
-	get premiumDiscriminator(): boolean {
-		return this._premiumDiscriminator ?? false;
-	}
-
 	get hasEverPurchased(): boolean | undefined {
 		const override = DeveloperOptions.hasEverPurchasedOverride;
 		return override != null ? override : this._hasEverPurchased;
@@ -381,7 +375,7 @@ export class User {
 	}
 
 	get tag(): string {
-		return `${this.username}#${this.discriminator}`;
+		return this.username;
 	}
 
 	get createdAt(): Date {
@@ -457,8 +451,6 @@ export class User {
 		if (premiumLifetimeSequence !== undefined) result.premium_lifetime_sequence = premiumLifetimeSequence;
 		const premiumGraceEndsAt = pickDateField(this._premiumGraceEndsAt, u, 'premium_grace_ends_at', opts);
 		if (premiumGraceEndsAt !== undefined) result.premium_grace_ends_at = dateToIsoOrNull(premiumGraceEndsAt);
-		const premiumDiscriminator = pickField(this._premiumDiscriminator, u, 'premium_discriminator', opts);
-		if (premiumDiscriminator !== undefined) result.premium_discriminator = premiumDiscriminator;
 		const premiumBadgeHidden = pickField(this.premiumBadgeHidden, u, 'premium_badge_hidden', opts);
 		if (premiumBadgeHidden !== undefined) result.premium_badge_hidden = premiumBadgeHidden;
 		const premiumBadgeMasked = pickField(this.premiumBadgeMasked, u, 'premium_badge_masked', opts);
@@ -651,7 +643,6 @@ export class User {
 			this._premiumWillCancel === other._premiumWillCancel &&
 			this._premiumBillingCycle === other._premiumBillingCycle &&
 			this._premiumLifetimeSequence === other._premiumLifetimeSequence &&
-			this._premiumDiscriminator === other._premiumDiscriminator &&
 			this.premiumBadgeHidden === other.premiumBadgeHidden &&
 			this.premiumBadgeMasked === other.premiumBadgeMasked &&
 			this.premiumBadgeTimestampHidden === other.premiumBadgeTimestampHidden &&
@@ -716,7 +707,6 @@ export class User {
 			'premium_grace_ends_at',
 			this._premiumGraceEndsAt === undefined ? undefined : dateToIsoOrNull(this._premiumGraceEndsAt),
 		);
-		setOptional('premium_discriminator', this._premiumDiscriminator);
 		setOptional('premium_badge_hidden', this.premiumBadgeHidden);
 		setOptional('premium_badge_masked', this.premiumBadgeMasked);
 		setOptional('premium_badge_timestamp_hidden', this.premiumBadgeTimestampHidden);

@@ -137,7 +137,7 @@ export const MarkdownTab: React.FC = observer(() => {
 		const author = currentUser?.toJSON() || {
 			id: '1000000000000000010',
 			username: 'MarkdownUser',
-			discriminator: '0000',
+			discriminator: '0',
 			global_name: 'Markdown Preview User',
 			avatar: null,
 			avatar_color: null,

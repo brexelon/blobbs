@@ -6,6 +6,8 @@ import {ReportAlreadyResolvedError} from '@fluxer/errors/src/domains/moderation/
 import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
 import type {
 	BulkScheduleUserDeletionRequest,
+	DeleteAccountImmediatelyRequest,
+	DeleteAllUserDataRequest,
 	ScheduleAccountDeletionRequest,
 } from '@fluxer/schema/src/domains/admin/AdminUserSchemas';
 import type Stripe from 'stripe';
@@ -21,6 +23,11 @@ import type {ReportService} from '../../report/ReportService';
 import {getReportSearchService} from '../../SearchFactory';
 import {clearPendingDeletion, reschedulePendingDeletion} from '../../user/services/PendingDeletionCoordinator';
 import {mapUserToAdminResponse} from '../models/UserTypes';
+import {
+	purgeAllUserDataFromDatabase,
+	resolveUserDeletionDependencies,
+} from '../../user/services/UserDeletionService';
+import {createUserCacheService} from '../../middleware/ServiceSingletons';
 import type {AdminAuditService} from './AdminAuditService';
 import type {AdminBanManagementService} from './AdminBanManagementService';
 import type {AdminUserUpdatePropagator} from './AdminUserUpdatePropagator';
@@ -176,6 +183,168 @@ export class AdminUserDeletionService {
 		};
 	}
 
+	async deleteAccountImmediately(
+		data: DeleteAccountImmediatelyRequest,
+		adminUserId: UserID,
+		auditLogReason: string | null,
+		acls: ReadonlySet<string>,
+	) {
+		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
+		const {auditService, updatePropagator} = this.deps;
+		const userId = createUserID(data.user_id);
+		const user = await userRepository.findUnique(userId);
+		if (!user) {
+			throw new UnknownUserError();
+		}
+		const pendingDeletionAt = new Date();
+		const updatedUser = await userRepository.patchUpsert(
+			userId,
+			{
+				flags: user.flags | UserFlags.DELETED,
+				pending_deletion_at: pendingDeletionAt,
+				deletion_reason_code: data.reason_code,
+				deletion_public_reason: data.public_reason ?? null,
+				deletion_audit_log_reason: auditLogReason,
+			},
+			user.toRow(),
+		);
+		await reschedulePendingDeletion({
+			userId,
+			currentPendingDeletionAt: user.pendingDeletionAt,
+			nextPendingDeletionAt: pendingDeletionAt,
+			deletionReasonCode: data.reason_code,
+			userRepository,
+			deletionQueue: this.deps.kvDeletionQueue,
+		});
+		await this.enqueueImmediateUserDeletion({
+			userId,
+			pendingDeletionAt,
+			deletionReasonCode: data.reason_code,
+			adminUserId,
+			auditLogReason,
+			userRepository,
+		});
+		await AuthSession.terminateAllUserSessions(this.deps.apiContext, userId);
+		const {stripe, billingRepository} = this.deps;
+		if (user.stripeSubscriptionId && stripe) {
+			try {
+				const sub = await billingRepository.subscriptions.findById(user.stripeSubscriptionId);
+				const latestInvoiceId = sub?.latest_invoice_id ?? null;
+				let chargeIdForRefund: string | null = null;
+				if (latestInvoiceId) {
+					const payment = await billingRepository.payments.findPrimaryForInvoice(latestInvoiceId);
+					chargeIdForRefund = payment?.charge_id ?? null;
+				}
+				const canceled = await stripe.subscriptions.cancel(user.stripeSubscriptionId, {
+					invoice_now: false,
+					prorate: false,
+				});
+				try {
+					await billingRepository.subscriptions.upsertFromStripe(canceled, {
+						knownUserId: BigInt(userId),
+						snapshotCapturedAt: new Date(),
+					});
+				} catch (mirrorErr) {
+					Logger.error(
+						{mirrorErr, subId: canceled.id},
+						'Mirror upsert failed after immediate deletion subscription cancel; reconciler will heal',
+					);
+				}
+				if (chargeIdForRefund) {
+					const refund = await stripe.refunds.create({
+						charge: chargeIdForRefund,
+						reason: 'fraudulent',
+						metadata: {
+							admin_user_id: String(adminUserId),
+							target_user_id: String(userId),
+							reason: 'immediate_deletion',
+						},
+					});
+					try {
+						await billingRepository.refunds.upsertFromStripe(refund, {
+							invoiceId: latestInvoiceId ?? undefined,
+							customerId: user.stripeCustomerId ?? undefined,
+							userId: BigInt(userId),
+						});
+					} catch (mirrorErr) {
+						Logger.error(
+							{mirrorErr, refundId: refund.id},
+							'Mirror upsert failed after immediate deletion refund; reconciler will heal',
+						);
+					}
+				}
+			} catch (err) {
+				Logger.error(
+					{err, userId: userId.toString(), subscriptionId: user.stripeSubscriptionId},
+					'Failed to cancel/refund Stripe subscription on immediate deletion',
+				);
+			}
+		}
+		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await this.banIdentifiersForScheduledDeletion({
+			user,
+			adminUserId,
+			auditLogReason,
+			deletionReasonCode: data.reason_code,
+		});
+		await this.resolvePendingReportsAgainstUser({user, adminUserId});
+		await auditService.createAuditLog({
+			adminUserId,
+			targetType: 'user',
+			targetId: data.user_id,
+			action: 'delete_immediately',
+			auditLogReason,
+			metadata: new Map([['reason_code', data.reason_code.toString()]]),
+		});
+		return {
+			user: await mapUserToAdminResponse(updatedUser, cacheService, acls),
+		};
+	}
+
+	async deleteAllUserData(
+		data: DeleteAllUserDataRequest,
+		adminUserId: UserID,
+		auditLogReason: string | null,
+		_acls: ReadonlySet<string>,
+	) {
+		const {users: userRepository, snowflake, worker} = this.deps.apiContext.services;
+		const {auditService} = this.deps;
+		const userId = createUserID(data.user_id);
+		const user = await userRepository.findUnique(userId);
+		if (!user) {
+			throw new UnknownUserError();
+		}
+		await AuthSession.terminateAllUserSessions(this.deps.apiContext, userId);
+		await purgeAllUserDataFromDatabase(
+			userId,
+			resolveUserDeletionDependencies({
+				userCacheService: createUserCacheService(),
+				snowflakeService: snowflake,
+				stripe: this.deps.stripe,
+				workerService: worker,
+			}),
+		);
+		if (user.pendingDeletionAt) {
+			await clearPendingDeletion({
+				userId,
+				pendingDeletionAt: user.pendingDeletionAt,
+				userRepository,
+				deletionQueue: this.deps.kvDeletionQueue,
+			});
+		}
+		await auditService.createAuditLog({
+			adminUserId,
+			targetType: 'user',
+			targetId: data.user_id,
+			action: 'delete_all_user_data',
+			auditLogReason,
+			metadata: new Map(),
+		});
+		return {
+			deleted: true as const,
+		};
+	}
+
 	async cancelAccountDeletion(
 		data: {
 			user_id: bigint;
@@ -292,6 +461,39 @@ export class AdminUserDeletionService {
 			successful,
 			failed,
 		};
+	}
+
+	private async enqueueImmediateUserDeletion(params: {
+		userId: UserID;
+		pendingDeletionAt: Date;
+		deletionReasonCode: number;
+		adminUserId: UserID;
+		auditLogReason: string | null;
+		userRepository: AdminUserDeletionServiceDeps['apiContext']['services']['users'];
+	}): Promise<void> {
+		const {userId, pendingDeletionAt, deletionReasonCode, adminUserId, auditLogReason, userRepository} = params;
+		const {worker: workerService} = this.deps.apiContext.services;
+		try {
+			await workerService.addJob(
+				'userProcessPendingDeletion',
+				{
+					userId: userId.toString(),
+					deletionReasonCode,
+				},
+				{
+					requestedByUserId: adminUserId,
+					...(auditLogReason && {auditLogReason}),
+				},
+			);
+			await this.deps.kvDeletionQueue.removeFromQueue(userId);
+			await userRepository.removePendingDeletion(userId, pendingDeletionAt);
+		} catch (error) {
+			Logger.error(
+				{error, userId: userId.toString()},
+				'Failed to enqueue immediate user deletion worker job; KV queue will retry on next cron run',
+			);
+			throw error;
+		}
 	}
 
 	private async banIdentifiersForScheduledDeletion(params: {

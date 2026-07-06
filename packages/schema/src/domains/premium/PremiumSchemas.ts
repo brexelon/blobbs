@@ -258,8 +258,8 @@ export type SelfServeRefundEligibilityResponse = z.infer<typeof SelfServeRefundE
 
 const PremiumBillingState = z.object({
 	stripe_customer_id: z.string().nullable(),
-	current_subscription_price: CurrentSubscriptionPriceResponse.nullable(),
-	pending_subscription_change: PendingSubscriptionChangeResponse.nullable(),
+	current_subscription_price: CurrentSubscriptionPriceResponse,
+	pending_subscription_change: PendingSubscriptionChangeResponse,
 	subscription: PremiumBillingSubscriptionResponse.nullable(),
 	invoices: z.array(PremiumBillingInvoiceResponse),
 	invoices_has_more: z.boolean(),

@@ -90,6 +90,11 @@ const BYPASS_SLOWMODE_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	comment:
 		'Permission description in the role/permission editor for the Bypass Slowmode permission. Slowmode is the per-channel cooldown between messages.',
 });
+const CREATE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'Create threads that everyone in a channel can view.',
+	comment:
+		'Permission description in the role/permission editor for the Create Threads permission. A thread is a sub-conversation rooted on a message in a channel.',
+});
 const TIME_OUT_MEMBERS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	message: 'Prevent members from sending messages, reacting, and joining voice for a duration.',
 	comment:
@@ -250,6 +255,10 @@ const BYPASS_SLOWMODE_DESCRIPTOR = msg({
 	message: 'Bypass slowmode',
 	comment: 'Permission name: allows ignoring per-channel message rate limits.',
 });
+const CREATE_THREADS_DESCRIPTOR = msg({
+	message: 'Create threads',
+	comment: 'Permission name: allows creating threads in a channel.',
+});
 const TIME_OUT_MEMBERS_DESCRIPTOR = msg({
 	message: 'Time out members',
 	comment: 'Permission name: allows temporarily restricting members.',
@@ -357,6 +366,7 @@ const PERMISSION_TITLE_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.USE_EXTERNAL_STICKERS, USE_EXTERNAL_STICKERS_DESCRIPTOR],
 	[Permissions.ADD_REACTIONS, ADD_REACTIONS_DESCRIPTOR],
 	[Permissions.BYPASS_SLOWMODE, BYPASS_SLOWMODE_DESCRIPTOR],
+	[Permissions.CREATE_THREADS, CREATE_THREADS_DESCRIPTOR],
 	[Permissions.MODERATE_MEMBERS, TIME_OUT_MEMBERS_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL, VIEW_CHANNEL_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL_MEMBERS, VIEW_CHANNEL_MEMBERS_DESCRIPTOR],
@@ -387,6 +397,7 @@ const PERMISSION_DESCRIPTION_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.USE_EXTERNAL_EMOJIS, USE_EXTERNAL_EMOJI_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.ADD_REACTIONS, ADD_REACTIONS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.BYPASS_SLOWMODE, BYPASS_SLOWMODE_PERMISSION_DESCRIPTION_DESCRIPTOR],
+	[Permissions.CREATE_THREADS, CREATE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.MODERATE_MEMBERS, TIME_OUT_MEMBERS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL_MEMBERS, VIEW_CHANNEL_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR],

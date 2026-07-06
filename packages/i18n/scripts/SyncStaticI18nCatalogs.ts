@@ -246,7 +246,7 @@ function renderTs(config: StaticCatalogConfig, locale: StaticLocale, catalog: Ca
 	const name = exportName(config, locale);
 	return `${GENERATED_HEADER}import {${config.defineFunctionName}} from '${config.defineImportPath}';
 
-const ${name} = ${config.defineFunctionName}(${JSON.stringify(catalog, null, '\t')});
+export const ${name} = ${config.defineFunctionName}(${JSON.stringify(catalog, null, '\t')});
 
 export default ${name};
 `;

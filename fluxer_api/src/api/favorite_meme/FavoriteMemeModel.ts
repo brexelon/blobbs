@@ -4,7 +4,6 @@ import type {FavoriteMemeResponse} from '@fluxer/schema/src/domains/meme/MemeSch
 import {userIdToChannelId} from '../BrandedTypes';
 import {makeAttachmentCdnUrl} from '../channel/services/message/MessageHelpers';
 import type {FavoriteMeme} from '../models/FavoriteMeme';
-import {assertSafeByteSize} from '../utils/ByteSizeUtils';
 
 export function mapFavoriteMemeToResponse(meme: FavoriteMeme): FavoriteMemeResponse {
 	const url = makeAttachmentCdnUrl(userIdToChannelId(meme.userId), meme.attachmentId, meme.filename);
@@ -18,7 +17,7 @@ export function mapFavoriteMemeToResponse(meme: FavoriteMeme): FavoriteMemeRespo
 		filename: meme.filename,
 		content_type: meme.contentType,
 		content_hash: meme.contentHash ?? null,
-		size: assertSafeByteSize(meme.size, 'favorite meme size'),
+		size: Number(meme.size),
 		width: meme.width ?? null,
 		height: meme.height ?? null,
 		duration: meme.duration ?? null,

@@ -17,7 +17,6 @@ import {RateLimitConfigs} from '../RateLimitConfig';
 import type {HonoApp, HonoEnv} from '../types/HonoEnv';
 import {Validator} from '../Validator';
 import {GifProviderHeaderMiddleware} from './GifProviderHeaderMiddleware';
-import {resolveGifRequestCountry} from './GifRequestCountry';
 
 const TAGS = ['GIFs'];
 
@@ -35,8 +34,8 @@ const PREFIXES: ReadonlyArray<PrefixConfig> = [
 ];
 const DEPRECATION_NOTICE = 'Use /gifs/* instead - these vendor-specific paths are deprecated and will be removed.';
 
-async function getCountry(ctx: Context<HonoEnv>): Promise<string> {
-	return resolveGifRequestCountry(ctx.req.raw);
+function getCountry(ctx: Context<HonoEnv>): string {
+	return ctx.req.header('CF-IPCountry') || 'US';
 }
 
 function deprecationMiddleware(deprecated: boolean): MiddlewareHandler<HonoEnv> {
@@ -73,8 +72,7 @@ function registerRoutes(app: HonoApp, cfg: PrefixConfig) {
 		async (ctx) => {
 			const {q, locale} = ctx.req.valid('query');
 			const provider = await ctx.get('gifService').getActive();
-			const country = await getCountry(ctx);
-			return ctx.json(await provider.search({q, locale, country}));
+			return ctx.json(await provider.search({q, locale, country: getCountry(ctx)}));
 		},
 	);
 	app.get(
@@ -96,8 +94,7 @@ function registerRoutes(app: HonoApp, cfg: PrefixConfig) {
 		Validator('query', GifLocaleQuery),
 		async (ctx) => {
 			const provider = await ctx.get('gifService').getActive();
-			const country = await getCountry(ctx);
-			return ctx.json(await provider.getFeatured({locale: ctx.req.valid('query').locale, country}));
+			return ctx.json(await provider.getFeatured({locale: ctx.req.valid('query').locale, country: getCountry(ctx)}));
 		},
 	);
 	const trendingPath = prefix === '/gifs' ? `${prefix}/trending` : `${prefix}/trending-gifs`;
@@ -120,11 +117,10 @@ function registerRoutes(app: HonoApp, cfg: PrefixConfig) {
 		Validator('query', GifLocaleQuery),
 		async (ctx) => {
 			const provider = await ctx.get('gifService').getActive();
-			const country = await getCountry(ctx);
 			return ctx.json(
 				await provider.getTrendingGifs({
 					locale: ctx.req.valid('query').locale,
-					country,
+					country: getCountry(ctx),
 				}),
 			);
 		},
@@ -149,8 +145,7 @@ function registerRoutes(app: HonoApp, cfg: PrefixConfig) {
 		async (ctx) => {
 			const {id, q, locale} = ctx.req.valid('json');
 			const provider = await ctx.get('gifService').getActive();
-			const country = await getCountry(ctx);
-			await provider.registerShare({id, q: q ?? '', locale, country});
+			await provider.registerShare({id, q: q ?? '', locale, country: getCountry(ctx)});
 			return ctx.body(null, 204);
 		},
 	);

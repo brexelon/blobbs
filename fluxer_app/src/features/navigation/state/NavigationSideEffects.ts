@@ -4,6 +4,10 @@ import Messages from '@app/features/messaging/state/MessagingMessages';
 import Navigation from '@app/features/navigation/state/Navigation';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import Notification from '@app/features/ui/state/Notification';
+import Channels from '@app/features/channel/state/Channels';
+import {hydrateUnresolvedUserPlaceholders} from '@app/features/user/state/UserPlaceholderHydration';
+import {ME} from '@fluxer/constants/src/AppConstants';
+import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import {reaction} from 'mobx';
 
 const logger = new Logger('NavigationSideEffects');
@@ -36,6 +40,12 @@ class NavigationSideEffects {
 		this.lastMessageId = messageId;
 		if (!channelId) return;
 		logger.debug(`Route change: guild=${guildId}, channel=${channelId}, message=${messageId}`);
+		if (guildId === ME) {
+			const channel = Channels.getChannel(channelId);
+			if (channel && (channel.type === ChannelTypes.DM || channel.type === ChannelTypes.GROUP_DM)) {
+				hydrateUnresolvedUserPlaceholders(channel.recipientIds);
+			}
+		}
 		Messages.handleChannelSelect({
 			guildId: guildId ?? undefined,
 			channelId,

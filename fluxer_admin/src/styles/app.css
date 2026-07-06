@@ -239,3 +239,12 @@ input:disabled + .checkbox-custom {
   border: 2px solid transparent;
   background-clip: content-box;
 }
+
+dialog {
+  margin: auto;
+  border: 0;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 40%);
+}

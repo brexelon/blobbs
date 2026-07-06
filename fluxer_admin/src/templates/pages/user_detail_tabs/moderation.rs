@@ -63,11 +63,16 @@ pub fn moderation_tab(
     let base = &config.base_path;
     let can_delete_all_messages = acl::has_permission(admin_acls, acl::MESSAGE_DELETE_ALL);
     let can_shred_messages = acl::has_permission(admin_acls, acl::MESSAGE_SHRED);
+    let can_delete_user = acl::has_permission(admin_acls, acl::USER_DELETE);
     html! {
         div class="space-y-6" {
             div class="grid grid-cols-1 gap-6 md:grid-cols-2" {
                 (ban_actions_card(base, user, csrf_token))
                 (deletion_card(base, user, csrf_token))
+            }
+            @if can_delete_user {
+                (delete_immediately_card(base, user, csrf_token))
+                (delete_all_user_data_card(base, user, csrf_token))
             }
             @if can_delete_all_messages {
                 (delete_all_messages_card(base, user, csrf_token, delete_all_messages_dry_run))
@@ -76,6 +81,106 @@ pub fn moderation_tab(
                 (message_shred_card(base, user, csrf_token, message_shred_job_id, message_shred_status))
             }
         }
+    }
+}
+
+fn delete_immediately_card(base: &str, user: &AdminUser, csrf_token: &str) -> Markup {
+    let action_url = format!("{base}/users/{}?action=delete_immediately&tab=moderation", user.id);
+    let confirm_message = format!(
+        "Are you sure you want to immediately delete the account for @{}? \
+         This permanently deletes the account without a grace period and queues all data for deletion. \
+         This cannot be undone.",
+        user.username
+    );
+    html! {
+        (card_with_header("Immediate Account Deletion", html! {
+            div class="space-y-4" {
+                div class="rounded-lg border border-red-200 bg-red-50 p-4" {
+                    p class="text-sm font-medium text-red-800" { "Warning: This action is irreversible." }
+                    p class="mt-1 text-sm text-red-700" {
+                        "This permanently deletes the account for "
+                        strong { "@" (user.username) }
+                        " immediately, without any grace period. All data will be queued for deletion at once."
+                    }
+                }
+                form method="post"
+                    action=(action_url)
+                    hx-post=(action_url)
+                    hx-target="#flash-container"
+                    hx-swap="none"
+                    hx-push-url="false"
+                    hx-confirm=(confirm_message) {
+                    (csrf_input(csrf_token))
+                    div class="space-y-3" {
+                        (form_label("Reason"))
+                        select name="reason_code"
+                            class="block w-full rounded-md border border-neutral-300 \
+                                   px-3 py-2 text-sm shadow-sm \
+                                   focus:border-brand-primary focus:outline-none \
+                                   focus:ring-1 focus:ring-brand-primary" {
+                            @for &(value, label) in DELETION_REASONS {
+                                option value=(value) { (label) }
+                            }
+                        }
+                        (form_label("Public Reason (optional)"))
+                        input type="text" name="public_reason"
+                            placeholder="Enter public reason..."
+                            class="block w-full rounded-md border border-neutral-300 \
+                                   px-3 py-2 text-sm shadow-sm \
+                                   focus:border-brand-primary focus:outline-none \
+                                   focus:ring-1 focus:ring-brand-primary";
+                        (form_label("Private Reason (optional)"))
+                        input type="text" name="private_reason"
+                            placeholder="Enter private reason (audit log)..."
+                            class="block w-full rounded-md border border-neutral-300 \
+                                   px-3 py-2 text-sm shadow-sm \
+                                   focus:border-brand-primary focus:outline-none \
+                                   focus:ring-1 focus:ring-brand-primary";
+                        (form_actions(html! {
+                            (danger_button("Delete Account Immediately"))
+                        }))
+                    }
+                }
+            }
+        }))
+    }
+}
+
+fn delete_all_user_data_card(base: &str, user: &AdminUser, csrf_token: &str) -> Markup {
+    let action_url = format!("{base}/users/{}?action=delete_all_user_data&tab=moderation", user.id);
+    let confirm_message = format!(
+        "Are you sure you want to delete all data for @{}? \
+         This permanently removes all associated data from the database and cannot be undone.",
+        user.username
+    );
+    html! {
+        (card_with_header("Delete All User Data", html! {
+            div class="space-y-4" {
+                p class="text-sm text-neutral-600" {
+                    "Permanently remove this user and all associated data from the database, including their profile. \
+                     No deleted-user placeholder records are created. This action cannot be undone."
+                }
+                form method="post"
+                    action=(action_url)
+                    hx-post=(action_url)
+                    hx-target="#flash-container"
+                    hx-swap="none"
+                    hx-push-url="false"
+                    hx-confirm=(confirm_message) {
+                    (csrf_input(csrf_token))
+                    (form_label("Private Reason (optional)"))
+                    input type="text" name="private_reason"
+                        placeholder="Enter private reason (audit log)..."
+                        class="block w-full rounded-md border border-neutral-300 \
+                               px-3 py-2 text-sm shadow-sm \
+                               focus:border-brand-primary focus:outline-none \
+                               focus:ring-1 focus:ring-brand-primary";
+                    (form_actions(html! {
+                        (danger_button("Delete All User Data"))
+                    }))
+                }
+            }
+        }))
     }
 }
 

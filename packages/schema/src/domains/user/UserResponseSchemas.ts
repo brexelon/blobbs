@@ -556,7 +556,7 @@ export const EmailTokenResponse = z.object({
 export type EmailTokenResponse = z.infer<typeof EmailTokenResponse>;
 
 export const UserTagCheckResponse = z.object({
-	taken: z.boolean().describe('Whether the username/discriminator combination is already taken'),
+	taken: z.boolean().describe('Whether the username is already taken'),
 });
 
 export type UserTagCheckResponse = z.infer<typeof UserTagCheckResponse>;

@@ -151,10 +151,7 @@ export class AuthRequestService {
 	}
 
 	startSso(data: SsoStartRequest) {
-		return this.ssoService.startLogin({
-			redirectTo: data.redirect_to ?? undefined,
-			redirectUri: data.redirect_uri ?? undefined,
-		});
+		return this.ssoService.startLogin(data.redirect_to ?? undefined);
 	}
 
 	completeSso(data: SsoCompleteRequest, request: Request) {
@@ -294,8 +291,15 @@ export class AuthRequestService {
 		return await this.toAuthTokenResponse(result);
 	}
 
-	getUsernameSuggestions({globalName}: AuthUsernameSuggestionsRequest): UsernameSuggestionsResponse {
-		return {suggestions: generateUsernameSuggestions(globalName)};
+	getUsernameSuggestions({globalName}: AuthUsernameSuggestionsRequest): Promise<UsernameSuggestionsResponse> {
+		return this.generateUsernameSuggestions(globalName);
+	}
+
+	private async generateUsernameSuggestions(globalName: string): Promise<UsernameSuggestionsResponse> {
+		const suggestions = await generateUsernameSuggestions(globalName, (username) =>
+			this.apiContext.services.users.isUsernameAvailable(username),
+		);
+		return {suggestions};
 	}
 
 	async initiateHandoff({

@@ -9,10 +9,10 @@ import Channels from '@app/features/channel/state/Channels';
 import GuildMatureContentAgree from '@app/features/guild/state/GuildMatureContentAgree';
 import Guilds from '@app/features/guild/state/Guilds';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
-import * as MessageUtils from '@app/features/messaging/utils/MessageUtils';
 import Navigation from '@app/features/navigation/state/Navigation';
 import SelectedChannel from '@app/features/navigation/state/SelectedChannel';
 import {buildMessageNotificationBody} from '@app/features/notification/utils/MessageNotificationPreview';
+import {shouldNotifyForMessage} from '@app/features/notification/utils/MessageNotificationEligibility';
 import * as NotificationUtils from '@app/features/notification/utils/NotificationUtils';
 import * as PushSubscriptionService from '@app/features/platform/push/PushSubscriptionService';
 import {IS_DEV} from '@app/features/platform/types/Env';
@@ -212,30 +212,8 @@ class NotificationState {
 		return this.focused;
 	}
 
-	private isMessageMentionLike(channel: Channel, message: Message, currentUser: User): boolean {
-		if (MessageUtils.isMentioned(currentUser, message)) {
-			return true;
-		}
-		if (channel.isPrivate()) {
-			return !UserGuildSettings.isGuildOrChannelMuted(null, channel.id);
-		}
-		return false;
-	}
-
-	private shouldNotifyBasedOnSettings(channel: Channel, messageRecord: Message, currentUser: User): boolean {
-		const level = UserGuildSettings.resolvedMessageNotifications({
-			id: channel.id,
-			guildId: channel.guildId,
-			parentId: channel.parentId ?? undefined,
-			type: channel.type,
-		});
-		if (level === MessageNotifications.NO_MESSAGES) {
-			return false;
-		}
-		if (level === MessageNotifications.ALL_MESSAGES) {
-			return true;
-		}
-		return this.isMessageMentionLike(channel, messageRecord, currentUser);
+	private shouldNotifyBasedOnSettings(channel: Channel, message: WireMessage): boolean {
+		return shouldNotifyForMessage(channel, message);
 	}
 
 	private isFocusedForNotifications(): boolean {
@@ -261,12 +239,12 @@ class NotificationState {
 			return null;
 		}
 		if (
-			UserGuildSettings.allowNoMessages({
+			UserGuildSettings.resolvedMessageNotifications({
 				id: channel.id,
 				guildId: channel.guildId,
 				parentId: channel.parentId ?? undefined,
 				type: channel.type,
-			})
+			}) === MessageNotifications.NO_MESSAGES
 		) {
 			return null;
 		}
@@ -389,16 +367,20 @@ class NotificationState {
 			this.isViewingChannel(message.channel_id) &&
 			this.isFocusedForNotifications();
 		if (isFocusedViewingChannel && !Modal.hasModalOpen()) {
-			NotificationUtils.playSameChannelNotificationSoundIfEnabled();
-			this.markNotified(message.id);
-			return true;
+			const channel = Channels.getChannel(message.channel_id);
+			if (channel && this.shouldNotifyBasedOnSettings(channel, message)) {
+				NotificationUtils.playSameChannelNotificationSoundIfEnabled();
+				this.markNotified(message.id);
+				return true;
+			}
+			return false;
 		}
 		const notificationData = this.validateNotificationData(message);
 		if (!notificationData) {
 			return false;
 		}
-		const {channel, messageRecord, currentUser} = notificationData;
-		if (!this.shouldNotifyBasedOnSettings(channel, messageRecord, currentUser)) {
+		const {channel} = notificationData;
+		if (!this.shouldNotifyBasedOnSettings(channel, message)) {
 			return false;
 		}
 		if (!this.claimNotification(message.id)) {

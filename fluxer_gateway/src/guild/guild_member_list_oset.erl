@@ -36,7 +36,8 @@ from_sorted(OSet, Keys) ->
 -spec destroy(oset()) -> ok.
 destroy(OSet) ->
     try guild_member_list_oset_nif:destroy(OSet) of
-        ok -> ok
+        ok -> ok;
+        _ -> ok
     catch
         _:_ -> ok
     end.

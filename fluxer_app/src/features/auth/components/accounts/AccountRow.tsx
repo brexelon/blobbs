@@ -75,7 +75,6 @@ export const AccountRow = observer(
 		const {i18n} = useLingui();
 		const avatarUrl = getAccountAvatarUrl(account);
 		const displayName = getAccountDisplayName(account, '???');
-		const discriminator = account.userData?.discriminator ?? '0000';
 		const instanceHost = showInstance ? getInstanceHost(account) : null;
 		const instanceEndpoint = showInstance ? getInstanceEndpoint(account) : null;
 		const shouldShowInstance = typeof instanceHost === 'string' && !STANDARD_INSTANCES.has(instanceHost);
@@ -121,9 +120,6 @@ export const AccountRow = observer(
 									data-flx="auth.accounts.account-row.user-text"
 								>
 									{displayName}
-									<span className={styles.discriminator} data-flx="auth.accounts.account-row.discriminator">
-										#{discriminator}
-									</span>
 								</span>
 								{shouldShowInstance && instanceEndpoint ? (
 									<Tooltip text={instanceEndpoint} position="right" data-flx="auth.accounts.account-row.tooltip">
@@ -145,9 +141,6 @@ export const AccountRow = observer(
 											data-flx="auth.accounts.account-row.user-text--2"
 										>
 											{displayName}
-											<span className={styles.discriminator} data-flx="auth.accounts.account-row.discriminator--2">
-												#{discriminator}
-											</span>
 										</span>
 									) : (
 										<span
@@ -171,9 +164,6 @@ export const AccountRow = observer(
 								{variant !== 'manage' ? (
 									<span className={clsx('user-text', styles.tag)} data-flx="auth.accounts.account-row.user-text--4">
 										{displayName}
-										<span className={styles.discriminator} data-flx="auth.accounts.account-row.discriminator--3">
-											#{discriminator}
-										</span>
 									</span>
 								) : null}
 								{variant === 'manage' && isCurrent ? (

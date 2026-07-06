@@ -52,7 +52,7 @@ describe('Account Delete Mention Resolution', () => {
 		const mention = mentionMsg!.mentions![0];
 		expect(mention.id).toBe(bob.userId);
 		expect(mention.username).toBe('DeletedUser');
-		expect(mention.discriminator).toBe('0000');
+		expect(mention.discriminator).toBe('0');
 		expect(mention.global_name).toBe('Deleted User');
 		expect(mention.avatar).toBeNull();
 		expect(mentionMsg!.author.id).toBe(alice.userId);
@@ -84,7 +84,7 @@ describe('Account Delete Mention Resolution', () => {
 		const msg = messages.find((m) => m.id === sentMessage.id);
 		expect(msg).toBeDefined();
 		expect(msg!.author.username).toBe('DeletedUser');
-		expect(msg!.author.discriminator).toBe('0000');
+		expect(msg!.author.discriminator).toBe('0');
 		expect(msg!.author.global_name).toBe('Deleted User');
 		expect(msg!.author.avatar).toBeNull();
 	}, 60000);
@@ -103,7 +103,7 @@ describe('Account Delete Mention Resolution', () => {
 			.execute();
 		expect(user.id).toBe(bob.userId);
 		expect(user.username).toBe('DeletedUser');
-		expect(user.discriminator).toBe('0000');
+		expect(user.discriminator).toBe('0');
 		expect(user.global_name).toBe('Deleted User');
 		expect(user.avatar).toBeNull();
 	}, 60000);

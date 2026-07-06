@@ -20,7 +20,6 @@ import {EMAIL_CLEARABLE_SUSPICIOUS_ACTIVITY_FLAGS} from '../../auth/AuthEmail';
 import {createUserID, type UserID} from '../../BrandedTypes';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
 import {GuildMemberSearchIndexService} from '../../guild/services/member/GuildMemberSearchIndexService';
-import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService, PreparedAssetUpload} from '../../infrastructure/EntityAssetService';
 import {Logger} from '../../Logger';
 import type {User} from '../../models/User';
@@ -30,7 +29,6 @@ import type {AdminUserUpdatePropagator} from './AdminUserUpdatePropagator';
 
 interface AdminUserProfileServiceDeps {
 	apiContext: ApiContext;
-	discriminatorService: IDiscriminatorService;
 	entityAssetService: EntityAssetService;
 	auditService: AdminAuditService;
 	updatePropagator: AdminUserUpdatePropagator;
@@ -234,26 +232,20 @@ export class AdminUserProfileService {
 			cache: cacheService,
 			contactChangeLog: contactChangeLogService,
 		} = this.deps.apiContext.services;
-		const {discriminatorService, auditService, updatePropagator} = this.deps;
+		const {auditService, updatePropagator} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
 			throw new UnknownUserError();
 		}
-		const discriminatorResult = await discriminatorService.generateDiscriminator({
-			username: data.username,
-			requestedDiscriminator: data.discriminator,
-			user,
-		});
-		if (!discriminatorResult.available || discriminatorResult.discriminator === -1) {
+		const newUsername = data.username.toLowerCase();
+		const isSameUser = newUsername === user.username;
+		if (!isSameUser && !(await userRepository.isUsernameAvailable(newUsername))) {
 			throw new TagAlreadyTakenError();
 		}
 		const updatedUser = await userRepository.patchUpsert(
 			userId,
-			{
-				username: data.username,
-				discriminator: discriminatorResult.discriminator,
-			},
+			{username: newUsername},
 			user.toRow(),
 		);
 		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
@@ -271,8 +263,7 @@ export class AdminUserProfileService {
 			auditLogReason,
 			metadata: new Map([
 				['old_username', user.username],
-				['new_username', data.username],
-				['discriminator', discriminatorResult.discriminator.toString()],
+				['new_username', newUsername],
 			]),
 		});
 		void this.reindexGuildMembersForUser(updatedUser);

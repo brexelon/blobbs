@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {MessageFlags} from '@fluxer/constants/src/ChannelConstants';
-import {
-	DELETED_USER_DISCRIMINATOR,
-	DELETED_USER_GLOBAL_NAME,
-	DELETED_USER_USERNAME,
-} from '@fluxer/constants/src/UserConstants';
+import {DELETED_USER_GLOBAL_NAME, DELETED_USER_USERNAME} from '@fluxer/constants/src/UserConstants';
 import type {MessageEmbedResponse} from '@fluxer/schema/src/domains/message/EmbedSchemas';
 import type {
 	MessageAttachmentResponse,
@@ -42,7 +38,6 @@ import type {Message} from '../../models/Message';
 import type {MessageSnapshot} from '../../models/MessageSnapshot';
 import type {StickerItem} from '../../models/StickerItem';
 import {mapUserToPartialResponse} from '../../user/UserMappers';
-import {assertSafeByteSize} from '../../utils/ByteSizeUtils';
 
 class NoopNatsConnectionManager implements INatsConnectionManager {
 	async connect(): Promise<void> {}
@@ -279,7 +274,7 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 		return {
 			id: message.webhookId?.toString() ?? '0',
 			username: message.webhookName ?? DELETED_USER_USERNAME,
-			discriminator: DELETED_USER_DISCRIMINATOR.toString().padStart(4, '0'),
+			discriminator: '0',
 			global_name: message.webhookName ?? DELETED_USER_GLOBAL_NAME,
 			avatar: message.webhookAvatarHash,
 			avatar_color: null,
@@ -299,7 +294,7 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 		return {
 			id: userId.toString(),
 			username: DELETED_USER_USERNAME,
-			discriminator: DELETED_USER_DISCRIMINATOR.toString().padStart(4, '0'),
+			discriminator: '0',
 			global_name: DELETED_USER_GLOBAL_NAME,
 			avatar: null,
 			avatar_color: null,
@@ -374,7 +369,7 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 					description: attachment.description,
 					content_type: attachment.contentType,
 					content_hash: attachment.contentHash,
-					size: assertSafeByteSize(attachment.size, 'message attachment size'),
+					size: Number(attachment.size),
 					url,
 					proxy_url: url,
 					width: attachment.width,

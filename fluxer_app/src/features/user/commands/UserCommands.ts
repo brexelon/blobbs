@@ -254,17 +254,11 @@ export async function update(user: UserUpdatePayload): Promise<UserUpdateRespons
 	}
 }
 
-export async function checkFluxerTagAvailability({
-	username,
-	discriminator,
-}: {
-	username: string;
-	discriminator: string;
-}): Promise<boolean> {
+export async function checkFluxerTagAvailability({username}: {username: string}): Promise<boolean> {
 	try {
-		logger.debug(`Checking availability for FluxerTag ${username}#${discriminator}`);
+		logger.debug(`Checking username availability for ${username}`);
 		const response = await http.get<FluxerTagAvailabilityResponse>(Endpoints.USER_CHECK_TAG, {
-			query: {username, discriminator},
+			query: {username},
 		});
 		return response.body.taken;
 	} catch (error) {

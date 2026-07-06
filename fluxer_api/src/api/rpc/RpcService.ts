@@ -54,7 +54,6 @@ import {
 } from '../guild/GuildModel';
 import type {IGuildRepositoryAggregate} from '../guild/repositories/IGuildRepositoryAggregate';
 import type {AvatarService} from '../infrastructure/AvatarService';
-import type {IDiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {IGatewayService} from '../infrastructure/IGatewayService';
 import type {ListParticipantsResult} from '../infrastructure/ILiveKitService';
 import type {IStorageService} from '../infrastructure/IStorageService';
@@ -240,8 +239,7 @@ export class RpcService {
 		private readStateService: ReadStateService,
 		private apiContext: ApiContext,
 		private gatewayService: IGatewayService,
-		private discriminatorService: IDiscriminatorService,
-		private favoriteMemeRepository: IFavoriteMemeRepository,
+			private favoriteMemeRepository: IFavoriteMemeRepository,
 		private botAuthService: BotAuthService,
 		private inviteRepository: IInviteRepository,
 		private webhookRepository: IWebhookRepository,
@@ -268,7 +266,6 @@ export class RpcService {
 			guildRepository: this.guildRepository,
 			userCacheService: this.userCacheService,
 			gatewayService: this.gatewayService,
-			discriminatorService: this.discriminatorService,
 			paymentRepository: new PaymentRepository(),
 			pneumaticPostService: new PneumaticPostService({
 				repository: new PneumaticPostRepository(),

@@ -20,7 +20,6 @@ export type PushSubscriptionPlatform = 'web_push' | 'android_fcm' | 'ios_apns' |
 export interface UserRow {
 	user_id: UserID;
 	username: string;
-	discriminator: number;
 	global_name: Nullish<string>;
 	bot: Nullish<boolean>;
 	system: Nullish<boolean>;
@@ -83,7 +82,6 @@ export interface UserRow {
 export const USER_COLUMNS = [
 	'user_id',
 	'username',
-	'discriminator',
 	'global_name',
 	'bot',
 	'system',
@@ -145,7 +143,6 @@ export const USER_COLUMNS = [
 export const EMPTY_USER_ROW: UserRow = {
 	user_id: -1n as UserID,
 	username: '',
-	discriminator: 0,
 	global_name: null,
 	bot: null,
 	system: null,
@@ -590,11 +587,21 @@ export const USER_CONTACT_CHANGE_LOG_COLUMNS = [
 	'event_at',
 ] as const satisfies ReadonlyArray<keyof UserContactChangeLogRow>;
 
+/** @deprecated Use UserByUsernameV2Row — the old table has discriminator in the PK and cannot be altered */
 export interface UserByUsernameRow {
 	username: string;
 	discriminator: number;
 	user_id: UserID;
 }
+
+export interface UserByUsernameV2Row {
+	username: string;
+	user_id: UserID;
+}
+
+export const USER_BY_USERNAME_V2_COLUMNS = ['username', 'user_id'] as const satisfies ReadonlyArray<
+	keyof UserByUsernameV2Row
+>;
 
 export interface UserByEmailRow {
 	email_lower: string;
