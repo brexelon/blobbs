@@ -3,7 +3,9 @@
 import {ConfirmModal} from '@app/features/app/components/dialogs/ConfirmModal';
 import Authentication from '@app/features/auth/state/Authentication';
 import * as ChannelPinCommands from '@app/features/channel/commands/ChannelPinsCommands';
+import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {useMaybeMessageViewContext} from '@app/features/channel/components/MessageViewContext';
+import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import {isSystemDmChannel} from '@app/features/channel/utils/ChannelUtils';
@@ -22,6 +24,7 @@ import {buildRawMessageContentCopyText} from '@app/features/messaging/utils/Mess
 import {buildMessageJumpLink} from '@app/features/messaging/utils/MessageLinkUtils';
 import {retryFailedMessage} from '@app/features/messaging/utils/MessageRetryUtils';
 import {type ReactionEmoji, toReactionEmoji} from '@app/features/messaging/utils/ReactionUtils';
+import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {getDefaultReplyMention} from '@app/features/notification/utils/MentionReplyPreferenceUtils';
 import Permission from '@app/features/permissions/state/Permission';
 import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
@@ -35,6 +38,8 @@ import MobileLayout from '@app/features/ui/state/MobileLayout';
 import Users from '@app/features/user/state/Users';
 import TtsUtils from '@app/features/voice/utils/VoiceTtsUtils';
 import {
+	ChannelTypes,
+	GUILD_TEXT_BASED_CHANNEL_TYPES,
 	isMessageTypeDeletable,
 	MessageFlags,
 	MessageStates,
@@ -171,6 +176,8 @@ export interface MessagePermissions {
 	canForwardMessage: boolean;
 	canSuppressEmbeds: boolean;
 	shouldRenderSuppressEmbeds: boolean;
+	canStartThread: boolean;
+	hasThread: boolean;
 }
 
 function canForwardMessageFromChannel(message: Message, channel: Channel, isDM: boolean): boolean {
@@ -235,6 +242,15 @@ function getMessagePermissionsForChannel(message: Message, channel: Channel): Me
 		(message.isCurrentUserAuthor() || (!isDM && canDeleteMessage));
 	const shouldRenderSuppressEmbeds =
 		message.isUserMessage() && canSuppressEmbeds && (isEmbedsSuppressed(message) || message.embeds.length > 0);
+	const hasThread = message.threadId != null;
+	const isThreadableChannel =
+		!isDM && channel.type !== ChannelTypes.GUILD_THREAD && GUILD_TEXT_BASED_CHANNEL_TYPES.has(channel.type);
+	const canStartThread =
+		!isClientSystem &&
+		!interactionsBlocked &&
+		message.isUserMessage() &&
+		isThreadableChannel &&
+		(hasThread || Permission.can(Permissions.CREATE_THREADS, {channelId: message.channelId}));
 	return {
 		channel,
 		isDM,
@@ -247,6 +263,8 @@ function getMessagePermissionsForChannel(message: Message, channel: Channel): Me
 		canForwardMessage,
 		canSuppressEmbeds,
 		shouldRenderSuppressEmbeds,
+		canStartThread,
+		hasThread,
 	};
 }
 
@@ -301,6 +319,7 @@ export interface MessageActionHandlers {
 	handleForward: () => void;
 	handleRemoveAllReactions: () => void;
 	handleMarkAsUnread: () => void;
+	handleStartThread: () => void;
 }
 
 export function createMessageActionHandlers(
@@ -395,6 +414,28 @@ export function createMessageActionHandlers(
 		requestMarkMessageUnread(message);
 		onClose?.();
 	};
+	const handleStartThread = () => {
+		const guildId = sourceChannel?.guildId ?? Channels.getChannel(message.channelId)?.guildId ?? null;
+		if (!guildId) {
+			onClose?.();
+			return;
+		}
+		const openThreadAction = async () => {
+			if (message.threadId != null) {
+				await ThreadCommands.joinThread(message.threadId);
+				selectChannel(guildId, message.threadId);
+				return;
+			}
+			ModalCommands.push(
+				modal(() => <ThreadCreateModal channelId={message.channelId} guildId={guildId} message={message} />),
+			);
+		};
+		if (onClose) {
+			ModalCommands.runAfterBottomSheetClose(onClose, () => void openThreadAction());
+			return;
+		}
+		void openThreadAction();
+	};
 	return {
 		handleEmojiSelect,
 		handleCopyMessageId,
@@ -410,6 +451,7 @@ export function createMessageActionHandlers(
 		handleForward,
 		handleRemoveAllReactions,
 		handleMarkAsUnread,
+		handleStartThread,
 	};
 }
 

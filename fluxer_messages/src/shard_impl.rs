@@ -66,7 +66,8 @@ const MESSAGE_COLUMNS: &str = "\
     content, edited_timestamp, pinned_timestamp, flags, mention_everyone, \
     mention_users, mention_roles, mention_channels, \
     has_reaction, version, nsfw_emojis, \
-    attachments, embeds, sticker_items, message_reference, call, message_snapshots";
+    attachments, embeds, sticker_items, message_reference, call, message_snapshots, \
+    thread_id, thread_name";
 
 pub struct MessagesShard {
     storage: MessagesStorage,
@@ -130,6 +131,8 @@ struct MessageDbRow {
     message_reference: Option<udt::MessageReferenceUdt>,
     call: Option<udt::MessageCallUdt>,
     message_snapshots: Option<Vec<udt::MessageSnapshotUdt>>,
+    thread_id: Option<i64>,
+    thread_name: Option<String>,
 }
 
 #[cfg_attr(feature = "scylla", derive(DeserializeRow))]
@@ -1165,6 +1168,8 @@ impl MessagesShard {
             }),
             nonce: options.nonce.clone(),
             call: message.call.as_ref().map(map_call),
+            thread_id: message.thread_id.map(|id| id.to_string()),
+            thread_name: message.thread_name.clone(),
             referenced_message,
         }
     }
@@ -3039,6 +3044,8 @@ impl From<MessageDbRow> for Message {
             message_snapshots: row
                 .message_snapshots
                 .map(|v| v.into_iter().map(convert_message_snapshot).collect()),
+            thread_id: row.thread_id,
+            thread_name: row.thread_name,
         }
     }
 }

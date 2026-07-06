@@ -59,6 +59,7 @@ import {
 } from '@app/features/ui/action_menu/ContextMenuIcons';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
+import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {KeybindHint} from '@app/features/ui/keybind_hint/KeybindHint';
 import type {MenuGroupType, MenuItemType} from '@app/features/ui/menu_bottom_sheet/MenuBottomSheet';
 import UserSettings from '@app/features/user/state/UserSettings';
@@ -83,6 +84,14 @@ const REMOVE_ALL_REACTIONS_DESCRIPTOR = msg({
 const FORWARD_DESCRIPTOR = msg({
 	message: 'Forward',
 	comment: 'Message context menu item that opens the forward-to-channel picker.',
+});
+const START_THREAD_DESCRIPTOR = msg({
+	message: 'Start new thread',
+	comment: 'Message context menu item that starts a new thread rooted on the message.',
+});
+const JOIN_THREAD_DESCRIPTOR = msg({
+	message: 'Join thread',
+	comment: 'Message context menu item shown when the message already has a thread.',
 });
 const UNSUPPRESS_EMBEDS_DESCRIPTOR = msg({
 	message: 'Unsuppress embeds',
@@ -120,6 +129,7 @@ export const messageActionMenuItemIds = {
 	viewReactions: 'view_reactions',
 	removeAllReactions: 'remove_all_reactions',
 	reply: 'reply',
+	thread: 'thread',
 	forward: 'forward',
 	edit: 'edit',
 	pinMessage: 'message_pin',
@@ -281,6 +291,14 @@ export const useMessageActionMenuData = (
 					shortcut: (
 						<KeybindHint action="message_reply" data-flx="channel.message-action-menu.groups.keybind-hint--3" />
 					),
+				});
+			}
+			if (message.isUserMessage() && supportsInteractiveActions && permissions?.canStartThread) {
+				interactionActions.push({
+					id: messageActionMenuItemIds.thread,
+					icon: <ThreadIcon size={20} data-flx="channel.message-action-menu.groups.thread-icon" />,
+					label: i18n._(permissions?.hasThread ? JOIN_THREAD_DESCRIPTOR : START_THREAD_DESCRIPTOR),
+					onClick: handlers.handleStartThread,
 				});
 			}
 			if (message.isUserMessage() && supportsInteractiveActions && permissions?.canForwardMessage) {

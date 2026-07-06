@@ -170,6 +170,8 @@ export class Message {
 	readonly _allowedMentions?: AllowedMentions;
 	readonly _favoriteMemeId?: string;
 	readonly stickers?: ReadonlyArray<MessageStickerItem>;
+	readonly threadId?: string | null;
+	readonly threadName?: string | null;
 
 	constructor(message: MessageInput, options?: MessageRecordOptions) {
 		this.instanceId = options?.instanceId ?? RuntimeConfig.localInstanceDomain;
@@ -203,6 +205,8 @@ export class Message {
 		this.timestamp = new Date(message.timestamp);
 		this.editedTimestamp = message.edited_timestamp ? new Date(message.edited_timestamp) : null;
 		this.state = message.state ?? MessageStates.SENT;
+		this.threadId = message.thread_id ?? null;
+		this.threadName = message.thread_name ?? null;
 		this.nonce = message.nonce;
 		this.blocked = message.blocked ?? isBlocked;
 		this.mentions = Object.freeze((message.mentions ?? []).map((user) => new User(user)));
@@ -544,6 +548,8 @@ export class Message {
 			state: this.state,
 			nonce: this.nonce,
 			blocked: this.blocked,
+			thread_id: this.threadId,
+			thread_name: this.threadName,
 			_allowedMentions: this._allowedMentions,
 			_favoriteMemeId: this._favoriteMemeId,
 		};

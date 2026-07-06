@@ -7,6 +7,7 @@ import {MessageActionBar, MessageActionBarCore} from '@app/features/channel/comp
 import {MessageActionBottomSheet} from '@app/features/channel/components/MessageActionBottomSheet';
 import {requestDeleteMessage} from '@app/features/channel/components/MessageActionUtils';
 import {MessageViewContextProvider} from '@app/features/channel/components/MessageViewContext';
+import {ThreadPreviewCard} from '@app/features/channel/components/ThreadPreviewCard';
 import type {Channel} from '@app/features/channel/models/Channel';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
 import {parse} from '@app/features/messaging/components/markdown/renderers';
@@ -739,6 +740,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 						canForwardMessage: true,
 						canSuppressEmbeds: true,
 						shouldRenderSuppressEmbeds: false,
+						canStartThread: false,
+						hasThread: false,
 					}
 				: undefined,
 			onPopoutToggle: handleMessagePopoutToggle,
@@ -910,6 +913,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					data-flx="channel.message.article.alt-click"
 				>
 					{messageComponent}
+					{message.threadId != null && <ThreadPreviewCard message={message} />}
 					{shouldRenderInlineActionBar &&
 						(previewMode ? (
 							<MessageActionBarCore
@@ -924,6 +928,8 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 									canPinMessage: true,
 									canForwardMessage: true,
 									shouldRenderSuppressEmbeds: true,
+									canStartThread: false,
+									hasThread: false,
 								}}
 								isSaved={false}
 								developerMode={false}

@@ -1,0 +1,56 @@
+.container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin: 4px 0 4px 56px;
+}
+
+/* Connector line coming out of the parent message's left gutter, mirroring the
+   reply connector visual. */
+.connector {
+	position: absolute;
+	left: -20px;
+	top: -8px;
+	width: 20px;
+	height: 24px;
+	border-left: 2px solid var(--background-modifier-accent);
+	border-bottom: 2px solid var(--background-modifier-accent);
+	border-bottom-left-radius: 8px;
+}
+
+.box {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 12px;
+	border: 1px solid var(--brand-primary, var(--accent-primary, #5865f2));
+	border-radius: 8px;
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: 14px;
+	max-width: 100%;
+}
+
+.box:hover {
+	background: var(--background-modifier-hover);
+}
+
+.icon {
+	color: var(--brand-primary, var(--accent-primary, #5865f2));
+	flex-shrink: 0;
+}
+
+.name {
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.action {
+	color: var(--text-muted);
+	font-size: 13px;
+	flex-shrink: 0;
+}

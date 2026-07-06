@@ -16,6 +16,7 @@ import {
 	isSpecialMention,
 	isSticker,
 } from '@app/features/channel/components/Autocomplete';
+import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import type {Command} from '@app/features/devtools/hooks/useCommands';
@@ -69,13 +70,15 @@ import Permission from '@app/features/permissions/state/Permission';
 import * as PermissionUtils from '@app/features/permissions/utils/PermissionUtils';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
+import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
+import {modal} from '@app/features/ui/commands/ModalCommands';
 import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import type {UserId} from '@fluxer/schema/src/branded/WireIds';
 import {useLingui} from '@lingui/react/macro';
 import {matchSorter} from 'match-sorter';
-import {useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
+import {createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 
 const logger = new Logger('useTextareaAutocomplete');
 
@@ -151,9 +154,7 @@ export function useTextareaAutocomplete({
 		channel?.guildId ? GuildMembers.getGuildMemberVersion(channel.guildId) : 0,
 	);
 	const channelMemberListVersion = useSyncExternalStore(MemberSidebar.subscribe.bind(MemberSidebar), () =>
-		channel?.guildId && channel.id
-			? MemberSidebar.getChannelListVersion(channel.guildId, channel.id)
-			: 0,
+		channel?.guildId && channel.id ? MemberSidebar.getChannelListVersion(channel.guildId, channel.id) : 0,
 	);
 	const gifCacheRef = useRef<Map<string, Array<Gif>>>(new Map());
 	const currentSearchRef = useRef<string | null>(null);
@@ -899,6 +900,14 @@ export function useTextareaAutocomplete({
 						Math.max(0, newCursorPosition - trimmedChars),
 					);
 					setSelectedIndex(0);
+					return;
+				} else if (option.command.name === '/thread' && channel?.guildId) {
+					const guildId = channel.guildId;
+					const channelId = channel.id;
+					const clearedValue = `${beforeMatch}${guildBeforeMatch}${afterMatch}`.trimStart();
+					applyAutocompleteValue(clearedValue, [], 0);
+					setSelectedIndex(0);
+					ModalCommands.push(modal(() => createElement(ThreadCreateModal, {channelId, guildId})));
 					return;
 				} else {
 					const insertionText = getCommandInsertionText(option.command);

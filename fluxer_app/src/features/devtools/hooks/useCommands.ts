@@ -35,6 +35,10 @@ const CHANGE_YOUR_NICKNAME_IN_THIS_COMMUNITY_DESCRIPTOR = msg({
 	message: 'Change your nickname in this community.',
 	comment: "Slash-command description for /nick. Changes the user's nickname in the current community.",
 });
+const START_A_THREAD_DESCRIPTOR = msg({
+	message: 'Start a new thread in this channel.',
+	comment: 'Slash-command description for /thread. Opens the create-thread modal.',
+});
 const KICK_A_MEMBER_FROM_THIS_COMMUNITY_DESCRIPTOR = msg({
 	message: 'Kick a member from this community.',
 	comment: 'Slash-command description for /kick. Removes a member from the current community (moderation action).',
@@ -107,6 +111,13 @@ export function useCommands(): Array<Command> {
 				name: '/nick',
 				description: i18n._(CHANGE_YOUR_NICKNAME_IN_THIS_COMMUNITY_DESCRIPTOR),
 				permission: Permissions.CHANGE_NICKNAME,
+				requiresGuild: true,
+			},
+			{
+				type: 'action',
+				name: '/thread',
+				description: i18n._(START_A_THREAD_DESCRIPTOR),
+				permission: Permissions.CREATE_THREADS,
 				requiresGuild: true,
 			},
 			{
