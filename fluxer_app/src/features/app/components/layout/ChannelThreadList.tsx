@@ -4,9 +4,6 @@ import styles from '@app/features/app/components/layout/ChannelThreadList.module
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
-import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
-import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
-import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
@@ -85,7 +82,6 @@ const ThreadRow = observer(
 				data-flx="app.channel-thread-list.row"
 			>
 				<span className={styles.connector} aria-hidden="true" />
-				<ThreadIcon size={16} className={styles.icon} data-flx="app.channel-thread-list.icon" />
 				<span className={styles.name}>{name}</span>
 			</button>
 		);
