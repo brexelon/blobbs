@@ -26,6 +26,13 @@ describe('MessageTypeSchema', () => {
 			expect(result.data).toBe(MessageTypes.CALL);
 		}
 	});
+	it('accepts thread created message type', () => {
+		const result = MessageTypeSchema.safeParse(MessageTypes.THREAD_CREATED);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBe(MessageTypes.THREAD_CREATED);
+		}
+	});
 	it('accepts reply message type', () => {
 		const result = MessageTypeSchema.safeParse(MessageTypes.REPLY);
 		expect(result.success).toBe(true);
