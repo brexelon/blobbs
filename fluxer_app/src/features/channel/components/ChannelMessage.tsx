@@ -871,10 +871,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 	const hasThreadPreview = message.threadId != null;
 	return (
 		<>
-			<div
-				className={clsx(styles.messageThreadBlock, hasThreadPreview && styles.messageThreadBlockHasPreview)}
-				data-flx="channel.message.thread-block"
-			>
+			<div className={styles.messageThreadBlock} data-flx="channel.message.thread-block">
 				<FocusRing data-flx="channel.message.focus-ring">
 					<div
 					role="article"
@@ -902,7 +899,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					data-flx-compact={messageDisplayCompact ? 'true' : undefined}
 					data-flx-grouped={shouldGroup && shouldApplyGroupedLayout(message, prevMessage) ? 'true' : undefined}
 					tabIndex={keyboardModeEnabled ? -1 : undefined}
-					className={messageClasses}
+					className={clsx(messageClasses, hasThreadPreview && styles.messageHasThreadPreview)}
 					ref={messageRef}
 					onClickCapture={handleClickCapture}
 					onClick={handleAltClick}
