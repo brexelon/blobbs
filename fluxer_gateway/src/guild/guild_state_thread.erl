@@ -17,7 +17,9 @@
 -export([
     handle_member_add/2,
     handle_member_remove/2,
-    handle_thread_update/2
+    handle_thread_update/2,
+    handle_preview_subscribe/3,
+    handle_preview_unsubscribe/3
 ]).
 
 -type guild_state() :: map().
@@ -33,7 +35,11 @@
 handle_member_add(EventData, State) ->
     case {parse_user_id(EventData), parse_thread_id(EventData)} of
         {UserId, ThreadId} when is_integer(UserId), is_integer(ThreadId) ->
-            guild_virtual_channel_access:add_virtual_access(UserId, ThreadId, State);
+            State1 = guild_virtual_channel_access:add_virtual_access(UserId, ThreadId, State),
+            %% A real join supersedes any prior preview grant: clearing the preview
+            %% mark ensures a later unsubscribe_thread_preview (e.g. from another tab
+            %% still showing the thread) cannot revoke a genuine member's access.
+            guild_virtual_channel_access:clear_thread_preview(UserId, ThreadId, State1);
         _ ->
             State
     end.
@@ -57,6 +63,35 @@ handle_thread_update(EventData, State) ->
         {ThreadId, ?THREAD_STATE_ARCHIVED} when is_integer(ThreadId) ->
             revoke_all_access(ThreadId, State);
         _ ->
+            State
+    end.
+
+%% A preview grant makes a thread's channel-scoped events visible to a user who
+%% is looking at (but has not joined) the thread. If the user can already see the
+%% thread — because they are a joined member, or an earlier preview from this user
+%% is still active — there is nothing to grant. Otherwise grant virtual access and
+%% remember it as preview-originated so the matching unsubscribe can revoke it
+%% (and only it, never a real membership).
+-spec handle_preview_subscribe(user_id(), channel_id(), guild_state()) -> guild_state().
+handle_preview_subscribe(UserId, ThreadId, State) ->
+    case guild_virtual_channel_access:has_virtual_access(UserId, ThreadId, State) of
+        true ->
+            State;
+        false ->
+            State1 = guild_virtual_channel_access:add_virtual_access(UserId, ThreadId, State),
+            guild_virtual_channel_access:mark_thread_preview(UserId, ThreadId, State1)
+    end.
+
+%% Revoke a preview-originated grant. The preview mark is the guard: a thread the
+%% user genuinely joined has no mark (handle_member_add clears it), so its access
+%% survives an unsubscribe.
+-spec handle_preview_unsubscribe(user_id(), channel_id(), guild_state()) -> guild_state().
+handle_preview_unsubscribe(UserId, ThreadId, State) ->
+    case guild_virtual_channel_access:has_thread_preview(UserId, ThreadId, State) of
+        true ->
+            State1 = guild_virtual_channel_access:remove_virtual_access(UserId, ThreadId, State),
+            guild_virtual_channel_access:clear_thread_preview(UserId, ThreadId, State1);
+        false ->
             State
     end.
 
@@ -144,5 +179,47 @@ handle_thread_update_non_archive_preserves_access_test() ->
     EventData = #{<<"id">> => <<"99">>, <<"thread_metadata">> => #{<<"state">> => 0}},
     Updated = handle_thread_update(EventData, State1),
     ?assertEqual(true, guild_virtual_channel_access:has_virtual_access(7, 99, Updated)).
+
+handle_preview_subscribe_grants_and_marks_test() ->
+    State0 = #{id => 1, sessions => #{}},
+    Updated = handle_preview_subscribe(7, 99, State0),
+    ?assertEqual(true, guild_virtual_channel_access:has_virtual_access(7, 99, Updated)),
+    ?assertEqual(true, guild_virtual_channel_access:has_thread_preview(7, 99, Updated)).
+
+handle_preview_subscribe_is_noop_when_already_visible_test() ->
+    State0 = #{id => 1, sessions => #{}},
+    Joined = guild_virtual_channel_access:add_virtual_access(7, 99, State0),
+    Updated = handle_preview_subscribe(7, 99, Joined),
+    %% A joined member gains no preview mark, so a later unsubscribe cannot revoke them.
+    ?assertEqual(false, guild_virtual_channel_access:has_thread_preview(7, 99, Updated)),
+    ?assertEqual(true, guild_virtual_channel_access:has_virtual_access(7, 99, Updated)).
+
+handle_preview_unsubscribe_revokes_preview_test() ->
+    State0 = #{id => 1, sessions => #{}},
+    Subscribed = handle_preview_subscribe(7, 99, State0),
+    Updated = handle_preview_unsubscribe(7, 99, Subscribed),
+    ?assertEqual(false, guild_virtual_channel_access:has_virtual_access(7, 99, Updated)),
+    ?assertEqual(false, guild_virtual_channel_access:has_thread_preview(7, 99, Updated)).
+
+handle_preview_unsubscribe_preserves_membership_test() ->
+    State0 = #{id => 1, sessions => #{}},
+    %% Member joins (clearing any preview), then an unsubscribe arrives.
+    Joined = handle_member_add(
+        #{<<"thread_id">> => <<"99">>, <<"user_id">> => <<"7">>}, State0
+    ),
+    Updated = handle_preview_unsubscribe(7, 99, Joined),
+    ?assertEqual(true, guild_virtual_channel_access:has_virtual_access(7, 99, Updated)).
+
+handle_member_add_clears_prior_preview_test() ->
+    State0 = #{id => 1, sessions => #{}},
+    Previewing = handle_preview_subscribe(7, 99, State0),
+    ?assertEqual(true, guild_virtual_channel_access:has_thread_preview(7, 99, Previewing)),
+    Joined = handle_member_add(
+        #{<<"thread_id">> => <<"99">>, <<"user_id">> => <<"7">>}, Previewing
+    ),
+    ?assertEqual(false, guild_virtual_channel_access:has_thread_preview(7, 99, Joined)),
+    %% The preview-turned-member keeps access even if an unsubscribe follows.
+    Unsub = handle_preview_unsubscribe(7, 99, Joined),
+    ?assertEqual(true, guild_virtual_channel_access:has_virtual_access(7, 99, Unsub)).
 
 -endif.

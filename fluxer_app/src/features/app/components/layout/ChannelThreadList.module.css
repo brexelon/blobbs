@@ -1,0 +1,56 @@
+.list {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Thread rows are indented from the parent channel and connected via a line. */
+.row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 30px;
+	padding: 3px 8px 3px 10px;
+	border: none;
+	background: transparent;
+	border-radius: 4px;
+	color: var(--channels-default, var(--text-muted));
+	cursor: pointer;
+	font-size: 14px;
+	min-height: 26px;
+	text-align: left;
+}
+
+.row:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-hover, var(--text-normal));
+}
+
+.rowSelected {
+	background: var(--background-modifier-selected);
+	color: var(--interactive-active, var(--text-normal));
+}
+
+.connector {
+	position: absolute;
+	left: -8px;
+	top: -4px;
+	width: 10px;
+	height: 18px;
+	border-left: 2px solid var(--background-modifier-accent);
+	border-bottom: 2px solid var(--background-modifier-accent);
+	border-bottom-left-radius: 6px;
+	pointer-events: none;
+}
+
+.icon {
+	flex-shrink: 0;
+	opacity: 0.8;
+}
+
+.name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}

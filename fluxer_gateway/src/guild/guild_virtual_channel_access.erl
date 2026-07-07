@@ -20,7 +20,10 @@
     has_preserve/3,
     mark_move_pending/3,
     clear_move_pending/3,
-    is_move_pending/3
+    is_move_pending/3,
+    mark_thread_preview/3,
+    clear_thread_preview/3,
+    has_thread_preview/3
 ]).
 
 -type guild_state() :: map().
@@ -62,11 +65,13 @@ remove_all_user_virtual_access(UserId, State) ->
     VCP = maps:get(virtual_channel_access_pending, State, #{}),
     VCPr = maps:get(virtual_channel_access_preserve, State, #{}),
     VCM = maps:get(virtual_channel_access_move_pending, State, #{}),
+    VCTp = maps:get(virtual_channel_access_thread_preview, State, #{}),
     State1 = State#{
         virtual_channel_access => maps:remove(UserId, VCA),
         virtual_channel_access_pending => maps:remove(UserId, VCP),
         virtual_channel_access_preserve => maps:remove(UserId, VCPr),
-        virtual_channel_access_move_pending => maps:remove(UserId, VCM)
+        virtual_channel_access_move_pending => maps:remove(UserId, VCM),
+        virtual_channel_access_thread_preview => maps:remove(UserId, VCTp)
     },
     clear_user_session_view_cache(UserId, State1).
 
@@ -77,11 +82,13 @@ update_user_virtual_access(UserId, ChannelId, UpdatedChans, State) ->
     VCP = maps:get(virtual_channel_access_pending, State, #{}),
     VCPr = maps:get(virtual_channel_access_preserve, State, #{}),
     VCM = maps:get(virtual_channel_access_move_pending, State, #{}),
+    VCTp = maps:get(virtual_channel_access_thread_preview, State, #{}),
     State1 = State#{
         virtual_channel_access => VCA#{UserId => UpdatedChans},
         virtual_channel_access_pending => del_from_user_set(UserId, ChannelId, VCP),
         virtual_channel_access_preserve => del_from_user_set(UserId, ChannelId, VCPr),
-        virtual_channel_access_move_pending => del_from_user_set(UserId, ChannelId, VCM)
+        virtual_channel_access_move_pending => del_from_user_set(UserId, ChannelId, VCM),
+        virtual_channel_access_thread_preview => del_from_user_set(UserId, ChannelId, VCTp)
     },
     update_user_session_view_cache(UserId, ChannelId, remove, State1).
 
@@ -184,6 +191,27 @@ clear_move_pending(UserId, ChannelId, State) ->
 -spec is_move_pending(user_id(), channel_id(), guild_state()) -> boolean().
 is_move_pending(UserId, ChannelId, State) ->
     user_channel_check(UserId, ChannelId, virtual_channel_access_move_pending, State).
+
+%% Thread preview marks flag a virtual access grant as originating from an
+%% ephemeral thread preview rather than a persisted thread membership, so the
+%% preview can be revoked on unsubscribe without disturbing real members.
+-spec mark_thread_preview(user_id(), channel_id(), guild_state()) -> guild_state().
+mark_thread_preview(UserId, ChannelId, State) ->
+    PreviewMap = maps:get(virtual_channel_access_thread_preview, State, #{}),
+    UserPreview = sets:add_element(ChannelId, maps:get(UserId, PreviewMap, sets:new())),
+    State#{virtual_channel_access_thread_preview => PreviewMap#{UserId => UserPreview}}.
+
+-spec clear_thread_preview(user_id(), channel_id(), guild_state()) -> guild_state().
+clear_thread_preview(UserId, ChannelId, State) ->
+    Preview = maps:get(virtual_channel_access_thread_preview, State, #{}),
+    State#{
+        virtual_channel_access_thread_preview =>
+            clear_from_user_set(UserId, ChannelId, Preview)
+    }.
+
+-spec has_thread_preview(user_id(), channel_id(), guild_state()) -> boolean().
+has_thread_preview(UserId, ChannelId, State) ->
+    user_channel_check(UserId, ChannelId, virtual_channel_access_thread_preview, State).
 
 -spec get_users_with_virtual_access(channel_id(), guild_state()) -> [user_id()].
 get_users_with_virtual_access(ChannelId, State) ->

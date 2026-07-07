@@ -16,6 +16,7 @@ import {MatureTextChannelIcon} from '@app/features/ui/components/icons/MatureTex
 import {MatureVoiceChannelIcon} from '@app/features/ui/components/icons/MatureVoiceChannelIcon';
 import {NoConnectChannelIcon} from '@app/features/ui/components/icons/NoConnectChannelIcon';
 import {TextChannelIcon} from '@app/features/ui/components/icons/TextChannelIcon';
+import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {VoiceChannelIcon} from '@app/features/ui/components/icons/VoiceChannelIcon';
 import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
@@ -51,6 +52,10 @@ const TEXT_MATURE_DESCRIPTOR = msg({
 const TEXT_DESCRIPTOR = msg({
 	message: 'Text',
 	comment: 'Channel type chip label for a text channel.',
+});
+const THREAD_DESCRIPTOR = msg({
+	message: 'Thread',
+	comment: 'Channel type chip label for a thread channel.',
 });
 const UNKNOWN_USER_DESCRIPTOR = msg({
 	message: 'Unknown user',
@@ -130,6 +135,14 @@ export function getIcon(
 				return <LockedLinkChannelIcon data-flx="channel.channel-utils.get-icon.locked-link-channel-icon" {...props} />;
 			return <LinkChannelIcon data-flx="channel.channel-utils.get-icon.link-channel-icon" {...props} />;
 		}
+		case ChannelTypes.GUILD_THREAD:
+			return (
+				<ThreadIcon
+					size={typeof props.size === 'number' ? props.size : 20}
+					className={props.className}
+					data-flx="channel.channel-utils.get-icon.thread-icon"
+				/>
+			);
 		case ChannelTypes.GUILD_CATEGORY:
 			return <CaretDownIcon weight="bold" data-flx="channel.channel-utils.get-icon.caret-down-icon" {...props} />;
 		case ChannelTypes.DM_PERSONAL_NOTES:
@@ -147,6 +160,8 @@ export function getName(channel: Channel) {
 			return i18n._(CATEGORY_DESCRIPTOR);
 		case ChannelTypes.GUILD_LINK:
 			return channel.nsfw ? i18n._(LINK_MATURE_DESCRIPTOR) : i18n._(LINK_DESCRIPTOR);
+		case ChannelTypes.GUILD_THREAD:
+			return i18n._(THREAD_DESCRIPTOR);
 		default:
 			return channel.nsfw ? i18n._(TEXT_MATURE_DESCRIPTOR) : i18n._(TEXT_DESCRIPTOR);
 	}
