@@ -82,6 +82,15 @@ export class ThreadOperationsService {
 			}
 		}
 		const threadId = createChannelID(await this.snowflakeService.generateForChannel(parentChannelId.toString()));
+		// For standalone creation we announce the thread with a system message and
+		// treat it as the origin message, so deleting the thread can find and clean
+		// it up exactly like a message-originated thread. Pre-generate its id here so
+		// the thread row can reference it up front.
+		const systemMessageId =
+			originMessageId == null
+				? createMessageID(await this.snowflakeService.generateForChannel(parentChannelId.toString()))
+				: null;
+		const threadOriginMessageId = originMessageId ?? systemMessageId;
 		const now = new Date();
 		const autoCloseAt = new Date(now.getTime() + data.auto_close_duration_seconds * 1000);
 		const thread = await this.channelRepository.upsert({
@@ -115,7 +124,7 @@ export class ThreadOperationsService {
 			thread_state: ThreadStates.OPEN,
 			thread_auto_close_duration_seconds: data.auto_close_duration_seconds,
 			thread_auto_close_at: autoCloseAt,
-			thread_origin_message_id: originMessageId,
+			thread_origin_message_id: threadOriginMessageId,
 			soft_deleted: false,
 			indexed_at: null,
 			version: 1,
@@ -141,7 +150,7 @@ export class ThreadOperationsService {
 				// The thread grew out of an existing message: re-broadcast it so every
 				// viewer renders the thread preview card beneath it without a refresh.
 				await this.broadcastOriginMessageUpdate({parent, messageId: originMessageId});
-			} else {
+			} else if (systemMessageId != null) {
 				// The thread was started standalone (topbar "Create" / /thread): post a
 				// "started a thread" system message carrying the thread annotation, so it
 				// surfaces in the channel with its own preview card, like the origin case.
@@ -149,6 +158,7 @@ export class ThreadOperationsService {
 					parent,
 					guildId,
 					creatorId: userId,
+					messageId: systemMessageId,
 					threadId,
 					threadName: data.name,
 				});
@@ -172,11 +182,11 @@ export class ThreadOperationsService {
 		parent: Channel;
 		guildId: GuildID;
 		creatorId: UserID;
+		messageId: MessageID;
 		threadId: ChannelID;
 		threadName: string;
 	}): Promise<void> {
-		const {parent, guildId, creatorId, threadId, threadName} = params;
-		const messageId = createMessageID(await this.snowflakeService.generateForChannel(parent.id.toString()));
+		const {parent, guildId, creatorId, messageId, threadId, threadName} = params;
 		await this.messagePersistenceService.createSystemMessage({
 			messageId,
 			channelId: parent.id,
@@ -347,7 +357,9 @@ export class ThreadOperationsService {
 		if (thread.parentId != null) {
 			await this.threadRepository.removeFromParentIndex(thread.parentId, threadId);
 			if (thread.threadOriginMessageId != null) {
-				await this.threadRepository.clearOriginMessageAnnotation({
+				// Detach the origin/announcement message so its preview box drops, but
+				// keep any "started a thread" system message readable.
+				await this.threadRepository.clearOriginMessageThreadLink({
 					parentChannelId: thread.parentId,
 					messageId: thread.threadOriginMessageId,
 				});
@@ -356,7 +368,12 @@ export class ThreadOperationsService {
 		await this.gatewayService.dispatchGuild({
 			guildId,
 			event: 'THREAD_DELETE',
-			data: {id: threadId.toString(), guild_id: guildId.toString(), parent_id: thread.parentId?.toString() ?? null},
+			data: {
+				id: threadId.toString(),
+				guild_id: guildId.toString(),
+				parent_id: thread.parentId?.toString() ?? null,
+				origin_message_id: thread.threadOriginMessageId?.toString() ?? null,
+			},
 		});
 	}
 

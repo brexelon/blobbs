@@ -624,6 +624,21 @@ class Messages {
 		return true;
 	}
 
+	/**
+	 * Detach a message from a thread that was just deleted, dropping its preview
+	 * box (gated on threadId) while leaving the rest of the message — e.g. the
+	 * "started a thread" system message text — intact.
+	 */
+	@action
+	clearThreadLink(channelId: string, messageId: string): boolean {
+		const existing = ChannelMessages.get(channelId);
+		if (!existing || !existing.has(messageId)) return false;
+		const updated = existing.update(messageId, (message) => message.withUpdates({thread_id: null}));
+		this.commitMessages(updated);
+		this.notifyChange();
+		return true;
+	}
+
 	@action
 	handleUserUpdate(action: {
 		user: {
