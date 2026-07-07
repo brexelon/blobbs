@@ -29,6 +29,7 @@ import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
+import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import GuildMatureContentAgree, {MatureContentGateReason} from '@app/features/guild/state/GuildMatureContentAgree';
 import Guilds from '@app/features/guild/state/Guilds';
 import GuildVerification from '@app/features/guild/state/GuildVerification';
@@ -193,13 +194,23 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 	useEffect(() => {
 		// A thread the user opens but has not joined shows in the sidebar as a
 		// preview for as long as it is the active view, and disappears on navigate.
+		// While previewing, ask the gateway for ephemeral visibility of the thread's
+		// live events (messages, typing); joined threads already have that access.
 		if (isThreadChannel) {
 			Threads.setPreview(channelId);
-			return () => Threads.setPreview(null);
+			if (guildId && !Threads.isJoined(channelId)) {
+				GatewayConnection.socket?.subscribeThreadPreview({guildId, threadId: channelId});
+			}
+			return () => {
+				Threads.setPreview(null);
+				if (guildId && !Threads.isJoined(channelId)) {
+					GatewayConnection.socket?.unsubscribeThreadPreview({guildId, threadId: channelId});
+				}
+			};
 		}
 		Threads.setPreview(null);
 		return undefined;
-	}, [isThreadChannel, channelId]);
+	}, [isThreadChannel, channelId, guildId]);
 	const searchState = useChannelSearchState(channel);
 	const {
 		isSearchActive,

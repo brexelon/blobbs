@@ -529,6 +529,24 @@ export class GatewaySocket extends EventEmitter<GatewaySocketEvents> {
 		});
 	}
 
+	subscribeThreadPreview(params: {guildId: string; threadId: string}): void {
+		if (!this.isConnected()) return;
+		if (params.guildId.length === 0 || params.threadId.length === 0) return;
+		this.sendPayload({
+			op: GatewayOpcodes.SUBSCRIBE_THREAD_PREVIEW,
+			d: {guild_id: params.guildId, thread_id: params.threadId},
+		});
+	}
+
+	unsubscribeThreadPreview(params: {guildId: string; threadId: string}): void {
+		if (!this.isConnected()) return;
+		if (params.guildId.length === 0 || params.threadId.length === 0) return;
+		this.sendPayload({
+			op: GatewayOpcodes.UNSUBSCRIBE_THREAD_PREVIEW,
+			d: {guild_id: params.guildId, thread_id: params.threadId},
+		});
+	}
+
 	setToken(token: string): void {
 		this.options.token = token;
 	}

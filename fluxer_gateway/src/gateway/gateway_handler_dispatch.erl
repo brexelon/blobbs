@@ -30,7 +30,11 @@
 -define(MAX_REQUEST_WORKERS, 4).
 
 -type request_worker_type() ::
-    request_guild_members | request_guild_counts | request_channel_member_counts | lazy_request.
+    request_guild_members
+    | request_guild_counts
+    | request_channel_member_counts
+    | lazy_request
+    | thread_preview.
 
 -spec handle_opcode(atom(), map(), state()) -> ws_result().
 handle_opcode(heartbeat, #{<<"d">> := Seq}, State) ->
@@ -77,6 +81,14 @@ handle_authenticated_opcode(
     is_pid(Pid)
 ->
     handle_request_channel_member_counts(Data, Pid, State);
+handle_authenticated_opcode(subscribe_thread_preview, Data, #{session_pid := Pid} = State) when
+    is_pid(Pid)
+->
+    handle_thread_preview(subscribe, Data, Pid, State);
+handle_authenticated_opcode(unsubscribe_thread_preview, Data, #{session_pid := Pid} = State) when
+    is_pid(Pid)
+->
+    handle_thread_preview(unsubscribe, Data, Pid, State);
 handle_authenticated_opcode(_, _, State) ->
     gateway_handler_encode:close_with_reason(unknown_opcode, <<"Unknown opcode">>, State).
 
@@ -426,6 +438,33 @@ handle_lazy_request(Data, Pid, State) ->
     SocketPid = self(),
     Fun = fun() -> do_lazy_request(Data, SocketPid, Pid) end,
     request_worker_result(start_request_worker(lazy_request, Fun, State), State).
+
+-spec handle_thread_preview(subscribe | unsubscribe, map(), pid(), state()) -> ws_result().
+handle_thread_preview(Action, Data, Pid, State) ->
+    SocketPid = self(),
+    Fun = fun() -> do_thread_preview(Action, Data, SocketPid, Pid) end,
+    request_worker_result(start_request_worker(thread_preview, Fun, State), State).
+
+-spec do_thread_preview(subscribe | unsubscribe, map(), pid(), pid()) -> ok.
+do_thread_preview(Action, Data, SocketPid, SessionPid) ->
+    try do_thread_preview_inner(Action, Data, SocketPid, SessionPid) of
+        ok -> ok
+    catch
+        error:_Reason -> ok;
+        exit:_Reason -> ok;
+        throw:_Reason -> ok
+    end.
+
+-spec do_thread_preview_inner(subscribe | unsubscribe, map(), pid(), pid()) -> ok.
+do_thread_preview_inner(Action, Data, _SocketPid, SessionPid) ->
+    case gen_server:call(SessionPid, {get_state}, 5000) of
+        SessionState when is_map(SessionState) ->
+            guild_thread_preview:handle_op(
+                Action, Data, SessionState#{session_pid => SessionPid}
+            );
+        _ ->
+            ok
+    end.
 
 -spec request_worker_result({ok, pid(), state()} | dropped, state()) -> ws_result().
 request_worker_result({ok, _Pid, WorkerState}, _State) ->

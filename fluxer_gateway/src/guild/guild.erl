@@ -156,6 +156,14 @@ handle_cast({send_members_chunk, SessionId, ChunkData}, State) ->
     handle_send_members_chunk_cast(SessionId, ChunkData, State);
 handle_cast({patch_everyone_perms, Bit}, State) when is_integer(Bit), Bit > 0 ->
     {noreply, guild_maintenance:apply_everyone_perm_bit(Bit, State)};
+handle_cast({thread_preview_subscribe, UserId, ThreadId}, State) when
+    is_integer(UserId), is_integer(ThreadId)
+->
+    {noreply, guild_state_thread:handle_preview_subscribe(UserId, ThreadId, State)};
+handle_cast({thread_preview_unsubscribe, UserId, ThreadId}, State) when
+    is_integer(UserId), is_integer(ThreadId)
+->
+    {noreply, guild_state_thread:handle_preview_unsubscribe(UserId, ThreadId, State)};
 handle_cast(Msg, State) when is_tuple(Msg) ->
     route_cast(element(1, Msg), Msg, State);
 handle_cast(_, State) ->
