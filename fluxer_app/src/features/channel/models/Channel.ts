@@ -81,6 +81,7 @@ export class Channel {
 	readonly contentWarningText: string | null;
 	readonly rateLimitPerUser: number;
 	readonly nicks: Readonly<Record<string, string>>;
+	readonly threadMetadata: NonNullable<WireChannel['thread_metadata']> | null;
 
 	constructor(channel: WireChannel, options?: ChannelRecordOptions) {
 		this.instanceId = options?.instanceId ?? RuntimeConfig.localInstanceDomain;
@@ -108,6 +109,7 @@ export class Channel {
 		this.contentWarningText = channel.content_warning_text ?? null;
 		this.rateLimitPerUser = channel.rate_limit_per_user ?? 0;
 		this.nicks = channel.nicks ?? {};
+		this.threadMetadata = channel.thread_metadata ?? null;
 		if ((this.type === ChannelTypes.DM || this.type === ChannelTypes.GROUP_DM) && channel.recipients) {
 			Users?.cacheUsers(Array.from(channel.recipients));
 		}
@@ -337,6 +339,7 @@ export class Channel {
 			content_warning_text: this.contentWarningText,
 			rate_limit_per_user: this.rateLimitPerUser,
 			nicks: this.nicks,
+			thread_metadata: this.threadMetadata ?? undefined,
 		};
 	}
 }

@@ -227,4 +227,6 @@ export interface Channel {
 	readonly content_warning_text?: string | null;
 	readonly rate_limit_per_user?: number;
 	readonly nicks?: Readonly<Record<string, string>>;
+	readonly thread_metadata?: ThreadMetadata | null;
+	readonly joined?: boolean;
 }
