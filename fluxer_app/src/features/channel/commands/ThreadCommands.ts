@@ -4,8 +4,14 @@ import {Endpoints} from '@app/features/app/constants/Endpoints';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import type {Channel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
+import type {UserPartial} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 
 const logger = new Logger('Threads');
+
+export interface ThreadMember {
+	user: UserPartial;
+	joined_at: string;
+}
 
 export type ThreadStateAction = 'open' | 'close' | 'archive' | 'unarchive';
 
@@ -30,12 +36,32 @@ export async function createThread(channelId: string, params: ThreadCreateParams
 	}
 }
 
+export async function listJoinedThreads(): Promise<Array<Channel>> {
+	try {
+		const response = await http.get<{threads: Array<Channel>}>(Endpoints.USER_THREADS);
+		return response.body.threads;
+	} catch (error) {
+		logger.error('Failed to list joined threads:', error);
+		throw error;
+	}
+}
+
 export async function listThreads(channelId: string): Promise<Array<Channel>> {
 	try {
 		const response = await http.get<{threads: Array<Channel>}>(Endpoints.CHANNEL_THREADS(channelId));
 		return response.body.threads;
 	} catch (error) {
 		logger.error(`Failed to list threads in channel ${channelId}:`, error);
+		throw error;
+	}
+}
+
+export async function listThreadMembers(threadId: string): Promise<Array<ThreadMember>> {
+	try {
+		const response = await http.get<{members: Array<ThreadMember>}>(Endpoints.THREAD_MEMBERS(threadId));
+		return response.body.members;
+	} catch (error) {
+		logger.error(`Failed to list members for thread ${threadId}:`, error);
 		throw error;
 	}
 }

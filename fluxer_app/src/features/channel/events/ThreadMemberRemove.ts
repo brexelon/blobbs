@@ -14,4 +14,6 @@ export function handleThreadMemberRemove(data: ThreadMemberPayload, _context: Ga
 	if (data.user_id === Authentication.currentUserId) {
 		Threads.leave(data.thread_id);
 	}
+	// Refresh an open thread member list so it reflects who currently has access.
+	Threads.bumpMemberListVersion(data.thread_id);
 }

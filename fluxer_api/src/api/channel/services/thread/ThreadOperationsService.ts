@@ -13,6 +13,7 @@ import {UnknownMessageError} from '@fluxer/errors/src/domains/channel/UnknownMes
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import type {ChannelResponse} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {ThreadCreateRequest, ThreadUpdateRequest} from '@fluxer/schema/src/domains/channel/ThreadRequestSchemas';
+import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {type ChannelID, createChannelID, createMessageID, type GuildID, type UserID} from '../../../BrandedTypes';
 import type {ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
@@ -144,6 +145,49 @@ export class ThreadOperationsService {
 			threads.map((thread) => this.mapThread(thread, memberships.has(thread.id), requestCache)),
 		);
 		return {threads: responses};
+	}
+
+	async listJoinedThreads(params: {
+		userId: UserID;
+		requestCache: RequestCache;
+	}): Promise<{threads: Array<ChannelResponse>}> {
+		const {userId, requestCache} = params;
+		const rows = await this.threadRepository.listMemberThreads(userId);
+		if (rows.length === 0) {
+			return {threads: []};
+		}
+		const channels = await this.channelRepository.listChannels(rows.map((row) => row.thread_id));
+		const threads = channels.filter((channel) => channel.type === ChannelTypes.GUILD_THREAD && !channel.isSoftDeleted);
+		threads.sort((a, b) => Number((b.lastMessageId ?? 0n) - (a.lastMessageId ?? 0n)));
+		const responses = await Promise.all(threads.map((thread) => this.mapThread(thread, true, requestCache)));
+		return {threads: responses};
+	}
+
+	async listThreadMembers(params: {
+		userId: UserID;
+		threadId: ChannelID;
+		requestCache: RequestCache;
+	}): Promise<{members: Array<{user: UserPartialResponse; joined_at: string}>}> {
+		const {userId, threadId, requestCache} = params;
+		const thread = await this.loadThread(threadId);
+		await this.authService.getChannelAuthenticated({userId, channelId: thread.parentId ?? threadId});
+		const rows = await this.threadRepository.listMembers(threadId);
+		if (rows.length === 0) {
+			return {members: []};
+		}
+		const partials = await this.userCacheService.getUserPartialResponses(
+			rows.map((row) => row.user_id),
+			requestCache,
+		);
+		const members: Array<{user: UserPartialResponse; joined_at: string}> = [];
+		for (const row of rows) {
+			const user = partials.get(row.user_id);
+			if (user == null) {
+				continue;
+			}
+			members.push({user, joined_at: row.joined_at.toISOString()});
+		}
+		return {members};
 	}
 
 	async joinThread(params: {

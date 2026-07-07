@@ -1,19 +1,35 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {Endpoints} from '@app/features/app/constants/Endpoints';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
+import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
+import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import styles from '@app/features/channel/components/popouts/ChannelThreadsPopout.module.css';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
+import {Message} from '@app/features/messaging/models/MessagingMessage';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
+import Permission from '@app/features/permissions/state/Permission';
+import {http} from '@app/features/platform/transport/RestTransport';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {Button} from '@app/features/ui/button/Button';
+import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
+import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
+import {modal} from '@app/features/ui/commands/ModalCommands';
+import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
-import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
+import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
+import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
+import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
+import {DotsThreeIcon, MagnifyingGlassIcon} from '@phosphor-icons/react';
+import {DateTime} from 'luxon';
 import {observer} from 'mobx-react-lite';
-import {useEffect, useState} from 'react';
+import type React from 'react';
+import {useEffect, useMemo, useState} from 'react';
 
 const logger = new Logger('ChannelThreadsPopout');
 
@@ -21,17 +37,49 @@ const THREADS_DESCRIPTOR = msg({
 	message: 'Threads',
 	comment: 'Title of the popout that lists the threads belonging to a channel.',
 });
+const SEARCH_PLACEHOLDER_DESCRIPTOR = msg({
+	message: 'Search for Thread Name',
+	comment: 'Placeholder for the thread search input in the channel threads popout.',
+});
+const CREATE_DESCRIPTOR = msg({
+	message: 'Create',
+	comment: 'Button in the channel threads popout header that starts a new thread.',
+});
+const CREATE_THREAD_DESCRIPTOR = msg({
+	message: 'Create Thread',
+	comment: 'Button in the channel threads popout empty state that starts a new thread.',
+});
 const LOADING_DESCRIPTOR = msg({
 	message: 'Loading threads…',
 	comment: 'Placeholder shown while the channel thread list is being fetched.',
 });
-const EMPTY_DESCRIPTOR = msg({
-	message: 'There are no threads in this channel yet.',
-	comment: 'Placeholder shown when a channel has no threads.',
-});
 const ERROR_DESCRIPTOR = msg({
 	message: 'Could not load threads.',
 	comment: 'Placeholder shown when the channel thread list fails to load.',
+});
+const NO_RESULTS_DESCRIPTOR = msg({
+	message: 'No threads match your search.',
+	comment: 'Placeholder shown when a thread search returns no results.',
+});
+const EMPTY_TITLE_DESCRIPTOR = msg({
+	message: 'There are no threads.',
+	comment: 'Title of the empty state shown when a channel has no threads.',
+});
+const EMPTY_BODY_DESCRIPTOR = msg({
+	message: 'Stay focused on a conversation with a thread — a temporary text channel.',
+	comment: 'Body of the empty state shown when a channel has no threads.',
+});
+const NO_RECENT_MESSAGES_DESCRIPTOR = msg({
+	message: 'No recent messages',
+	comment: 'Meta text shown for a thread row that has no messages yet.',
+});
+const JOINED_THREADS_DESCRIPTOR = msg({
+	message: '{count} Joined Threads',
+	comment: 'Section label above the list of threads the user has joined. {count} is inserted by code.',
+});
+const OTHER_THREADS_DESCRIPTOR = msg({
+	message: '{count} Other Threads',
+	comment: 'Section label above the list of threads the user has not joined. {count} is inserted by code.',
 });
 const CLOSED_DESCRIPTOR = msg({
 	message: 'Closed',
@@ -41,22 +89,58 @@ const ARCHIVED_DESCRIPTOR = msg({
 	message: 'Archived',
 	comment: 'Badge marking a thread whose lifecycle state is archived.',
 });
+const MORE_ACTIONS_DESCRIPTOR = msg({
+	message: 'More options',
+	comment: 'Accessible label for the button that opens the thread management menu.',
+});
 
 type LoadState = 'loading' | 'loaded' | 'error';
+
+const threadName = (thread: WireChannel): string => thread.thread_metadata?.name ?? thread.name ?? '';
+const threadState = (thread: WireChannel): number => thread.thread_metadata?.state ?? ThreadStates.OPEN;
+const isThreadJoined = (thread: WireChannel): boolean => Threads.isJoined(thread.id) || Boolean(thread.joined);
+
+function lastActiveRelative(thread: WireChannel, lastMessage: Message | null): string | null {
+	const referenceId = lastMessage?.id ?? thread.last_message_id ?? thread.id;
+	if (!referenceId) {
+		return null;
+	}
+	const dateTime = DateTime.fromMillis(extractTimestamp(referenceId));
+	return dateTime.isValid ? dateTime.toRelative() : null;
+}
 
 export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Channel; onClose?: () => void}) => {
 	const {i18n} = useLingui();
 	const [threads, setThreads] = useState<ReadonlyArray<WireChannel>>([]);
+	const [lastMessages, setLastMessages] = useState<Record<string, Message | null>>({});
 	const [loadState, setLoadState] = useState<LoadState>('loading');
+	const [query, setQuery] = useState('');
+	const canCreate = Permission.can(Permissions.CREATE_THREADS, channel);
 
 	useEffect(() => {
 		let cancelled = false;
 		setLoadState('loading');
+		setLastMessages({});
 		ThreadCommands.listThreads(channel.id)
-			.then((result) => {
+			.then(async (result) => {
 				if (cancelled) return;
 				setThreads(result);
 				setLoadState('loaded');
+				const entries = await Promise.all(
+					result.map(async (thread) => {
+						try {
+							const response = await http.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(thread.id), {
+								query: {limit: '1'},
+							});
+							const wire = response.body[0] ?? null;
+							return [thread.id, wire ? new Message(wire) : null] as const;
+						} catch {
+							return [thread.id, null] as const;
+						}
+					}),
+				);
+				if (cancelled) return;
+				setLastMessages(Object.fromEntries(entries));
 			})
 			.catch((error) => {
 				if (cancelled) return;
@@ -79,54 +163,203 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		}
 	};
 
+	const handleCreate = () => {
+		if (!channel.guildId) {
+			return;
+		}
+		const guildId = channel.guildId;
+		onClose?.();
+		ModalCommands.push(modal(() => <ThreadCreateModal channelId={channel.id} guildId={guildId} />));
+	};
+
+	const openThreadMenu = (event: React.MouseEvent, thread: WireChannel) => {
+		ContextMenuCommands.openFromEvent(event, ({onClose: onMenuClose}) => (
+			<ThreadContextMenu
+				threadId={thread.id}
+				threadName={threadName(thread)}
+				threadState={threadState(thread)}
+				isJoined={isThreadJoined(thread)}
+				guildId={channel.guildId ?? null}
+				parentChannelId={channel.id}
+				onClose={onMenuClose}
+				onGoToThread={() => handleOpen(thread)}
+			/>
+		));
+	};
+
+	const filtered = useMemo(() => {
+		const normalized = query.trim().toLowerCase();
+		if (!normalized) {
+			return threads;
+		}
+		return threads.filter((thread) => threadName(thread).toLowerCase().includes(normalized));
+	}, [threads, query]);
+
+	const joinedThreads = filtered.filter((thread) => isThreadJoined(thread));
+	const otherThreads = filtered.filter((thread) => !isThreadJoined(thread));
+
+	const renderRow = (thread: WireChannel) => {
+		const name = threadName(thread);
+		const state = threadState(thread);
+		const lastMessage = lastMessages[thread.id] ?? null;
+		const badge =
+			state === ThreadStates.ARCHIVED
+				? i18n._(ARCHIVED_DESCRIPTOR)
+				: state === ThreadStates.CLOSED
+					? i18n._(CLOSED_DESCRIPTOR)
+					: null;
+		const relative = lastActiveRelative(thread, lastMessage);
+		return (
+			<div
+				key={thread.id}
+				className={styles.row}
+				role="button"
+				tabIndex={0}
+				onClick={() => handleOpen(thread)}
+				onKeyDown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						handleOpen(thread);
+					}
+				}}
+				onContextMenu={(event) => openThreadMenu(event, thread)}
+				data-flx="channel.channel-threads-popout.row"
+			>
+				<div className={styles.content} data-flx="channel.channel-threads-popout.content">
+					<div className={styles.nameLine} data-flx="channel.channel-threads-popout.name-line">
+						<span className={styles.name}>{name}</span>
+						{badge && <span className={styles.badge}>{badge}</span>}
+					</div>
+					<div className={styles.meta} data-flx="channel.channel-threads-popout.meta">
+						{lastMessage ? (
+							<span className={styles.metaMessage}>
+								<span className={styles.metaAuthor}>{lastMessage.author.displayName}:</span> {lastMessage.content}
+							</span>
+						) : (
+							<span className={styles.metaMessage}>{i18n._(NO_RECENT_MESSAGES_DESCRIPTOR)}</span>
+						)}
+						{relative && <span className={styles.metaTime}> • {relative}</span>}
+					</div>
+				</div>
+				{lastMessage && <Avatar user={lastMessage.author} size={40} />}
+				<button
+					type="button"
+					className={styles.moreButton}
+					aria-label={i18n._(MORE_ACTIONS_DESCRIPTOR)}
+					onClick={(event) => {
+						event.stopPropagation();
+						openThreadMenu(event, thread);
+					}}
+					data-flx="channel.channel-threads-popout.more-button"
+				>
+					<DotsThreeIcon size={18} weight="bold" />
+				</button>
+			</div>
+		);
+	};
+
+	const renderBody = () => {
+		if (loadState === 'loading') {
+			return (
+				<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.loading">
+					{i18n._(LOADING_DESCRIPTOR)}
+				</div>
+			);
+		}
+		if (loadState === 'error') {
+			return (
+				<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.error">
+					{i18n._(ERROR_DESCRIPTOR)}
+				</div>
+			);
+		}
+		if (threads.length === 0) {
+			return (
+				<div className={styles.emptyState} data-flx="channel.channel-threads-popout.empty">
+					<div className={styles.emptyMark} aria-hidden="true" data-flx="channel.channel-threads-popout.empty-mark">
+						<ThreadIcon size={40} className={styles.emptyIcon} data-flx="channel.channel-threads-popout.empty-icon" />
+					</div>
+					<h2 className={styles.emptyTitle}>{i18n._(EMPTY_TITLE_DESCRIPTOR)}</h2>
+					<p className={styles.emptyBody}>{i18n._(EMPTY_BODY_DESCRIPTOR)}</p>
+					{canCreate && (
+						<Button
+							type="button"
+							variant="primary"
+							onClick={handleCreate}
+							fitContent
+							data-flx="channel.channel-threads-popout.empty-create"
+						>
+							{i18n._(CREATE_THREAD_DESCRIPTOR)}
+						</Button>
+					)}
+				</div>
+			);
+		}
+		if (filtered.length === 0) {
+			return (
+				<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.no-results">
+					{i18n._(NO_RESULTS_DESCRIPTOR)}
+				</div>
+			);
+		}
+		return (
+			<>
+				{joinedThreads.length > 0 && (
+					<>
+						<div className={styles.sectionLabel} data-flx="channel.channel-threads-popout.joined-label">
+							{i18n._(JOINED_THREADS_DESCRIPTOR, {count: joinedThreads.length})}
+						</div>
+						{joinedThreads.map(renderRow)}
+					</>
+				)}
+				{otherThreads.length > 0 && (
+					<>
+						<div className={styles.sectionLabel} data-flx="channel.channel-threads-popout.other-label">
+							{i18n._(OTHER_THREADS_DESCRIPTOR, {count: otherThreads.length})}
+						</div>
+						{otherThreads.map(renderRow)}
+					</>
+				)}
+			</>
+		);
+	};
+
 	return (
 		<div className={styles.container} data-flx="channel.channel-threads-popout.container">
 			<div className={styles.header} data-flx="channel.channel-threads-popout.header">
-				<ThreadIcon size={24} className={styles.iconLarge} data-flx="channel.channel-threads-popout.icon-large" />
-				<h1 className={styles.title} data-flx="channel.channel-threads-popout.title">
-					{i18n._(THREADS_DESCRIPTOR)}
-				</h1>
+				<div className={styles.headerTitleGroup} data-flx="channel.channel-threads-popout.header-title-group">
+					<ThreadIcon size={22} className={styles.iconLarge} data-flx="channel.channel-threads-popout.icon-large" />
+					<h1 className={styles.title} data-flx="channel.channel-threads-popout.title">
+						{i18n._(THREADS_DESCRIPTOR)}
+					</h1>
+				</div>
+				<div className={styles.search} data-flx="channel.channel-threads-popout.search">
+					<MagnifyingGlassIcon size={16} className={styles.searchIcon} />
+					<input
+						type="text"
+						className={styles.searchInput}
+						value={query}
+						onChange={(event) => setQuery(event.target.value)}
+						placeholder={i18n._(SEARCH_PLACEHOLDER_DESCRIPTOR)}
+						aria-label={i18n._(SEARCH_PLACEHOLDER_DESCRIPTOR)}
+						data-flx="channel.channel-threads-popout.search-input"
+					/>
+				</div>
+				{canCreate && (
+					<Button
+						type="button"
+						variant="primary"
+						compact
+						fitContent
+						onClick={handleCreate}
+						data-flx="channel.channel-threads-popout.create-button"
+					>
+						{i18n._(CREATE_DESCRIPTOR)}
+					</Button>
+				)}
 			</div>
 			<div className={styles.body} data-flx="channel.channel-threads-popout.body">
-				{loadState === 'loading' ? (
-					<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.loading">
-						{i18n._(LOADING_DESCRIPTOR)}
-					</div>
-				) : loadState === 'error' ? (
-					<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.error">
-						{i18n._(ERROR_DESCRIPTOR)}
-					</div>
-				) : threads.length === 0 ? (
-					<div className={styles.stateMessage} data-flx="channel.channel-threads-popout.empty">
-						{i18n._(EMPTY_DESCRIPTOR)}
-					</div>
-				) : (
-					threads.map((thread) => {
-						const state = thread.thread_metadata?.state ?? ThreadStates.OPEN;
-						const name = thread.thread_metadata?.name ?? thread.name ?? '';
-						const isJoined = Threads.isJoined(thread.id) || Boolean(thread.joined);
-						const badge =
-							state === ThreadStates.ARCHIVED
-								? i18n._(ARCHIVED_DESCRIPTOR)
-								: state === ThreadStates.CLOSED
-									? i18n._(CLOSED_DESCRIPTOR)
-									: null;
-						return (
-							<button
-								key={thread.id}
-								type="button"
-								className={styles.row}
-								onClick={() => handleOpen(thread)}
-								data-flx="channel.channel-threads-popout.row"
-							>
-								<ThreadIcon size={16} className={styles.icon} data-flx="channel.channel-threads-popout.icon" />
-								<span className={styles.name}>{name}</span>
-								{badge && <span className={styles.badge}>{badge}</span>}
-								{isJoined && <span className={styles.joinedDot} aria-hidden="true" />}
-							</button>
-						);
-					})
-				)}
+				{renderBody()}
 			</div>
 		</div>
 	);

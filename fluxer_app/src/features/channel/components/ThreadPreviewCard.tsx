@@ -4,11 +4,13 @@ import {Endpoints} from '@app/features/app/constants/Endpoints';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ThreadPreviewCard.module.css';
 import Channels from '@app/features/channel/state/Channels';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
+import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
@@ -97,16 +99,19 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 	const threadName = preview.name ?? storeThread?.name ?? message.threadName ?? '';
 	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
 	const lastMessage = preview.lastMessage;
-	const handleOpen = async () => {
+	const handleOpen = () => {
 		if (!threadId || !guildId) {
 			return;
 		}
-		try {
-			const joined = await ThreadCommands.joinThread(threadId);
-			Channels.handleChannelCreate({channel: joined});
-		} finally {
+		// On desktop, open the thread as a preview in the right-hand sidebar next
+		// to this channel rather than navigating into its full view. The mobile
+		// layout has no room for a side panel, so fall back to the full view there.
+		// Opening the thread from the channel sidebar always routes to the full view.
+		if (MobileLayout.enabled) {
 			selectChannel(guildId, threadId);
+			return;
 		}
+		ThreadSidebar.toggle(threadId, message.channelId);
 	};
 	if (!threadId) {
 		return null;

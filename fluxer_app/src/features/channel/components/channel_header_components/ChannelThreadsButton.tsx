@@ -7,7 +7,6 @@ import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {usePopout} from '@app/features/ui/hooks/usePopout';
 import {Popout} from '@app/features/ui/popover/PopoverPopout';
-import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {observer} from 'mobx-react-lite';
@@ -37,11 +36,12 @@ export const ChannelThreadsButton = observer(({channel}: ChannelThreadsButtonPro
 				/>
 			)}
 			position="bottom-end"
+			tooltip={threadsLabel}
+			tooltipPosition="bottom"
 		>
-			<Tooltip
-				text={threadsLabel}
-				position="bottom"
-				data-flx="channel.channel-header-components.channel-threads-button.tooltip"
+			<div
+				className={styles.iconButtonWrapper}
+				data-flx="channel.channel-header-components.channel-threads-button.icon-button-wrapper"
 			>
 				<FocusRing offset={-2} data-flx="channel.channel-header-components.channel-threads-button.focus-ring">
 					<button
@@ -59,7 +59,7 @@ export const ChannelThreadsButton = observer(({channel}: ChannelThreadsButtonPro
 						/>
 					</button>
 				</FocusRing>
-			</Tooltip>
+			</div>
 		</Popout>
 	);
 });

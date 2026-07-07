@@ -17,6 +17,7 @@
     broadcast_member_list_updates/5,
     broadcast_all_member_list_updates/1,
     broadcast_member_list_updates_for_channel/2,
+    broadcast_member_list_updates_for_thread/2,
     flush_pending_member_list_syncs/1,
     normalize_ranges/1,
     get_members_cursor/2
@@ -132,6 +133,11 @@ broadcast_all_member_list_updates(State) ->
     {ok, guild_state()}.
 broadcast_member_list_updates_for_channel(ChannelId, State) ->
     guild_member_list_write:broadcast_member_list_updates_for_channel(ChannelId, State).
+
+-spec broadcast_member_list_updates_for_thread(channel_id(), guild_state()) ->
+    {ok, guild_state()}.
+broadcast_member_list_updates_for_thread(ThreadId, State) ->
+    guild_member_list_write:broadcast_member_list_updates_for_thread(ThreadId, State).
 
 -spec flush_pending_member_list_syncs(guild_state()) -> guild_state().
 flush_pending_member_list_syncs(State) ->

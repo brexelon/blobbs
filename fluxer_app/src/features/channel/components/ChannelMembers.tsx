@@ -2,6 +2,7 @@
 
 import {OutlineFrame} from '@app/features/app/components/layout/OutlineFrame';
 import Authentication from '@app/features/auth/state/Authentication';
+import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ChannelMembers.module.css';
 import {UserTag} from '@app/features/channel/components/ChannelUserTag';
 import {CompactMemberCustomStatus} from '@app/features/channel/components/CompactMemberCustomStatus';
@@ -10,14 +11,17 @@ import {MemberListItem} from '@app/features/channel/components/MemberListItem';
 import memberItemStyles from '@app/features/channel/components/MemberListItem.module.css';
 import {MemberListUnavailableFallback} from '@app/features/channel/components/shared/MemberListUnavailableFallback';
 import type {Channel} from '@app/features/channel/models/Channel';
-import type {Guild} from '@app/features/guild/models/Guild';
+import Threads from '@app/features/channel/state/Threads';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import type {Guild} from '@app/features/guild/models/Guild';
+import Guilds from '@app/features/guild/state/Guilds';
 import {OFFLINE_DESCRIPTOR, ONLINE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {resolveMemberListCustomStatus} from '@app/features/member/hooks/useMemberListCustomStatus';
 import {resolveMemberListPresence} from '@app/features/member/hooks/useMemberListPresence';
 import {useMemberListSubscription} from '@app/features/member/hooks/useMemberListSubscription';
-import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
+import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
+import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
 import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import {
 	buildMemberListLayout,
@@ -26,7 +30,6 @@ import {
 	getTotalRowsFromLayout,
 } from '@app/features/member/utils/MemberListLayout';
 import {
-	areNormalizedMemberListRangesCovered,
 	areNormalizedMemberListRangesEqual,
 	buildMemberListRangeWindow,
 	buildMemberListRenderWindow,
@@ -47,10 +50,10 @@ import Users from '@app/features/user/state/Users';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import Window from '@app/features/window/state/Window';
-import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MEMBER_LIST_RANGE_MAX_SPAN} from '@fluxer/constants/src/GatewayConstants';
 import {GuildFeatures, GuildOperations} from '@fluxer/constants/src/GuildConstants';
+import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
 import type {StatusType} from '@fluxer/constants/src/StatusConstants';
 import {isOfflineStatus} from '@fluxer/constants/src/StatusConstants';
 import {useLingui as useLinguiRuntime} from '@lingui/react';
@@ -247,7 +250,9 @@ const FrozenMemberListInteractiveItem = observer(function FrozenMemberListIntera
 	const user = Users.getUser(row.userId);
 	const guildMember = GuildMembers.getMember(guild.id, row.userId);
 	if (!user || !guildMember) {
-		return <FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />;
+		return (
+			<FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />
+		);
 	}
 	return (
 		<MemberListItem
@@ -401,7 +406,11 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	const currentUserId = Authentication.currentUserId;
 	const lacksMemberViewPermission =
 		currentUserId != null && !PermissionUtils.can(Permissions.VIEW_CHANNEL_MEMBERS, currentUserId, channel.toJSON());
-	const {subscribe, forceSubscribe, resubscribe, isPaused: isSubscriptionPaused} = useMemberListSubscription({
+	const {
+		subscribe,
+		forceSubscribe,
+		isPaused: isSubscriptionPaused,
+	} = useMemberListSubscription({
 		guildId: guild.id,
 		channelId: channel.id,
 		enabled: !memberListUpdatesDisabled && !lacksMemberViewPermission,
@@ -554,13 +563,13 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	}, [scheduleRangeUpdate]);
 	const refreshVisibleMemberList = useCallback(
 		(options?: {force?: boolean}) => {
-		const scrollerState = scrollerRef.current?.getScrollerState();
-		if (!scrollerState) {
-			forceSubscribe(
-				subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
-			);
-			return;
-		}
+			const scrollerState = scrollerRef.current?.getScrollerState();
+			if (!scrollerState) {
+				forceSubscribe(
+					subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
+				);
+				return;
+			}
 			const scrollTop = scrollerState.scrollTop;
 			const clientHeight = scrollerState.offsetHeight;
 			const nextSubscriptionRanges = buildMemberListRangeWindow({
@@ -589,13 +598,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			}
 			subscribe(nextSubscriptionRanges);
 		},
-		[
-			forceSubscribe,
-			rowOffsets,
-			scaledMemberItemHeight,
-			subscribe,
-			totalRows,
-		],
+		[forceSubscribe, rowOffsets, scaledMemberItemHeight, subscribe, totalRows],
 	);
 	const handleScroll = useCallback(
 		(event: UIEvent<HTMLDivElement>) => {
@@ -1038,8 +1041,163 @@ interface ChannelMembersProps {
 	channel: Channel;
 }
 
+interface ThreadMemberRow {
+	user: User;
+	guildMember: GuildMember | null;
+	status: StatusType;
+}
+
+interface ThreadMemberGroup {
+	id: string;
+	label: string;
+	rows: Array<ThreadMemberRow>;
+}
+
+function sortThreadMemberRows(rows: Array<ThreadMemberRow>): Array<ThreadMemberRow> {
+	return [...rows].sort((a, b) =>
+		NicknameUtils.getDisplayName(a.user).localeCompare(NicknameUtils.getDisplayName(b.user)),
+	);
+}
+
+/**
+ * Groups thread members the same way the guild member sidebar does: online
+ * members fall under their highest hoisted role (highest hoist position first),
+ * then a generic "Online" group, then "Offline". Membership itself comes from the
+ * thread's persistent member list, not the gateway member-list engine.
+ */
+function buildThreadMemberGroups(
+	guild: Guild | null,
+	userIds: ReadonlyArray<string>,
+	onlineLabel: string,
+	offlineLabel: string,
+): Array<ThreadMemberGroup> {
+	const roleGroups = new Map<string, Array<ThreadMemberRow>>();
+	const onlineNoRole: Array<ThreadMemberRow> = [];
+	const offline: Array<ThreadMemberRow> = [];
+	for (const userId of userIds) {
+		const user = Users.getUser(userId);
+		if (user == null) {
+			continue;
+		}
+		const guildMember = guild ? (GuildMembers.getMember(guild.id, userId) ?? null) : null;
+		const status = Presence.getStatus(userId);
+		const row: ThreadMemberRow = {user, guildMember, status};
+		if (isOfflineStatus(status)) {
+			offline.push(row);
+			continue;
+		}
+		const hoistedRole = guildMember?.getSortedRoles().find((role) => role.hoist);
+		if (hoistedRole) {
+			const existing = roleGroups.get(hoistedRole.id);
+			if (existing) {
+				existing.push(row);
+			} else {
+				roleGroups.set(hoistedRole.id, [row]);
+			}
+		} else {
+			onlineNoRole.push(row);
+		}
+	}
+	const groups: Array<ThreadMemberGroup> = [];
+	if (guild) {
+		const sortedRoleIds = Array.from(roleGroups.keys()).sort((a, b) => {
+			const roleA = guild.roles[a];
+			const roleB = guild.roles[b];
+			const positionA = roleA?.effectiveHoistPosition ?? roleA?.position ?? 0;
+			const positionB = roleB?.effectiveHoistPosition ?? roleB?.position ?? 0;
+			if (positionB !== positionA) {
+				return positionB - positionA;
+			}
+			return BigInt(a) < BigInt(b) ? -1 : 1;
+		});
+		for (const roleId of sortedRoleIds) {
+			groups.push({
+				id: roleId,
+				label: guild.roles[roleId]?.name ?? '',
+				rows: sortThreadMemberRows(roleGroups.get(roleId) ?? []),
+			});
+		}
+	}
+	if (onlineNoRole.length > 0) {
+		groups.push({id: 'online', label: onlineLabel, rows: sortThreadMemberRows(onlineNoRole)});
+	}
+	if (offline.length > 0) {
+		groups.push({id: 'offline', label: offlineLabel, rows: sortThreadMemberRows(offline)});
+	}
+	return groups;
+}
+
+const ThreadMembersList = observer(function ThreadMembersList({channel}: {channel: Channel}) {
+	const {i18n} = useLingui();
+	const version = Threads.getMemberListVersion(channel.id);
+	const [userIds, setUserIds] = useState<Array<string>>([]);
+	useEffect(() => {
+		let cancelled = false;
+		ThreadCommands.listThreadMembers(channel.id)
+			.then((members) => {
+				if (cancelled) {
+					return;
+				}
+				Users.cacheUsers(members.map((member) => member.user));
+				setUserIds(members.map((member) => member.user.id));
+			})
+			.catch(() => {
+				// Best-effort: leave the list empty if it fails to load.
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [channel.id, version]);
+	const guild = channel.guildId ? (Guilds.getGuild(channel.guildId) ?? null) : null;
+	const groups = buildThreadMemberGroups(guild, userIds, i18n._(ONLINE_DESCRIPTOR), i18n._(OFFLINE_DESCRIPTOR));
+	return (
+		<OutlineFrame
+			hideTopBorder
+			sides={{left: false}}
+			data-flx="channel.channel-members.thread-members-list.outline-frame"
+		>
+			<MemberListContainer
+				channelId={channel.id}
+				data-flx="channel.channel-members.thread-members-list.member-list-container"
+			>
+				{groups.map((group) => (
+					<div
+						key={group.id}
+						className={styles.groupContainer}
+						data-flx="channel.channel-members.thread-members-list.group-container"
+					>
+						<div className={styles.groupHeader} data-flx="channel.channel-members.thread-members-list.group-header">
+							{group.label} {'\u2014'} {group.rows.length}
+						</div>
+						<div className={styles.membersList} data-flx="channel.channel-members.thread-members-list.members-list">
+							{group.rows.map((row) => (
+								<MemberListItem
+									key={row.user.id}
+									user={row.user}
+									channelId={channel.id}
+									guildId={guild?.id}
+									guildMember={row.guildMember ?? undefined}
+									status={row.status}
+									isOwner={guild?.isOwner(row.user.id) ?? false}
+									roleColor={row.guildMember?.getColorString()}
+									disableBackdrop={true}
+									data-flx="channel.channel-members.thread-members-list.member-list-item"
+								/>
+							))}
+						</div>
+						<div className={styles.groupSpacer} data-flx="channel.channel-members.thread-members-list.group-spacer" />
+					</div>
+				))}
+			</MemberListContainer>
+		</OutlineFrame>
+	);
+});
+
 export const ChannelMembers = observer(function ChannelMembers({guild = null, channel}: ChannelMembersProps) {
 	useLinguiRuntime();
+	if (channel.type === ChannelTypes.GUILD_THREAD) {
+		return <ThreadMembersList channel={channel} data-flx="channel.channel-members.thread-members-list" />;
+	}
 	if (channel.type === ChannelTypes.GROUP_DM) {
 		const currentUserId = Authentication.currentUserId;
 		const allUserIds = currentUserId ? [currentUserId, ...channel.recipientIds] : channel.recipientIds;

@@ -62,6 +62,8 @@ export const Endpoints = {
 	THREAD: (threadId: string) => `/threads/${threadId}`,
 	THREAD_JOIN: (threadId: string) => `/threads/${threadId}/join`,
 	THREAD_LEAVE: (threadId: string) => `/threads/${threadId}/leave`,
+	THREAD_MEMBERS: (threadId: string) => `/threads/${threadId}/members`,
+	USER_THREADS: '/users/@me/threads',
 	CHANNEL_MESSAGES_BULK: '/channels/messages/bulk',
 	CHANNEL_MESSAGE_SCHEDULE: (channelId: string) => `/channels/${channelId}/messages/schedule`,
 	CHANNEL_MESSAGE: (channelId: string, messageId: string) => `/channels/${channelId}/messages/${messageId}`,
