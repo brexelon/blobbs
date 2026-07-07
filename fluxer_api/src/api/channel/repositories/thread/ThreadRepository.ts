@@ -167,4 +167,22 @@ export class ThreadRepository {
 			),
 		);
 	}
+
+	/**
+	 * Detach a message from its thread while keeping thread_name. Used when a
+	 * thread is deleted: the preview box (gated on thread_id) disappears, but a
+	 * "started a thread: <name>" system message keeps its label.
+	 */
+	async clearOriginMessageThreadLink(params: {parentChannelId: ChannelID; messageId: MessageID}): Promise<void> {
+		await upsertOne(
+			Messages.patchByPk(
+				{
+					channel_id: params.parentChannelId,
+					bucket: BucketUtils.makeBucket(params.messageId),
+					message_id: params.messageId,
+				},
+				{thread_id: Db.clear()},
+			),
+		);
+	}
 }

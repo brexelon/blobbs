@@ -3,15 +3,21 @@
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import type {GatewayHandlerContext} from '@app/features/gateway/events/EventRouter';
+import Messages from '@app/features/messaging/state/MessagingMessages';
 import type {Channel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 
 interface ThreadDeletePayload {
 	id: string;
 	guild_id?: string;
 	parent_id?: string | null;
+	origin_message_id?: string | null;
 }
 
 export function handleThreadDelete(data: ThreadDeletePayload, _context: GatewayHandlerContext): void {
 	Threads.leave(data.id);
+	// Drop the preview box under the origin/announcement message in real time.
+	if (data.parent_id && data.origin_message_id) {
+		Messages.clearThreadLink(data.parent_id, data.origin_message_id);
+	}
 	Channels.handleChannelDelete({channel: data as Channel});
 }

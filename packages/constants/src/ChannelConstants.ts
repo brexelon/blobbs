@@ -82,7 +82,7 @@ const MESSAGE_TYPE_DELETABLE = {
 	[MessageTypes.CALL]: false,
 	[MessageTypes.CHANNEL_NAME_CHANGE]: false,
 	[MessageTypes.CHANNEL_ICON_CHANGE]: false,
-	[MessageTypes.THREAD_CREATED]: false,
+	[MessageTypes.THREAD_CREATED]: true,
 	[MessageTypes.CLIENT_SYSTEM]: false,
 } as const satisfies Record<MessageTypeValue, boolean>;
 
