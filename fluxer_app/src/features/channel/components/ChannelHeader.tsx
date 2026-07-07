@@ -32,6 +32,7 @@ import {CallButtons} from '@app/features/channel/components/channel_header_compo
 import {ChannelHeaderIcon} from '@app/features/channel/components/channel_header_components/ChannelHeaderIcon';
 import {ChannelNotificationSettingsButton} from '@app/features/channel/components/channel_header_components/ChannelNotificationSettingsButton';
 import {ChannelPinsButton} from '@app/features/channel/components/channel_header_components/ChannelPinsButton';
+import {ChannelThreadsButton} from '@app/features/channel/components/channel_header_components/ChannelThreadsButton';
 import {UpdaterIcon} from '@app/features/channel/components/channel_header_components/UpdaterIcon';
 import {InboxButton, StaffToolsButton} from '@app/features/channel/components/channel_header_components/UtilityButtons';
 import {useChannelSearchState} from '@app/features/channel/components/channel_view/useChannelSearchState';
@@ -923,6 +924,9 @@ export const ChannelHeader = observer(
 							)}
 							{showPins && channel && !isMobile && (
 								<ChannelPinsButton channel={channel} data-flx="channel.channel-header.channel-pins-button" />
+							)}
+							{channel && isGuildChannel && !isMobile && channel.type === ChannelTypes.GUILD_TEXT && (
+								<ChannelThreadsButton channel={channel} data-flx="channel.channel-header.channel-threads-button" />
 							)}
 							{shouldShowCreateGroupButton && (
 								<ChannelHeaderIcon

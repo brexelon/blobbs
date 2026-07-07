@@ -26,6 +26,7 @@ import {useChannelMemberListVisibility} from '@app/features/channel/hooks/useCha
 import {useChannelSearchVisibility} from '@app/features/channel/hooks/useChannelSearchVisibility';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
+import Threads from '@app/features/channel/state/Threads';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
 import GuildMatureContentAgree, {MatureContentGateReason} from '@app/features/guild/state/GuildMatureContentAgree';
@@ -188,6 +189,17 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 	const matureContentResolved = GuildMatureContentAgree.getResolvedContext({channelId, guildId});
 	const showMatureContentGate = matureContentGateReason !== MatureContentGateReason.NONE;
 	const forceMockMatureContentGate = DeveloperOptions.mockMatureContentGateReason !== 'none';
+	const isThreadChannel = channel?.type === ChannelTypes.GUILD_THREAD;
+	useEffect(() => {
+		// A thread the user opens but has not joined shows in the sidebar as a
+		// preview for as long as it is the active view, and disappears on navigate.
+		if (isThreadChannel) {
+			Threads.setPreview(channelId);
+			return () => Threads.setPreview(null);
+		}
+		Threads.setPreview(null);
+		return undefined;
+	}, [isThreadChannel, channelId]);
 	const searchState = useChannelSearchState(channel);
 	const {
 		isSearchActive,

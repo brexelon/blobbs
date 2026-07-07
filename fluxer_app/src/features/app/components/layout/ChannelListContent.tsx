@@ -6,6 +6,7 @@ import {ChannelItem} from '@app/features/app/components/layout/ChannelItem';
 import channelItemStyles from '@app/features/app/components/layout/ChannelItem.module.css';
 import {ChannelItemContent} from '@app/features/app/components/layout/ChannelItemContent';
 import styles from '@app/features/app/components/layout/ChannelListContent.module.css';
+import {ChannelThreadList} from '@app/features/app/components/layout/ChannelThreadList';
 import {
 	CollapsedCategoryVoiceParticipants,
 	CollapsedChannelAvatarStack,
@@ -499,18 +500,24 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 									)}
 									{showTextChannels &&
 										visibleTextChannels.map((ch) => (
-											<ChannelItem
-												key={ch.id}
-												guild={guild}
-												channel={ch}
-												isDraggingAnything={isDraggingAnything}
-												activeDragItem={activeDragItem}
-												onChannelDrop={handleChannelDrop}
-												onDragStateChange={setActiveDragItem}
-												isSelectedByPath={selectedChannelInGuildId === ch.id}
-												isOnMembersRoute={isMembersSelected}
-												data-flx="app.channel-list-content.channel-item--2"
-											/>
+											<React.Fragment key={ch.id}>
+												<ChannelItem
+													guild={guild}
+													channel={ch}
+													isDraggingAnything={isDraggingAnything}
+													activeDragItem={activeDragItem}
+													onChannelDrop={handleChannelDrop}
+													onDragStateChange={setActiveDragItem}
+													isSelectedByPath={selectedChannelInGuildId === ch.id}
+													isOnMembersRoute={isMembersSelected}
+													data-flx="app.channel-list-content.channel-item--2"
+												/>
+												<ChannelThreadList
+													guildId={guild.id}
+													channelId={ch.id}
+													selectedChannelId={selectedChannelInGuildId}
+												/>
+											</React.Fragment>
 										))}
 									{showVoiceChannels &&
 										visibleVoiceChannels.map((ch) => {

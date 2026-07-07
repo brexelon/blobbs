@@ -8,6 +8,11 @@ import {handleChannelRecipientAdd} from '@app/features/channel/events/ChannelRec
 import {handleChannelRecipientRemove} from '@app/features/channel/events/ChannelRecipientRemove';
 import {handleChannelUpdate} from '@app/features/channel/events/ChannelUpdate';
 import {handleChannelUpdateBulk} from '@app/features/channel/events/ChannelUpdateBulk';
+import {handleThreadCreate} from '@app/features/channel/events/ThreadCreate';
+import {handleThreadDelete} from '@app/features/channel/events/ThreadDelete';
+import {handleThreadMemberAdd} from '@app/features/channel/events/ThreadMemberAdd';
+import {handleThreadMemberRemove} from '@app/features/channel/events/ThreadMemberRemove';
+import {handleThreadUpdate} from '@app/features/channel/events/ThreadUpdate';
 import {handleFavoriteMemeCreate} from '@app/features/expressions/events/FavoriteMemeCreate';
 import {handleFavoriteMemeDelete} from '@app/features/expressions/events/FavoriteMemeDelete';
 import {handleFavoriteMemeUpdate} from '@app/features/expressions/events/FavoriteMemeUpdate';
@@ -124,6 +129,11 @@ export function createHandlerRegistry(): GatewayHandlerRegistry {
 	registry.set('CHANNEL_UPDATE', handleChannelUpdate as GatewayEventHandler);
 	registry.set('CHANNEL_UPDATE_BULK', handleChannelUpdateBulk as GatewayEventHandler);
 	registry.set('CHANNEL_DELETE', handleChannelDelete as GatewayEventHandler);
+	registry.set('THREAD_CREATE', handleThreadCreate as GatewayEventHandler);
+	registry.set('THREAD_UPDATE', handleThreadUpdate as GatewayEventHandler);
+	registry.set('THREAD_DELETE', handleThreadDelete as GatewayEventHandler);
+	registry.set('THREAD_MEMBER_ADD', handleThreadMemberAdd as GatewayEventHandler);
+	registry.set('THREAD_MEMBER_REMOVE', handleThreadMemberRemove as GatewayEventHandler);
 	registry.set('PASSIVE_UPDATES', handlePassiveUpdates as GatewayEventHandler);
 	registry.set('CHANNEL_PINS_UPDATE', handleChannelPinsUpdate as GatewayEventHandler);
 	registry.set('CHANNEL_PINS_ACK', handleChannelPinsAck as GatewayEventHandler);

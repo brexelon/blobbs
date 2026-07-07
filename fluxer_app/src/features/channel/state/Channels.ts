@@ -56,6 +56,11 @@ class Channels {
 		const dms: Array<Channel> = [];
 		const privateChannels: Array<Channel> = [];
 		for (const channel of this.channelsById.values()) {
+			if (channel.type === ChannelTypes.GUILD_THREAD) {
+				// Threads are rendered nested under their parent via the Threads store,
+				// never in the flat guild channel list (and never counted like channels).
+				continue;
+			}
 			if (channel.guildId) {
 				let list = byGuild.get(channel.guildId);
 				if (!list) {
