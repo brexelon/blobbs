@@ -254,7 +254,11 @@ export class ThreadOperationsService {
 	 * auto-joined, a closed thread reopens, and the inactivity timer is reset.
 	 * A no-op for non-thread channels.
 	 */
-	async handleThreadMessageActivity(params: {channelId: ChannelID; userId: UserID}): Promise<void> {
+	async handleThreadMessageActivity(params: {
+		channelId: ChannelID;
+		userId: UserID;
+		mentionedUserIds?: ReadonlyArray<UserID>;
+	}): Promise<void> {
 		const {userId} = params;
 		const channel = await this.channelRepository.findUnique(params.channelId);
 		if (!channel || channel.type !== ChannelTypes.GUILD_THREAD || channel.isSoftDeleted) return;
@@ -292,8 +296,53 @@ export class ThreadOperationsService {
 					data: await this.mapThread(updated, undefined, null),
 				});
 			}
+			await this.addMentionedThreadMembers({
+				thread: channel,
+				guildId,
+				authorId: userId,
+				mentionedUserIds: params.mentionedUserIds ?? [],
+			});
 		} catch (error) {
 			Logger.warn({error, threadId: channel.id.toString()}, 'Failed to record thread message activity');
+		}
+	}
+
+	/**
+	 * Add users mentioned in a thread message as thread members, mirroring
+	 * Discord: an @mention pulls a non-member into the thread so they receive its
+	 * traffic. Each candidate is gated on being able to view the thread's parent
+	 * channel, skipped if already a member, and failures are isolated per user so
+	 * one bad mention never blocks the rest.
+	 */
+	private async addMentionedThreadMembers(params: {
+		thread: Channel;
+		guildId: GuildID;
+		authorId: UserID;
+		mentionedUserIds: ReadonlyArray<UserID>;
+	}): Promise<void> {
+		const {thread, guildId, authorId, mentionedUserIds} = params;
+		const parentChannelId = thread.parentId ?? thread.id;
+		const authorKey = authorId.toString();
+		const seen = new Set<string>();
+		for (const mentionedId of mentionedUserIds) {
+			const key = mentionedId.toString();
+			if (key === authorKey || seen.has(key)) continue;
+			seen.add(key);
+			try {
+				if (await this.threadRepository.isMember(thread.id, mentionedId)) continue;
+				// Only pull in users who can actually see the thread's parent channel.
+				await this.authService.getChannelAuthenticated({userId: mentionedId, channelId: parentChannelId});
+				await this.threadRepository.addMember({
+					threadId: thread.id,
+					userId: mentionedId,
+					guildId,
+					parentId: thread.parentId,
+					joinedAt: new Date(),
+				});
+				await this.dispatchMemberEvent('THREAD_MEMBER_ADD', {threadId: thread.id, guildId, userId: mentionedId});
+			} catch (error) {
+				Logger.debug({error, threadId: thread.id.toString(), userId: key}, 'Skipped adding mentioned user to thread');
+			}
 		}
 	}
 
