@@ -10,6 +10,7 @@ import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
+import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -23,44 +24,59 @@ const NO_MESSAGES_YET_DESCRIPTOR = msg({
 	comment: 'Placeholder in the thread box under a message when the thread has no replies yet.',
 });
 
-function useThreadLastMessage(threadId: string | null): Message | null {
-	const [lastMessage, setLastMessage] = useState<Message | null>(null);
+interface ThreadPreviewData {
+	name: string | null;
+	autoCloseAt: string | null;
+	state: number | null;
+	lastMessage: Message | null;
+}
+
+/**
+ * Resolves the thread's authoritative name + auto-close metadata from the parent
+ * channel's thread list (accessible to anyone who can view the channel) and
+ * best-effort fetches the thread's latest message for the preview row.
+ */
+function useThreadPreview(parentChannelId: string, threadId: string | null): ThreadPreviewData {
+	const [data, setData] = useState<ThreadPreviewData>({
+		name: null,
+		autoCloseAt: null,
+		state: null,
+		lastMessage: null,
+	});
 	useEffect(() => {
 		if (!threadId) {
-			setLastMessage(null);
+			setData({name: null, autoCloseAt: null, state: null, lastMessage: null});
 			return;
 		}
 		let cancelled = false;
 		void (async () => {
-			try {
-				const response = await http.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(threadId), {
-					query: {limit: '1'},
-				});
-				if (cancelled) {
-					return;
-				}
-				const [wire] = response.body;
-				setLastMessage(wire ? new Message(wire) : null);
-			} catch {
-				// A non-member (preview access lands in a later phase) or an empty thread; the
-				// row simply falls back to the "no messages yet" placeholder.
-				if (!cancelled) {
-					setLastMessage(null);
-				}
+			const [threads, lastWire] = await Promise.all([
+				ThreadCommands.listThreads(parentChannelId).catch(() => [] as Array<WireChannel>),
+				http
+					.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(threadId), {query: {limit: '1'}})
+					.then((response) => response.body[0] ?? null)
+					.catch(() => null),
+			]);
+			if (cancelled) {
+				return;
 			}
+			const threadChannel = threads.find((candidate) => candidate.id === threadId);
+			setData({
+				name: threadChannel?.thread_metadata?.name ?? threadChannel?.name ?? null,
+				autoCloseAt: threadChannel?.thread_metadata?.auto_close_at ?? null,
+				state: threadChannel?.thread_metadata?.state ?? null,
+				lastMessage: lastWire ? new Message(lastWire) : null,
+			});
 		})();
 		return () => {
 			cancelled = true;
 		};
-	}, [threadId]);
-	return lastMessage;
+	}, [parentChannelId, threadId]);
+	return data;
 }
 
-function formatCloseLabel(autoCloseAt: string | null | undefined, state: number | undefined): string | null {
-	if (state === ThreadStates.ARCHIVED) {
-		return null;
-	}
-	if (!autoCloseAt) {
+function formatCloseLabel(autoCloseAt: string | null, state: number | null): string | null {
+	if (state === ThreadStates.ARCHIVED || !autoCloseAt) {
 		return null;
 	}
 	const closeTime = DateTime.fromISO(autoCloseAt);
@@ -76,16 +92,18 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 	const {i18n} = useLingui();
 	const threadId = message.threadId ?? null;
 	const guildId = Channels.getChannel(message.channelId)?.guildId ?? null;
-	const thread = threadId ? Channels.getChannel(threadId) : null;
-	const threadName = thread?.name ?? message.threadName ?? '';
-	const lastMessage = useThreadLastMessage(threadId);
-	const closeLabel = formatCloseLabel(thread?.threadMetadata?.auto_close_at, thread?.threadMetadata?.state);
+	const preview = useThreadPreview(message.channelId, threadId);
+	const storeThread = threadId ? Channels.getChannel(threadId) : null;
+	const threadName = preview.name ?? storeThread?.name ?? message.threadName ?? '';
+	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
+	const lastMessage = preview.lastMessage;
 	const handleOpen = async () => {
 		if (!threadId || !guildId) {
 			return;
 		}
 		try {
-			await ThreadCommands.joinThread(threadId);
+			const joined = await ThreadCommands.joinThread(threadId);
+			Channels.handleChannelCreate({channel: joined});
 		} finally {
 			selectChannel(guildId, threadId);
 		}
@@ -102,9 +120,7 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 						<ThreadIcon size={14} className={styles.icon} data-flx="channel.thread-preview-card.icon" />
 					</span>
 					<div className={styles.body}>
-						<div className={styles.header}>
-							<span className={styles.name}>{threadName}</span>
-						</div>
+						<div className={styles.name}>{threadName}</div>
 						<div className={styles.lastMessage}>
 							{lastMessage ? (
 								<>

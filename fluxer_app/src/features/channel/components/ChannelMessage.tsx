@@ -913,7 +913,6 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					data-flx="channel.message.article.alt-click"
 				>
 					{messageComponent}
-					{message.threadId != null && <ThreadPreviewCard message={message} />}
 					{shouldRenderInlineActionBar &&
 						(previewMode ? (
 							<MessageActionBarCore
@@ -947,6 +946,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 						))}
 				</div>
 			</FocusRing>
+			{message.threadId != null && <ThreadPreviewCard message={message} />}
 			{shouldShowBottomSheet && (
 				<MessageActionBottomSheet
 					isOpen={shouldShowBottomSheet}
