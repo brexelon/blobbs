@@ -86,6 +86,26 @@ export function ThreadController(app: HonoApp) {
 		},
 	);
 	app.get(
+		'/users/@me/threads',
+		RateLimitMiddleware(RateLimitConfigs.CHANNEL_GET),
+		LoginRequired,
+		OpenAPI({
+			operationId: 'list_joined_threads',
+			summary: 'List joined threads',
+			description:
+				'Returns every thread the current user is a member of, so clients can restore joined threads in the sidebar after reconnecting.',
+			responseSchema: ThreadListResponse,
+			statusCode: 200,
+			security: ['botToken', 'bearerToken', 'sessionToken'],
+			tags: 'Channels',
+		}),
+		async (ctx) => {
+			const user = ctx.get('user');
+			const requestCache = ctx.get('requestCache');
+			return ctx.json(await ctx.get('channelService').threads.listJoinedThreads({userId: user.id, requestCache}));
+		},
+	);
+	app.get(
 		'/threads/:thread_id/members',
 		RateLimitMiddleware(RateLimitConfigs.CHANNEL_GET),
 		LoginRequired,

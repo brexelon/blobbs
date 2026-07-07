@@ -147,6 +147,22 @@ export class ThreadOperationsService {
 		return {threads: responses};
 	}
 
+	async listJoinedThreads(params: {
+		userId: UserID;
+		requestCache: RequestCache;
+	}): Promise<{threads: Array<ChannelResponse>}> {
+		const {userId, requestCache} = params;
+		const rows = await this.threadRepository.listMemberThreads(userId);
+		if (rows.length === 0) {
+			return {threads: []};
+		}
+		const channels = await this.channelRepository.listChannels(rows.map((row) => row.thread_id));
+		const threads = channels.filter((channel) => channel.type === ChannelTypes.GUILD_THREAD && !channel.isSoftDeleted);
+		threads.sort((a, b) => Number((b.lastMessageId ?? 0n) - (a.lastMessageId ?? 0n)));
+		const responses = await Promise.all(threads.map((thread) => this.mapThread(thread, true, requestCache)));
+		return {threads: responses};
+	}
+
 	async listThreadMembers(params: {
 		userId: UserID;
 		threadId: ChannelID;

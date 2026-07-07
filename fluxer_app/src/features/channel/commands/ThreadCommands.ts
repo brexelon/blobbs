@@ -36,6 +36,16 @@ export async function createThread(channelId: string, params: ThreadCreateParams
 	}
 }
 
+export async function listJoinedThreads(): Promise<Array<Channel>> {
+	try {
+		const response = await http.get<{threads: Array<Channel>}>(Endpoints.USER_THREADS);
+		return response.body.threads;
+	} catch (error) {
+		logger.error('Failed to list joined threads:', error);
+		throw error;
+	}
+}
+
 export async function listThreads(channelId: string): Promise<Array<Channel>> {
 	try {
 		const response = await http.get<{threads: Array<Channel>}>(Endpoints.CHANNEL_THREADS(channelId));
