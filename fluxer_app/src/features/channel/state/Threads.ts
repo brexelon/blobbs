@@ -2,7 +2,7 @@
 
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
-import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {action, computed, makeObservable, observable} from 'mobx';
 
 const EMPTY_THREADS: ReadonlyArray<Channel> = Object.freeze([]);
@@ -28,11 +28,24 @@ class Threads {
 			memberListVersions: observable,
 			join: action,
 			leave: action,
+			setJoinedThreads: action,
 			setPreview: action,
 			bumpMemberListVersion: action,
 			clear: action,
 			activeThreadIds: computed,
 		});
+	}
+
+	/**
+	 * Replaces the set of joined threads wholesale. Used to restore membership
+	 * from the server on (re)connect so joined threads survive an app refresh.
+	 */
+	@action
+	setJoinedThreads(threadIds: Iterable<string>): void {
+		this.joinedThreadIds.clear();
+		for (const threadId of threadIds) {
+			this.joinedThreadIds.add(threadId);
+		}
 	}
 
 	/**
@@ -69,12 +82,20 @@ class Threads {
 		return this.isJoined(threadId) || this.isPreviewing(threadId);
 	}
 
-	/** Threads to render nested under a parent channel, in creation order. */
+	/**
+	 * Threads to render nested under a parent channel, in creation order. A
+	 * joined thread stays here until it is left, deleted, or closed/archived; the
+	 * single previewed thread is always shown while it is the active view.
+	 */
 	getSidebarThreads(parentChannelId: string): ReadonlyArray<Channel> {
 		const threads: Array<Channel> = [];
 		for (const threadId of this.activeThreadIds) {
 			const channel = Channels.getChannel(threadId);
-			if (channel && channel.type === ChannelTypes.GUILD_THREAD && (channel.parentId ?? null) === parentChannelId) {
+			if (!channel || channel.type !== ChannelTypes.GUILD_THREAD || (channel.parentId ?? null) !== parentChannelId) {
+				continue;
+			}
+			const isOpen = (channel.threadMetadata?.state ?? ThreadStates.OPEN) === ThreadStates.OPEN;
+			if (this.isPreviewing(threadId) || (this.isJoined(threadId) && isOpen)) {
 				threads.push(channel);
 			}
 		}

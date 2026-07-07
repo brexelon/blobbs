@@ -5,8 +5,10 @@ import AccountManager from '@app/features/auth/state/AccountManager';
 import accountStorage from '@app/features/auth/state/AccountStorage';
 import Authentication from '@app/features/auth/state/Authentication';
 import AuthSession from '@app/features/auth/state/AuthSession';
+import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import ChannelPins from '@app/features/channel/state/ChannelPins';
 import Channels from '@app/features/channel/state/Channels';
+import Threads from '@app/features/channel/state/Threads';
 import UserConnection from '@app/features/connection/state/UserConnection';
 import Emoji from '@app/features/emoji/state/Emoji';
 import Sticker from '@app/features/emoji/state/EmojiSticker';
@@ -157,6 +159,10 @@ function handleReadyInternal(data: ReadyPayload, context: GatewayHandlerContext)
 	GuildMembers.handleConnectionOpen(guilds);
 	GuildVerification.handleConnectionOpen();
 	Channels.handleConnectionOpen({channels});
+	// Threads aren't part of the READY channel payload, so restore the user's
+	// joined threads from the server (best-effort, async) to keep them in the
+	// sidebar across refreshes/reconnects.
+	void seedJoinedThreads();
 	Users.hydrateCachedPlaceholders();
 	if (data.auth_session_id_hash) {
 		AuthSession.handleConnectionOpen(data.auth_session_id_hash);
@@ -186,4 +192,19 @@ function handleReadyInternal(data: ReadyPayload, context: GatewayHandlerContext)
 	Initialization.setReady(data);
 	context.setReady();
 	Messages.handleConnectionOpen();
+}
+
+async function seedJoinedThreads(): Promise<void> {
+	try {
+		const threads = await ThreadCommands.listJoinedThreads();
+		runInAction(() => {
+			Threads.setJoinedThreads(threads.map((thread) => thread.id));
+			for (const thread of threads) {
+				Channels.handleChannelCreate({channel: thread});
+				Permission.handleChannelUpdate(thread.id);
+			}
+		});
+	} catch (error) {
+		logger.warn('Failed to restore joined threads after READY', error);
+	}
 }
