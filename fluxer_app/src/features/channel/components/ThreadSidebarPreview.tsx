@@ -4,6 +4,7 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {ChannelChatLayout} from '@app/features/channel/components/ChannelChatLayout';
 import {Messages} from '@app/features/channel/components/ChannelMessages';
 import {ChannelTextarea} from '@app/features/channel/components/ChannelTextarea';
+import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import styles from '@app/features/channel/components/ThreadSidebarPreview.module.css';
 import {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
@@ -14,13 +15,16 @@ import * as MessageCommands from '@app/features/messaging/commands/MessageComman
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
 import {Button} from '@app/features/ui/button/Button';
+import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
+import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {MAX_MESSAGES_PER_CHANNEL} from '@fluxer/constants/src/LimitConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {ArrowSquareOutIcon, XIcon} from '@phosphor-icons/react';
+import {ArrowSquareOutIcon, DotsThreeIcon, XIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
+import type React from 'react';
 import {useEffect} from 'react';
 
 const OPEN_FULL_VIEW_DESCRIPTOR = msg({
@@ -30,6 +34,10 @@ const OPEN_FULL_VIEW_DESCRIPTOR = msg({
 const CLOSE_THREAD_PREVIEW_DESCRIPTOR = msg({
 	message: 'Close thread',
 	comment: 'Tooltip on the button that closes the thread preview sidebar panel.',
+});
+const THREAD_OPTIONS_DESCRIPTOR = msg({
+	message: 'Thread options',
+	comment: 'Tooltip on the button that opens the thread management menu in the thread preview panel.',
 });
 const THREAD_DESCRIPTOR = msg({
 	message: 'Thread',
@@ -105,6 +113,21 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 		selectChannel(guildId, threadId);
 	};
 
+	const handleOpenMenu = (event: React.MouseEvent) => {
+		ContextMenuCommands.openFromEvent(event, ({onClose}) => (
+			<ThreadContextMenu
+				threadId={threadId}
+				threadName={threadName}
+				threadState={thread.threadMetadata?.state ?? ThreadStates.OPEN}
+				isJoined={Threads.isJoined(threadId)}
+				guildId={guildId}
+				parentChannelId={parentChannelId}
+				onClose={onClose}
+				onGoToThread={handleOpenFullView}
+			/>
+		));
+	};
+
 	return (
 		<aside className={styles.panel} data-flx="channel.thread-sidebar-preview.panel">
 			<header className={styles.header} data-flx="channel.thread-sidebar-preview.header">
@@ -115,6 +138,19 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 					{threadName}
 				</div>
 				<div className={styles.actions} data-flx="channel.thread-sidebar-preview.actions">
+					<Tooltip text={i18n._(THREAD_OPTIONS_DESCRIPTOR)}>
+						<Button
+							type="button"
+							variant="secondary"
+							square
+							compact
+							fitContent
+							icon={<DotsThreeIcon size={18} weight="bold" />}
+							onClick={handleOpenMenu}
+							aria-label={i18n._(THREAD_OPTIONS_DESCRIPTOR)}
+							data-flx="channel.thread-sidebar-preview.button.options"
+						/>
+					</Tooltip>
 					<Tooltip text={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}>
 						<Button
 							type="button"

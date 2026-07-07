@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
+import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import styles from '@app/features/channel/components/popouts/ChannelThreadsPopout.module.css';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
+import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
+import {DotsThreeIcon} from '@phosphor-icons/react';
+import {DateTime} from 'luxon';
 import {observer} from 'mobx-react-lite';
+import type React from 'react';
 import {useEffect, useState} from 'react';
 
 const logger = new Logger('ChannelThreadsPopout');
@@ -41,8 +47,26 @@ const ARCHIVED_DESCRIPTOR = msg({
 	message: 'Archived',
 	comment: 'Badge marking a thread whose lifecycle state is archived.',
 });
+const LAST_ACTIVE_DESCRIPTOR = msg({
+	message: 'Last active {relative}',
+	comment: 'Meta line under a thread row showing when it was last active. {relative} is a relative time.',
+});
+const MORE_ACTIONS_DESCRIPTOR = msg({
+	message: 'More options',
+	comment: 'Accessible label for the button that opens the thread management menu.',
+});
 
 type LoadState = 'loading' | 'loaded' | 'error';
+
+function formatLastActive(thread: WireChannel): string | null {
+	const referenceId = thread.last_message_id ?? thread.id;
+	if (!referenceId) {
+		return null;
+	}
+	const timestamp = extractTimestamp(referenceId);
+	const dateTime = DateTime.fromMillis(timestamp);
+	return dateTime.isValid ? dateTime.toRelative() : null;
+}
 
 export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Channel; onClose?: () => void}) => {
 	const {i18n} = useLingui();
@@ -79,6 +103,24 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		}
 	};
 
+	const openThreadMenu = (event: React.MouseEvent, thread: WireChannel) => {
+		const state = thread.thread_metadata?.state ?? ThreadStates.OPEN;
+		const name = thread.thread_metadata?.name ?? thread.name ?? '';
+		const isJoined = Threads.isJoined(thread.id) || Boolean(thread.joined);
+		ContextMenuCommands.openFromEvent(event, ({onClose: onMenuClose}) => (
+			<ThreadContextMenu
+				threadId={thread.id}
+				threadName={name}
+				threadState={state}
+				isJoined={isJoined}
+				guildId={channel.guildId ?? null}
+				parentChannelId={channel.id}
+				onClose={onMenuClose}
+				onGoToThread={() => handleOpen(thread)}
+			/>
+		));
+	};
+
 	return (
 		<div className={styles.container} data-flx="channel.channel-threads-popout.container">
 			<div className={styles.header} data-flx="channel.channel-threads-popout.header">
@@ -111,19 +153,49 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 								: state === ThreadStates.CLOSED
 									? i18n._(CLOSED_DESCRIPTOR)
 									: null;
+						const lastActive = formatLastActive(thread);
 						return (
-							<button
+							<div
 								key={thread.id}
-								type="button"
 								className={styles.row}
+								role="button"
+								tabIndex={0}
 								onClick={() => handleOpen(thread)}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										handleOpen(thread);
+									}
+								}}
+								onContextMenu={(event) => openThreadMenu(event, thread)}
 								data-flx="channel.channel-threads-popout.row"
 							>
-								<ThreadIcon size={16} className={styles.icon} data-flx="channel.channel-threads-popout.icon" />
-								<span className={styles.name}>{name}</span>
-								{badge && <span className={styles.badge}>{badge}</span>}
-								{isJoined && <span className={styles.joinedDot} aria-hidden="true" />}
-							</button>
+								<ThreadIcon size={18} className={styles.icon} data-flx="channel.channel-threads-popout.icon" />
+								<div className={styles.content} data-flx="channel.channel-threads-popout.content">
+									<div className={styles.nameLine} data-flx="channel.channel-threads-popout.name-line">
+										<span className={styles.name}>{name}</span>
+										{badge && <span className={styles.badge}>{badge}</span>}
+										{isJoined && <span className={styles.joinedDot} aria-hidden="true" />}
+									</div>
+									{lastActive && (
+										<div className={styles.meta} data-flx="channel.channel-threads-popout.meta">
+											{i18n._(LAST_ACTIVE_DESCRIPTOR, {relative: lastActive})}
+										</div>
+									)}
+								</div>
+								<button
+									type="button"
+									className={styles.moreButton}
+									aria-label={i18n._(MORE_ACTIONS_DESCRIPTOR)}
+									onClick={(event) => {
+										event.stopPropagation();
+										openThreadMenu(event, thread);
+									}}
+									data-flx="channel.channel-threads-popout.more-button"
+								>
+									<DotsThreeIcon size={18} weight="bold" />
+								</button>
+							</div>
 						);
 					})
 				)}
