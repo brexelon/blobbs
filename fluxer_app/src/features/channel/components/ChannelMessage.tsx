@@ -868,10 +868,15 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		}),
 		[shouldApplySpacing, previewContext, messageGroupSpacing],
 	);
+	const hasThreadPreview = message.threadId != null;
 	return (
 		<>
-			<FocusRing data-flx="channel.message.focus-ring">
-				<div
+			<div
+				className={clsx(styles.messageThreadBlock, hasThreadPreview && styles.messageThreadBlockHasPreview)}
+				data-flx="channel.message.thread-block"
+			>
+				<FocusRing data-flx="channel.message.focus-ring">
+					<div
 					role="article"
 					aria-label={messageAriaLabel}
 					id={`${idPrefix}-${channel.id}-${message.id}`}
@@ -944,9 +949,10 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 								data-flx="channel.message.message-action-bar"
 							/>
 						))}
-				</div>
-			</FocusRing>
-			{message.threadId != null && <ThreadPreviewCard message={message} />}
+					</div>
+				</FocusRing>
+				{hasThreadPreview && <ThreadPreviewCard message={message} />}
+			</div>
 			{shouldShowBottomSheet && (
 				<MessageActionBottomSheet
 					isOpen={shouldShowBottomSheet}
