@@ -292,7 +292,18 @@ prepare_member_tuple(UserId, Member, PresenceTab, ConnectedUserIds, Acc) ->
 -spec can_view(integer(), pos_integer(), map(), guild_state()) -> boolean().
 can_view(UserId, ChannelId, Member, State) when is_integer(UserId), UserId > 0 ->
     try
-        guild_permissions:can_view_channel(UserId, ChannelId, Member, State)
+        case guild_permissions:find_channel_by_id(ChannelId, State) of
+            undefined ->
+                %% A list id that resolves to no guild channel is a thread.
+                %% Thread membership is opt-in virtual access rather than
+                %% role-derived channel visibility, so the member list must show
+                %% exactly the joined members: never everyone who could view the
+                %% parent channel, and never users merely previewing the thread.
+                guild_virtual_channel_access:has_virtual_access(UserId, ChannelId, State) andalso
+                    not guild_virtual_channel_access:has_thread_preview(UserId, ChannelId, State);
+            _Channel ->
+                guild_permissions:can_view_channel(UserId, ChannelId, Member, State)
+        end
     catch
         _:_ -> false
     end;
@@ -345,5 +356,16 @@ sync_online_noop_without_engines_test() ->
     ?assertEqual(
         ok, sync_online(1, true, #{data => #{<<"guild">> => #{<<"features">> => []}}})
     ).
+
+thread_can_view_requires_non_preview_virtual_access_test() ->
+    %% A list id (99) that resolves to no guild channel is treated as a thread:
+    %% only joined members (virtual access without a preview mark) are visible.
+    State0 = #{id => 1, data => #{<<"guild">> => #{<<"features">> => []}}, sessions => #{}},
+    Member = #{<<"user">> => #{<<"id">> => <<"7">>}, <<"roles">> => []},
+    ?assertNot(can_view(7, 99, Member, State0)),
+    Joined = guild_virtual_channel_access:add_virtual_access(7, 99, State0),
+    ?assert(can_view(7, 99, Member, Joined)),
+    Preview = guild_virtual_channel_access:mark_thread_preview(7, 99, Joined),
+    ?assertNot(can_view(7, 99, Member, Preview)).
 
 -endif.
