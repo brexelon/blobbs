@@ -14,16 +14,16 @@
 }
 
 /* Connector hooking out of the origin message's avatar/thread icon down into the
-   box. The vertical drop is centred under the avatar (x = avatar centre) and the
-   elbow meets the box at its vertical middle (~24px, where the icon badge sits).
-   A small gap is left at each end: above the drop (clear of the avatar) and
-   before the box (via the reduced width). */
+   box. The vertical drop sits under the avatar's horizontal centre and the elbow
+   meets the box at its vertical middle (~24px, where the icon badge sits). A gap
+   is left at each end: above the drop (clear of the avatar) and before the box
+   (via the reduced width). */
 .connector {
 	position: absolute;
-	left: calc(-1 * (0.5 * var(--message-avatar-size) + var(--message-gutter)));
-	top: -6px;
-	width: calc(0.5 * var(--message-avatar-size) + var(--message-gutter) - 6px);
-	height: 30px;
+	left: calc(-1 * (0.5 * var(--message-avatar-size) + 0.5 * var(--message-gutter)));
+	top: -2px;
+	width: calc(0.5 * var(--message-avatar-size) + 0.5 * var(--message-gutter) - 6px);
+	height: 26px;
 	border-left: 2px solid var(--background-modifier-accent);
 	border-bottom: 2px solid var(--background-modifier-accent);
 	border-bottom-left-radius: 8px;
