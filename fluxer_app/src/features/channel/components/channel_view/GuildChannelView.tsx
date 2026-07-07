@@ -21,11 +21,13 @@ import {useChannelSearchState} from '@app/features/channel/components/channel_vi
 import {useVoiceCallChromePinState} from '@app/features/channel/components/channel_view/useVoiceCallChromePinState';
 import {MatureContentChannelGate} from '@app/features/channel/components/MatureContentChannelGate';
 import {useMessagesBottomBarVisibility} from '@app/features/channel/components/MessagesBottomBarVisibility';
+import {ThreadSidebarPreview} from '@app/features/channel/components/ThreadSidebarPreview';
 import {VerificationBarrier} from '@app/features/channel/components/VerificationBarrier';
 import {useChannelMemberListVisibility} from '@app/features/channel/hooks/useChannelMemberListVisibility';
 import {useChannelSearchVisibility} from '@app/features/channel/hooks/useChannelSearchVisibility';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import Threads from '@app/features/channel/state/Threads';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
@@ -211,6 +213,12 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 		Threads.setPreview(null);
 		return undefined;
 	}, [isThreadChannel, channelId, guildId]);
+	// The thread preview panel belongs to the channel it was opened from; close it
+	// whenever we navigate to a different channel so it never leaks across views.
+	useEffect(() => {
+		ThreadSidebar.closeIfNotParent(channelId);
+	}, [channelId]);
+	const threadSidebarThreadId = ThreadSidebar.parentChannelId === channelId ? ThreadSidebar.openThreadId : null;
 	const searchState = useChannelSearchState(channel);
 	const {
 		isSearchActive,
@@ -549,7 +557,8 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 			/>
 		);
 	}
-	const shouldRenderMemberList = isMemberListVisible && !isMobileLayout && !isSearchActive;
+	const isThreadSidebarOpen = threadSidebarThreadId != null && !isMobileLayout;
+	const shouldRenderMemberList = isMemberListVisible && !isMobileLayout && !isSearchActive && !isThreadSidebarOpen;
 	return (
 		<ChannelViewScaffold
 			header={
@@ -580,7 +589,13 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 				/>
 			}
 			sidePanel={
-				isSearchPanelVisible ? (
+				isThreadSidebarOpen ? (
+					<ThreadSidebarPreview
+						threadId={threadSidebarThreadId}
+						parentChannelId={channelId}
+						data-flx="channel.channel-view.guild-channel-view.thread-sidebar-preview"
+					/>
+				) : isSearchPanelVisible ? (
 					<div className={styles.searchPanel} data-flx="channel.channel-view.guild-channel-view.search-panel--2">
 						<ChannelSearchResults
 							channel={channel}

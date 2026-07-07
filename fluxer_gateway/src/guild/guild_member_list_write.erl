@@ -8,6 +8,7 @@
     broadcast_member_list_updates/5,
     broadcast_all_member_list_updates/1,
     broadcast_member_list_updates_for_channel/2,
+    broadcast_member_list_updates_for_thread/2,
     broadcast_channel_engine_connection_change/2,
     flush_pending_member_list_syncs/1,
     resync_hoisted_member_lists/1,
@@ -120,6 +121,21 @@ broadcast_channel_with_guild_id(GuildId, ChannelId, State) ->
         undefined -> {ok, State};
         ListId -> broadcast_list_by_id(GuildId, ChannelId, ListId, State)
     end.
+
+%% Threads are not part of the guild's channel index, so calculate_list_id/2
+%% (used by broadcast_member_list_updates_for_channel/2) resolves them to
+%% undefined. Broadcast against the thread's own snowflake list id directly so a
+%% subscribed thread member list is rebuilt and resynced when membership changes.
+-spec broadcast_member_list_updates_for_thread(channel_id(), guild_state()) ->
+    {ok, guild_state()}.
+broadcast_member_list_updates_for_thread(ThreadId, State) when
+    is_integer(ThreadId), ThreadId > 0
+->
+    guild_member_list_write_context:with_guild_id(State, fun(GuildId) ->
+        broadcast_list_by_id(GuildId, ThreadId, integer_to_binary(ThreadId), State)
+    end);
+broadcast_member_list_updates_for_thread(_ThreadId, State) ->
+    {ok, State}.
 
 -spec broadcast_channel_engine_connection_change(user_id(), guild_state()) -> guild_state().
 broadcast_channel_engine_connection_change(UserId, State) ->

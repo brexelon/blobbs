@@ -46,14 +46,20 @@ dispatch_member_list_event(channel_delete, _EventData, _OldState, UpdatedState) 
 dispatch_member_list_event(channel_update, EventData, _OldState, UpdatedState) ->
     broadcast_channel_update(EventData, UpdatedState);
 dispatch_member_list_event(channel_update_bulk, EventData, _OldState, UpdatedState) ->
-    Channels = maps:get(<<"channels">>, EventData, []),
-    lists:foldl(
-        fun broadcast_channel_update/2,
-        UpdatedState,
-        Channels
-    );
+	Channels = maps:get(<<"channels">>, EventData, []),
+	lists:foldl(
+		fun broadcast_channel_update/2,
+		UpdatedState,
+		Channels
+	);
+dispatch_member_list_event(thread_member_add, EventData, _OldState, UpdatedState) ->
+    broadcast_thread_member_update(<<"thread_id">>, EventData, UpdatedState);
+dispatch_member_list_event(thread_member_remove, EventData, _OldState, UpdatedState) ->
+    broadcast_thread_member_update(<<"thread_id">>, EventData, UpdatedState);
+dispatch_member_list_event(thread_update, EventData, _OldState, UpdatedState) ->
+    broadcast_thread_member_update(<<"id">>, EventData, UpdatedState);
 dispatch_member_list_event(_Event, _FinalData, _OldState, UpdatedState) ->
-    UpdatedState.
+	UpdatedState.
 
 -spec broadcast_member_update(event_data(), guild_state(), guild_state()) -> guild_state().
 broadcast_member_update(EventData, OldState, UpdatedState) ->
@@ -82,6 +88,21 @@ broadcast_channel_update(EventData, UpdatedState) ->
         ChannelId ->
             {ok, NewState} = guild_member_list:broadcast_member_list_updates_for_channel(
                 ChannelId, UpdatedState
+            ),
+            NewState
+    end.
+
+%% Thread membership changes (join/leave/archive) alter who appears in a thread's
+%% member list. Threads live outside the guild channel index, so the update is
+%% broadcast against the thread's own snowflake list id.
+-spec broadcast_thread_member_update(binary(), event_data(), guild_state()) -> guild_state().
+broadcast_thread_member_update(Key, EventData, UpdatedState) ->
+    case guild_dispatch_decorate:parse_snowflake(Key, maps:get(Key, EventData, undefined)) of
+        undefined ->
+            UpdatedState;
+        ThreadId ->
+            {ok, NewState} = guild_member_list:broadcast_member_list_updates_for_thread(
+                ThreadId, UpdatedState
             ),
             NewState
     end.
