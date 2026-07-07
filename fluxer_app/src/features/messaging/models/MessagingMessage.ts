@@ -342,6 +342,8 @@ export class Message {
 				state: updates.state ?? this.state,
 				nonce: updates.nonce ?? this.nonce,
 				blocked: updates.blocked ?? this.blocked,
+				thread_id: 'thread_id' in updates ? updates.thread_id : this.threadId,
+				thread_name: 'thread_name' in updates ? updates.thread_name : this.threadName,
 				_allowedMentions: updates._allowedMentions ?? this._allowedMentions,
 				_favoriteMemeId: updates._favoriteMemeId ?? this._favoriteMemeId,
 			},

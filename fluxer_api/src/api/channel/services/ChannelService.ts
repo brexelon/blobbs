@@ -196,6 +196,7 @@ export class ChannelService {
 			gatewayService,
 			snowflakeService,
 			userCacheService,
+			messagePersistenceService,
 		);
 	}
 
