@@ -38,6 +38,7 @@ export const ChannelThreadsButton = observer(({channel}: ChannelThreadsButtonPro
 			position="bottom-end"
 			tooltip={threadsLabel}
 			tooltipPosition="bottom"
+			subscribeTo="CHANNEL_THREADS_OPEN"
 		>
 			<div
 				className={styles.iconButtonWrapper}

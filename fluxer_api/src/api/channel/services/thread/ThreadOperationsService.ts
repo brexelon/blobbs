@@ -3,6 +3,7 @@
 import {
 	ChannelTypes,
 	GUILD_TEXT_BASED_CHANNEL_TYPES,
+	MessageTypes,
 	Permissions,
 	THREAD_AUTO_CLOSE_DURATIONS_SECONDS,
 	ThreadStates,
@@ -14,7 +15,14 @@ import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidat
 import type {ChannelResponse} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {ThreadCreateRequest, ThreadUpdateRequest} from '@fluxer/schema/src/domains/channel/ThreadRequestSchemas';
 import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
-import {type ChannelID, createChannelID, createMessageID, type GuildID, type UserID} from '../../../BrandedTypes';
+import {
+	type ChannelID,
+	createChannelID,
+	createMessageID,
+	type GuildID,
+	type MessageID,
+	type UserID,
+} from '../../../BrandedTypes';
 import type {ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../../infrastructure/ISnowflakeService';
@@ -26,6 +34,8 @@ import {mapChannelToResponse} from '../../ChannelMappers';
 import type {IChannelRepository} from '../../IChannelRepository';
 import {getAutoCloseBucket, type ThreadRepository} from '../../repositories/thread/ThreadRepository';
 import type {ChannelAuthService} from '../channel_data/ChannelAuthService';
+import {dispatchMessageCreateBroadcast, dispatchMessageUpdateBroadcast} from '../message/MessageGatewayDispatch';
+import type {MessagePersistenceService} from '../message/MessagePersistenceService';
 
 const AUTO_CLOSE_DURATIONS = new Set<number>(THREAD_AUTO_CLOSE_DURATIONS_SECONDS);
 
@@ -37,6 +47,7 @@ export class ThreadOperationsService {
 		private readonly gatewayService: IGatewayService,
 		private readonly snowflakeService: ISnowflakeService,
 		private readonly userCacheService: UserCacheService,
+		private readonly messagePersistenceService: MessagePersistenceService,
 	) {}
 
 	async createThread(params: {
@@ -125,7 +136,63 @@ export class ThreadOperationsService {
 		const response = await this.mapThread(thread, true, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_CREATE', data: response});
 		await this.dispatchMemberEvent('THREAD_MEMBER_ADD', {threadId, guildId, userId});
+		try {
+			if (originMessageId != null) {
+				// The thread grew out of an existing message: re-broadcast it so every
+				// viewer renders the thread preview card beneath it without a refresh.
+				await this.broadcastOriginMessageUpdate({parent, messageId: originMessageId});
+			} else {
+				// The thread was started standalone (topbar "Create" / /thread): post a
+				// "started a thread" system message carrying the thread annotation, so it
+				// surfaces in the channel with its own preview card, like the origin case.
+				await this.postThreadCreatedSystemMessage({
+					parent,
+					guildId,
+					creatorId: userId,
+					threadId,
+					threadName: data.name,
+				});
+			}
+		} catch (error) {
+			// The thread itself is already created and announced; a failure to surface
+			// the preview/system message must not fail the request.
+			Logger.warn({error, threadId: threadId.toString()}, 'Failed to surface thread creation in channel');
+		}
 		return response;
+	}
+
+	private async broadcastOriginMessageUpdate(params: {parent: Channel; messageId: MessageID}): Promise<void> {
+		const {parent, messageId} = params;
+		const message = await this.channelRepository.getMessage(parent.id, messageId);
+		if (!message) return;
+		await dispatchMessageUpdateBroadcast({gatewayService: this.gatewayService, channel: parent, message});
+	}
+
+	private async postThreadCreatedSystemMessage(params: {
+		parent: Channel;
+		guildId: GuildID;
+		creatorId: UserID;
+		threadId: ChannelID;
+		threadName: string;
+	}): Promise<void> {
+		const {parent, guildId, creatorId, threadId, threadName} = params;
+		const messageId = createMessageID(await this.snowflakeService.generateForChannel(parent.id.toString()));
+		await this.messagePersistenceService.createSystemMessage({
+			messageId,
+			channelId: parent.id,
+			userId: creatorId,
+			type: MessageTypes.THREAD_CREATED,
+			guildId,
+		});
+		await this.threadRepository.annotateOriginMessage({
+			parentChannelId: parent.id,
+			messageId,
+			threadId,
+			threadName,
+		});
+		const message = await this.channelRepository.getMessage(parent.id, messageId);
+		if (!message) return;
+		await dispatchMessageCreateBroadcast({gatewayService: this.gatewayService, channel: parent, message});
 	}
 
 	async listThreads(params: {

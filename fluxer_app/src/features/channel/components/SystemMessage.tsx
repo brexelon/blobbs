@@ -19,16 +19,27 @@ export const SystemMessage = observer(
 		icon: Icon,
 		iconWeight,
 		iconClassname,
+		iconNode,
 		message,
 		messageContent,
 	}: {
-		icon: Icon;
-		iconWeight: 'bold' | 'fill';
+		icon?: Icon;
+		iconWeight?: 'bold' | 'fill';
 		iconClassname?: string;
+		iconNode?: React.ReactNode;
 		message: Message;
 		messageContent: React.ReactNode;
 	}) => {
 		const {i18n} = useLingui();
+		const renderedIcon =
+			iconNode ??
+			(Icon ? (
+				<Icon
+					weight={iconWeight ?? 'bold'}
+					className={clsx(styles.systemMessageIconSvg, iconClassname)}
+					data-flx="channel.system-message.system-message-icon-svg"
+				/>
+			) : null);
 		const messageDisplayCompact = UserSettings.getMessageDisplayCompact();
 		const reactions = useMessageReactionsSnapshot(message.id);
 		const formattedDate = useMemo(
@@ -56,11 +67,7 @@ export const SystemMessage = observer(
 						className={styles.systemMessageIconCompact}
 						data-flx="channel.system-message.system-message-icon-compact"
 					>
-						<Icon
-							weight={iconWeight}
-							className={clsx(styles.systemMessageIconSvg, iconClassname)}
-							data-flx="channel.system-message.system-message-icon-svg"
-						/>
+						{renderedIcon}
 					</div>
 					<div
 						className={styles.systemMessageContentWrapper}
@@ -86,11 +93,7 @@ export const SystemMessage = observer(
 			<>
 				<div className={styles.messageGutterLeft} data-flx="channel.system-message.message-gutter-left" />
 				<div className={styles.systemMessageIconWrapper} data-flx="channel.system-message.system-message-icon-wrapper">
-					<Icon
-						weight={iconWeight}
-						className={clsx(styles.systemMessageIconSvg, iconClassname)}
-						data-flx="channel.system-message.system-message-icon-svg--2"
-					/>
+					{renderedIcon}
 				</div>
 				<div className={styles.messageGutterRight} data-flx="channel.system-message.message-gutter-right" />
 				<div className={styles.systemMessageContent} data-flx="channel.system-message.system-message-content--2">

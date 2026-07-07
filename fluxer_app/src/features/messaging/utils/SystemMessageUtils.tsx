@@ -135,6 +135,10 @@ const STARTED_A_CALL_DESCRIPTOR = msg({
 	message: '{username} started a call.',
 	comment: 'System message shown inline when a user starts a voice or video call in a DM or group DM.',
 });
+const STARTED_A_THREAD_DESCRIPTOR = msg({
+	message: '{username} started a thread: {threadName}.',
+	comment: 'System message shown inline when a user creates a thread in a channel. threadName is the thread title.',
+});
 
 interface StringifyableMessage {
 	id: string;
@@ -142,6 +146,7 @@ interface StringifyableMessage {
 	content: string;
 	author: {id: string};
 	mentions?: ReadonlyArray<{id: string}>;
+	threadName?: string | null;
 }
 
 const getGuildJoinMessagesPlaintext = (i18n: I18n): Array<(username: string) => string> => [
@@ -231,6 +236,8 @@ export const SystemMessageUtils = {
 				return i18n._(CHANGED_THE_CHANNEL_ICON_DESCRIPTOR, {username});
 			case MessageTypes.CALL:
 				return i18n._(STARTED_A_CALL_DESCRIPTOR, {username});
+			case MessageTypes.THREAD_CREATED:
+				return i18n._(STARTED_A_THREAD_DESCRIPTOR, {username, threadName: message.threadName ?? ''});
 			default:
 				return null;
 		}
