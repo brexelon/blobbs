@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import styles from '@app/features/app/components/layout/ChannelThreadList.module.css';
+import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
+import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
+import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
+import type React from 'react';
 import {useCallback} from 'react';
 
 interface ChannelThreadListProps {
@@ -25,8 +29,10 @@ export const ChannelThreadList = observer(({guildId, channelId, selectedChannelI
 				<ThreadRow
 					key={thread.id}
 					guildId={guildId}
+					parentChannelId={channelId}
 					threadId={thread.id}
 					name={thread.threadMetadata?.name ?? thread.name ?? ''}
+					state={thread.threadMetadata?.state ?? ThreadStates.OPEN}
 					isSelected={selectedChannelId === thread.id}
 				/>
 			))}
@@ -35,15 +41,47 @@ export const ChannelThreadList = observer(({guildId, channelId, selectedChannelI
 });
 
 const ThreadRow = observer(
-	({guildId, threadId, name, isSelected}: {guildId: string; threadId: string; name: string; isSelected: boolean}) => {
+	({
+		guildId,
+		parentChannelId,
+		threadId,
+		name,
+		state,
+		isSelected,
+	}: {
+		guildId: string;
+		parentChannelId: string;
+		threadId: string;
+		name: string;
+		state: number;
+		isSelected: boolean;
+	}) => {
 		const handleClick = useCallback(() => {
 			selectChannel(guildId, threadId);
 		}, [guildId, threadId]);
+		const handleContextMenu = useCallback(
+			(event: React.MouseEvent) => {
+				ContextMenuCommands.openFromEvent(event, ({onClose}) => (
+					<ThreadContextMenu
+						threadId={threadId}
+						threadName={name}
+						threadState={state}
+						isJoined={Threads.isJoined(threadId)}
+						guildId={guildId}
+						parentChannelId={parentChannelId}
+						onClose={onClose}
+						onGoToThread={() => selectChannel(guildId, threadId)}
+					/>
+				));
+			},
+			[guildId, parentChannelId, threadId, name, state],
+		);
 		return (
 			<button
 				type="button"
 				className={clsx(styles.row, isSelected && styles.rowSelected)}
 				onClick={handleClick}
+				onContextMenu={handleContextMenu}
 				data-flx="app.channel-thread-list.row"
 			>
 				<span className={styles.connector} aria-hidden="true" />
