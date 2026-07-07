@@ -2,6 +2,7 @@
 
 import {OutlineFrame} from '@app/features/app/components/layout/OutlineFrame';
 import Authentication from '@app/features/auth/state/Authentication';
+import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ChannelMembers.module.css';
 import {UserTag} from '@app/features/channel/components/ChannelUserTag';
 import {CompactMemberCustomStatus} from '@app/features/channel/components/CompactMemberCustomStatus';
@@ -10,14 +11,15 @@ import {MemberListItem} from '@app/features/channel/components/MemberListItem';
 import memberItemStyles from '@app/features/channel/components/MemberListItem.module.css';
 import {MemberListUnavailableFallback} from '@app/features/channel/components/shared/MemberListUnavailableFallback';
 import type {Channel} from '@app/features/channel/models/Channel';
-import type {Guild} from '@app/features/guild/models/Guild';
+import Threads from '@app/features/channel/state/Threads';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import type {Guild} from '@app/features/guild/models/Guild';
 import {OFFLINE_DESCRIPTOR, ONLINE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {resolveMemberListCustomStatus} from '@app/features/member/hooks/useMemberListCustomStatus';
 import {resolveMemberListPresence} from '@app/features/member/hooks/useMemberListPresence';
 import {useMemberListSubscription} from '@app/features/member/hooks/useMemberListSubscription';
-import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
 import GuildMembers from '@app/features/member/state/GuildMembers';
+import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
 import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import {
 	buildMemberListLayout,
@@ -26,7 +28,6 @@ import {
 	getTotalRowsFromLayout,
 } from '@app/features/member/utils/MemberListLayout';
 import {
-	areNormalizedMemberListRangesCovered,
 	areNormalizedMemberListRangesEqual,
 	buildMemberListRangeWindow,
 	buildMemberListRenderWindow,
@@ -47,10 +48,10 @@ import Users from '@app/features/user/state/Users';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import Window from '@app/features/window/state/Window';
-import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MEMBER_LIST_RANGE_MAX_SPAN} from '@fluxer/constants/src/GatewayConstants';
 import {GuildFeatures, GuildOperations} from '@fluxer/constants/src/GuildConstants';
+import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
 import type {StatusType} from '@fluxer/constants/src/StatusConstants';
 import {isOfflineStatus} from '@fluxer/constants/src/StatusConstants';
 import {useLingui as useLinguiRuntime} from '@lingui/react';
@@ -247,7 +248,9 @@ const FrozenMemberListInteractiveItem = observer(function FrozenMemberListIntera
 	const user = Users.getUser(row.userId);
 	const guildMember = GuildMembers.getMember(guild.id, row.userId);
 	if (!user || !guildMember) {
-		return <FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />;
+		return (
+			<FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />
+		);
 	}
 	return (
 		<MemberListItem
@@ -401,7 +404,11 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	const currentUserId = Authentication.currentUserId;
 	const lacksMemberViewPermission =
 		currentUserId != null && !PermissionUtils.can(Permissions.VIEW_CHANNEL_MEMBERS, currentUserId, channel.toJSON());
-	const {subscribe, forceSubscribe, resubscribe, isPaused: isSubscriptionPaused} = useMemberListSubscription({
+	const {
+		subscribe,
+		forceSubscribe,
+		isPaused: isSubscriptionPaused,
+	} = useMemberListSubscription({
 		guildId: guild.id,
 		channelId: channel.id,
 		enabled: !memberListUpdatesDisabled && !lacksMemberViewPermission,
@@ -554,13 +561,13 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	}, [scheduleRangeUpdate]);
 	const refreshVisibleMemberList = useCallback(
 		(options?: {force?: boolean}) => {
-		const scrollerState = scrollerRef.current?.getScrollerState();
-		if (!scrollerState) {
-			forceSubscribe(
-				subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
-			);
-			return;
-		}
+			const scrollerState = scrollerRef.current?.getScrollerState();
+			if (!scrollerState) {
+				forceSubscribe(
+					subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
+				);
+				return;
+			}
 			const scrollTop = scrollerState.scrollTop;
 			const clientHeight = scrollerState.offsetHeight;
 			const nextSubscriptionRanges = buildMemberListRangeWindow({
@@ -589,13 +596,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			}
 			subscribe(nextSubscriptionRanges);
 		},
-		[
-			forceSubscribe,
-			rowOffsets,
-			scaledMemberItemHeight,
-			subscribe,
-			totalRows,
-		],
+		[forceSubscribe, rowOffsets, scaledMemberItemHeight, subscribe, totalRows],
 	);
 	const handleScroll = useCallback(
 		(event: UIEvent<HTMLDivElement>) => {
@@ -1038,8 +1039,58 @@ interface ChannelMembersProps {
 	channel: Channel;
 }
 
+const ThreadMembersList = observer(function ThreadMembersList({channel}: {channel: Channel}) {
+	const version = Threads.getMemberListVersion(channel.id);
+	const [userIds, setUserIds] = useState<Array<string>>([]);
+	useEffect(() => {
+		let cancelled = false;
+		ThreadCommands.listThreadMembers(channel.id)
+			.then((members) => {
+				if (cancelled) {
+					return;
+				}
+				Users.cacheUsers(members.map((member) => member.user));
+				setUserIds(members.map((member) => member.user.id));
+			})
+			.catch(() => {
+				// Best-effort: leave the list empty if it fails to load.
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [channel.id, version]);
+	const users = userIds.map((id) => Users.getUser(id)).filter((user): user is User => user != null);
+	const memberGroups = MemberListUtils.getGroupDMMemberGroups(users);
+	const ownerId = channel.threadMetadata?.creator_id ?? channel.ownerId ?? null;
+	return (
+		<OutlineFrame
+			hideTopBorder
+			sides={{left: false}}
+			data-flx="channel.channel-members.thread-members-list.outline-frame"
+		>
+			<MemberListContainer
+				channelId={channel.id}
+				data-flx="channel.channel-members.thread-members-list.member-list-container"
+			>
+				{memberGroups.map((group) => (
+					<GroupDMMemberListGroup
+						key={group.id}
+						group={group}
+						channelId={channel.id}
+						ownerId={ownerId}
+						data-flx="channel.channel-members.thread-members-list.group"
+					/>
+				))}
+			</MemberListContainer>
+		</OutlineFrame>
+	);
+});
+
 export const ChannelMembers = observer(function ChannelMembers({guild = null, channel}: ChannelMembersProps) {
 	useLinguiRuntime();
+	if (channel.type === ChannelTypes.GUILD_THREAD) {
+		return <ThreadMembersList channel={channel} data-flx="channel.channel-members.thread-members-list" />;
+	}
 	if (channel.type === ChannelTypes.GROUP_DM) {
 		const currentUserId = Authentication.currentUserId;
 		const allUserIds = currentUserId ? [currentUserId, ...channel.recipientIds] : channel.recipientIds;

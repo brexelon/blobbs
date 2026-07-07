@@ -19,17 +19,34 @@ const EMPTY_THREADS: ReadonlyArray<Channel> = Object.freeze([]);
 class Threads {
 	private readonly joinedThreadIds = observable.set<string>();
 	private previewThreadId: string | null = null;
+	private readonly memberListVersions = observable.map<string, number>();
 
 	constructor() {
-		makeObservable<Threads, 'joinedThreadIds' | 'previewThreadId'>(this, {
+		makeObservable<Threads, 'joinedThreadIds' | 'previewThreadId' | 'memberListVersions'>(this, {
 			joinedThreadIds: observable,
 			previewThreadId: observable,
+			memberListVersions: observable,
 			join: action,
 			leave: action,
 			setPreview: action,
+			bumpMemberListVersion: action,
 			clear: action,
 			activeThreadIds: computed,
 		});
+	}
+
+	/**
+	 * Monotonic counter bumped whenever a thread's membership changes for any
+	 * user, so an open thread member list can refetch itself when someone joins
+	 * or leaves (thread membership isn't otherwise mirrored on the client).
+	 */
+	getMemberListVersion(threadId: string): number {
+		return this.memberListVersions.get(threadId) ?? 0;
+	}
+
+	@action
+	bumpMemberListVersion(threadId: string): void {
+		this.memberListVersions.set(threadId, this.getMemberListVersion(threadId) + 1);
 	}
 
 	get activeThreadIds(): ReadonlyArray<string> {
@@ -96,6 +113,7 @@ class Threads {
 	clear(): void {
 		this.joinedThreadIds.clear();
 		this.previewThreadId = null;
+		this.memberListVersions.clear();
 	}
 }
 

@@ -18,4 +18,7 @@ export function handleThreadMemberAdd(data: ThreadMemberPayload, _context: Gatew
 		// composer and other permission-gated affordances become available.
 		Permission.handleChannelUpdate(data.thread_id);
 	}
+	// Any member change (including other users) should refresh an open thread
+	// member list so it reflects who currently has access.
+	Threads.bumpMemberListVersion(data.thread_id);
 }
