@@ -199,6 +199,11 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 		// While previewing, ask the gateway for ephemeral visibility of the thread's
 		// live events (messages, typing); joined threads already have that access.
 		if (isThreadChannel) {
+			// Threads are seeded outside the READY permission rebuild, so on a fresh
+			// load (or after reconnect) a joined thread's permissions may never have
+			// been computed, leaving the composer disabled. Compute them now that the
+			// thread channel is present so the user can type in threads they can access.
+			Permission.handleChannelUpdate(channelId);
 			Threads.setPreview(channelId);
 			if (guildId && !Threads.isJoined(channelId)) {
 				GatewayConnection.socket?.subscribeThreadPreview({guildId, threadId: channelId});

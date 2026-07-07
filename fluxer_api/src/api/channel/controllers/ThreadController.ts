@@ -3,6 +3,7 @@
 import {ChannelResponse} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import {ThreadCreateRequest, ThreadUpdateRequest} from '@fluxer/schema/src/domains/channel/ThreadRequestSchemas';
 import {ChannelIdParam, ThreadIdParam} from '@fluxer/schema/src/domains/common/CommonParamSchemas';
+import {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {z} from 'zod';
 import {createChannelID} from '../../BrandedTypes';
 import {LoginRequired} from '../../middleware/AuthMiddleware';
@@ -14,6 +15,17 @@ import {Validator} from '../../Validator';
 
 const ThreadListResponse = z.object({
 	threads: z.array(ChannelResponse).describe('Threads under this channel, ordered by most recent activity'),
+});
+
+const ThreadMembersResponse = z.object({
+	members: z
+		.array(
+			z.object({
+				user: UserPartialResponse.describe('The thread member'),
+				joined_at: z.iso.datetime().describe('When the user joined the thread'),
+			}),
+		)
+		.describe('Members who have access to the thread (creator and anyone who has sent a message)'),
 });
 
 export function ThreadController(app: HonoApp) {
@@ -70,6 +82,30 @@ export function ThreadController(app: HonoApp) {
 			const requestCache = ctx.get('requestCache');
 			return ctx.json(
 				await ctx.get('channelService').threads.listThreads({userId: user.id, parentChannelId, requestCache}),
+			);
+		},
+	);
+	app.get(
+		'/threads/:thread_id/members',
+		RateLimitMiddleware(RateLimitConfigs.CHANNEL_GET),
+		LoginRequired,
+		Validator('param', ThreadIdParam),
+		OpenAPI({
+			operationId: 'list_thread_members',
+			summary: 'List thread members',
+			description:
+				'Returns the users who have access to a thread (its creator plus anyone who has sent a message in it). Requires view access to the thread.',
+			responseSchema: ThreadMembersResponse,
+			statusCode: 200,
+			security: ['botToken', 'bearerToken', 'sessionToken'],
+			tags: 'Channels',
+		}),
+		async (ctx) => {
+			const user = ctx.get('user');
+			const threadId = createChannelID(ctx.req.valid('param').thread_id);
+			const requestCache = ctx.get('requestCache');
+			return ctx.json(
+				await ctx.get('channelService').threads.listThreadMembers({userId: user.id, threadId, requestCache}),
 			);
 		},
 	);
