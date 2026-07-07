@@ -31,16 +31,42 @@
 	color: var(--interactive-active, var(--text-normal));
 }
 
+/*
+ * Thread rows share one continuous vertical line down the left of the group. Each
+ * row draws the full-height vertical segment plus a short horizontal tick to the
+ * row; the last row stops the vertical at the tick and rounds the elbow, so
+ * multiple threads look connected like Discord's thread branches.
+ */
 .connector {
 	position: absolute;
 	left: -8px;
-	top: -4px;
+	top: 0;
+	bottom: 0;
 	width: 10px;
-	height: 18px;
 	border-left: 2px solid var(--background-modifier-accent);
+	pointer-events: none;
+}
+
+.connector::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 50%;
+	width: 10px;
+	height: 2px;
+	background: var(--background-modifier-accent);
+	transform: translateY(-1px);
+}
+
+.row:last-child .connector {
+	bottom: auto;
+	height: 50%;
 	border-bottom: 2px solid var(--background-modifier-accent);
 	border-bottom-left-radius: 6px;
-	pointer-events: none;
+}
+
+.row:last-child .connector::after {
+	display: none;
 }
 
 .icon {
