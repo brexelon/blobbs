@@ -6,6 +6,7 @@ import styles from '@app/features/channel/components/ThreadPreviewCard.module.cs
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import GuildMembers from '@app/features/member/state/GuildMembers';
+import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
@@ -28,6 +29,10 @@ const NO_MESSAGES_YET_DESCRIPTOR = msg({
 	comment: 'Placeholder in the thread box under a message when the thread has no replies yet.',
 });
 
+// A short tail of recent messages is enough to keep the preview live: the newest
+// is shown, and the couple behind it let a deletion fall back to the prior one.
+const THREAD_PREVIEW_MESSAGE_LIMIT = 20;
+
 interface ThreadPreviewData {
 	name: string | null;
 	autoCloseAt: string | null;
@@ -40,10 +45,11 @@ interface ThreadPreviewData {
  * channel's thread list (accessible to anyone who can view the channel) and
  * surfaces its latest message for the preview row.
  *
- * The last message is live: the thread channel's `lastMessageId` (updated on
- * every MESSAGE_CREATE the client receives for the thread) drives a re-fetch, and
- * when the thread's messages are already loaded in the store we read the newest
- * one straight from there — so the preview keeps up without an app refresh.
+ * The last message is fully live: the thread's latest page is loaded into the
+ * message store, so the store's MESSAGE_CREATE/UPDATE/DELETE handling keeps the
+ * newest message current — new replies, edits, and deletions all reflect without
+ * an app refresh. A one-shot fetch seeds the row until the store is ready and
+ * covers threads the viewer cannot load messages for.
  */
 function useThreadPreview(parentChannelId: string, threadId: string | null): ThreadPreviewData {
 	const [data, setData] = useState<ThreadPreviewData>({
@@ -52,11 +58,19 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 		state: null,
 		lastMessage: null,
 	});
-	// Reactive live signals: re-fetch when a new message lands, and prefer the
-	// store's newest message whenever the thread is already loaded.
+	// Reactive live signals: re-fetch metadata when a new message lands, and prefer
+	// the store's newest message (kept live by create/edit/delete handling).
 	const liveLastMessageId = threadId ? (Channels.getChannel(threadId)?.lastMessageId ?? null) : null;
 	const storeCollection = threadId ? Messages.getCachedMessages(threadId) : undefined;
 	const storeLast = storeCollection?.ready ? storeCollection.last() : undefined;
+	// Load the thread's latest page so edits and deletions (not just new messages)
+	// flow into the preview through the store.
+	useEffect(() => {
+		if (!threadId) {
+			return;
+		}
+		void MessageCommands.fetchMessages(threadId, null, null, THREAD_PREVIEW_MESSAGE_LIMIT).catch(() => {});
+	}, [threadId]);
 	useEffect(() => {
 		if (!threadId) {
 			setData({name: null, autoCloseAt: null, state: null, lastMessage: null});

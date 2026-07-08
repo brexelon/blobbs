@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {Endpoints} from '@app/features/app/constants/Endpoints';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
@@ -9,11 +8,11 @@ import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import GuildMembers from '@app/features/member/state/GuildMembers';
-import {Message} from '@app/features/messaging/models/MessagingMessage';
+import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
+import type {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
-import {http} from '@app/features/platform/transport/RestTransport';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {AvatarStack} from '@app/features/ui/avatars/AvatarStack';
 import {Button} from '@app/features/ui/button/Button';
@@ -24,7 +23,6 @@ import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {User} from '@app/features/user/models/User';
 import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
-import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -101,6 +99,10 @@ type LoadState = 'loading' | 'loaded' | 'error';
 
 const MAX_JOINER_AVATARS = 5;
 
+// Load a short tail of each thread's messages so the previews stay live (new,
+// edited, and deleted messages all flow through the store) while the menu is open.
+const PREVIEW_MESSAGE_LIMIT = 20;
+
 const threadName = (thread: WireChannel): string => thread.thread_metadata?.name ?? thread.name ?? '';
 const threadState = (thread: WireChannel): number => thread.thread_metadata?.state ?? ThreadStates.OPEN;
 const isThreadJoined = (thread: WireChannel): boolean => Threads.isJoined(thread.id) || Boolean(thread.joined);
@@ -117,7 +119,6 @@ function lastActiveRelative(thread: WireChannel, lastMessage: Message | null): s
 export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Channel; onClose?: () => void}) => {
 	const {i18n} = useLingui();
 	const [threads, setThreads] = useState<ReadonlyArray<WireChannel>>([]);
-	const [lastMessages, setLastMessages] = useState<Record<string, Message | null>>({});
 	const [members, setMembers] = useState<Record<string, ReadonlyArray<User>>>({});
 	const [loadState, setLoadState] = useState<LoadState>('loading');
 	const [query, setQuery] = useState('');
@@ -126,7 +127,6 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 	useEffect(() => {
 		let cancelled = false;
 		setLoadState('loading');
-		setLastMessages({});
 		setMembers({});
 		ThreadCommands.listThreads(channel.id)
 			.then(async (result) => {
@@ -135,11 +135,9 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 				setLoadState('loaded');
 				const entries = await Promise.all(
 					result.map(async (thread) => {
-						const [lastMessage, threadMembers] = await Promise.all([
-							http
-								.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(thread.id), {query: {limit: '1'}})
-								.then((response) => (response.body[0] ? new Message(response.body[0]) : null))
-								.catch(() => null),
+						const [, threadMembers] = await Promise.all([
+							// Seed the store so each row's preview reflects live message activity.
+							MessageCommands.fetchMessages(thread.id, null, null, PREVIEW_MESSAGE_LIMIT).catch(() => []),
 							ThreadCommands.listThreadMembers(thread.id)
 								.then((rows) =>
 									[...rows]
@@ -149,12 +147,11 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 								)
 								.catch(() => [] as Array<User>),
 						]);
-						return [thread.id, {lastMessage, threadMembers}] as const;
+						return [thread.id, threadMembers] as const;
 					}),
 				);
 				if (cancelled) return;
-				setLastMessages(Object.fromEntries(entries.map(([id, value]) => [id, value.lastMessage])));
-				setMembers(Object.fromEntries(entries.map(([id, value]) => [id, value.threadMembers])));
+				setMembers(Object.fromEntries(entries));
 			})
 			.catch((error) => {
 				if (cancelled) return;
@@ -215,11 +212,10 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 	const renderRow = (thread: WireChannel) => {
 		const name = threadName(thread);
 		const state = threadState(thread);
-		// Prefer the live store message (updates as new messages arrive for a
-		// loaded thread) over the snapshot fetched when the popout opened.
+		// The store, seeded on open and kept current by MESSAGE_CREATE/UPDATE/DELETE
+		// handling, drives the preview so it updates live while the menu is open.
 		const storeCollection = Messages.getCachedMessages(thread.id);
-		const storeLast = storeCollection?.ready ? storeCollection.last() : undefined;
-		const lastMessage = storeLast ?? lastMessages[thread.id] ?? null;
+		const lastMessage = storeCollection?.ready ? (storeCollection.last() ?? null) : null;
 		const threadMembers = members[thread.id] ?? [];
 		const authorColor = lastMessage
 			? GuildMembers.getMember(channel.guildId ?? '', lastMessage.author.id)?.getColorString()
