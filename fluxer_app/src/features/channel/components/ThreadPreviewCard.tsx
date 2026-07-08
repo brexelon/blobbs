@@ -5,7 +5,6 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ThreadPreviewCard.module.css';
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
-import Threads from '@app/features/channel/state/Threads';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import GuildMembers from '@app/features/member/state/GuildMembers';
@@ -142,10 +141,11 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 	const lastMessage = preview.lastMessage;
 	// While the card is visible, take ephemeral access to the thread's live traffic
 	// (like the sidebar preview does) so edits and deletions — which never bump
-	// lastMessageId — stream into the store and refresh the row. Joined threads
-	// already receive this traffic, so only unjoined threads need the subscription.
+	// lastMessageId — stream into the store and refresh the row. This is needed even
+	// for threads the viewer has joined: membership alone does not push a thread's
+	// message events while the parent channel is the active view.
 	useEffect(() => {
-		if (!guildId || !threadId || Threads.isJoined(threadId)) {
+		if (!guildId || !threadId) {
 			return;
 		}
 		GatewayConnection.socket?.subscribeThreadPreview({guildId, threadId});

@@ -273,7 +273,6 @@ export const ThreadSettingsModal = observer(({threadId}: {threadId: string}) => 
 						<Button
 							type="button"
 							variant="danger"
-							fitContent
 							leftIcon={<TrashIcon size={16} />}
 							onClick={handleDelete}
 							data-flx="channel.thread-settings-modal.button.delete-mobile"
