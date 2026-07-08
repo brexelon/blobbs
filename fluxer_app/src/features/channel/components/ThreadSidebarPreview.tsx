@@ -4,6 +4,7 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {ChannelChatLayout} from '@app/features/channel/components/ChannelChatLayout';
 import {Messages} from '@app/features/channel/components/ChannelMessages';
 import {ChannelTextarea} from '@app/features/channel/components/ChannelTextarea';
+import {ChannelNotificationSettingsDropdown} from '@app/features/channel/components/channel_header_components/ChannelNotificationSettingsDropdown';
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import styles from '@app/features/channel/components/ThreadSidebarPreview.module.css';
 import {Channel} from '@app/features/channel/models/Channel';
@@ -11,6 +12,7 @@ import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import Threads from '@app/features/channel/state/Threads';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import {NOTIFICATION_SETTINGS_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
@@ -18,18 +20,23 @@ import {Button} from '@app/features/ui/button/Button';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
+import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {MAX_MESSAGES_PER_CHANNEL} from '@fluxer/constants/src/LimitConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {ArrowSquareOutIcon, DotsThreeIcon, XIcon} from '@phosphor-icons/react';
+import {BellIcon, BellSlashIcon, DotsThreeIcon, XIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useEffect} from 'react';
 
 const OPEN_FULL_VIEW_DESCRIPTOR = msg({
 	message: 'Open full view',
-	comment: 'Tooltip on the button that opens the previewed thread in its full channel view.',
+	comment: 'Tooltip on the thread preview title that opens the previewed thread in its full channel view.',
+});
+const NOTIFICATION_SETTINGS_MUTED_DESCRIPTOR = msg({
+	message: 'Notification settings (muted)',
+	comment: 'Tooltip on the thread preview notification button when the thread is muted. Keep it concise.',
 });
 const CLOSE_THREAD_PREVIEW_DESCRIPTOR = msg({
 	message: 'Close thread',
@@ -128,16 +135,50 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 		));
 	};
 
+	// The thread has its own channel id, so its notification override is
+	// independent of the parent channel — muting here never touches the parent.
+	const isMuted = UserGuildSettings.getChannelOverride(guildId, threadId)?.muted ?? false;
+	const notificationLabel = isMuted
+		? i18n._(NOTIFICATION_SETTINGS_MUTED_DESCRIPTOR)
+		: i18n._(NOTIFICATION_SETTINGS_DESCRIPTOR);
+	const handleOpenNotifications = (event: React.MouseEvent) => {
+		ContextMenuCommands.openFromElementBottomRight(event, ({onClose}) => (
+			<ChannelNotificationSettingsDropdown channel={thread} onClose={onClose} />
+		));
+	};
+
 	return (
 		<aside className={styles.panel} data-flx="channel.thread-sidebar-preview.panel">
 			<header className={styles.header} data-flx="channel.thread-sidebar-preview.header">
 				<span className={styles.iconBadge} aria-hidden="true">
 					<ThreadIcon size={16} className={styles.icon} data-flx="channel.thread-sidebar-preview.icon" />
 				</span>
-				<div className={styles.title} title={threadName} data-flx="channel.thread-sidebar-preview.title">
-					{threadName}
-				</div>
+				<Tooltip text={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}>
+					<button
+						type="button"
+						className={styles.title}
+						onClick={handleOpenFullView}
+						aria-label={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}
+						data-flx="channel.thread-sidebar-preview.title"
+					>
+						{threadName}
+					</button>
+				</Tooltip>
 				<div className={styles.actions} data-flx="channel.thread-sidebar-preview.actions">
+					<Tooltip text={notificationLabel}>
+						<Button
+							type="button"
+							variant="secondary"
+							square
+							compact
+							fitContent
+							icon={isMuted ? <BellSlashIcon size={18} /> : <BellIcon size={18} />}
+							onClick={handleOpenNotifications}
+							aria-label={notificationLabel}
+							aria-haspopup="menu"
+							data-flx="channel.thread-sidebar-preview.button.notifications"
+						/>
+					</Tooltip>
 					<Tooltip text={i18n._(THREAD_OPTIONS_DESCRIPTOR)}>
 						<Button
 							type="button"
@@ -149,19 +190,6 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 							onClick={handleOpenMenu}
 							aria-label={i18n._(THREAD_OPTIONS_DESCRIPTOR)}
 							data-flx="channel.thread-sidebar-preview.button.options"
-						/>
-					</Tooltip>
-					<Tooltip text={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}>
-						<Button
-							type="button"
-							variant="secondary"
-							square
-							compact
-							fitContent
-							icon={<ArrowSquareOutIcon size={18} />}
-							onClick={handleOpenFullView}
-							aria-label={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}
-							data-flx="channel.thread-sidebar-preview.button.open-full-view"
 						/>
 					</Tooltip>
 					<Tooltip text={i18n._(CLOSE_THREAD_PREVIEW_DESCRIPTOR)}>

@@ -48,6 +48,12 @@ export function isNewMessageGroup(
 	if (currentMessage.type === MessageTypes.REPLY) {
 		return true;
 	}
+	// A message that owns a thread renders a preview box beneath it, so it is
+	// isolated from its neighbours: it starts its own group, and the next message
+	// starts a fresh one too. Clearing the thread (e.g. on delete) reverts this.
+	if (currentMessage.threadId != null || prevMessage.threadId != null) {
+		return true;
+	}
 	const currentIsDisplaySystem =
 		currentMessage.type !== MessageTypes.DEFAULT && currentMessage.type !== MessageTypes.REPLY;
 	const prevIsDisplaySystem = prevMessage.type !== MessageTypes.DEFAULT && prevMessage.type !== MessageTypes.REPLY;

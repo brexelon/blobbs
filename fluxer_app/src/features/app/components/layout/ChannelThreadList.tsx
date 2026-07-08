@@ -5,6 +5,7 @@ import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadCo
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
+import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
@@ -20,6 +21,12 @@ interface ChannelThreadListProps {
 export const ChannelThreadList = observer(({guildId, channelId, selectedChannelId}: ChannelThreadListProps) => {
 	const threads = Threads.getSidebarThreads(channelId);
 	if (threads.length === 0) {
+		return null;
+	}
+	// Keep a muted channel's threads out of the sidebar unless the user is actively
+	// in that channel (clicked into it) — revealing again once it's unmuted.
+	const isParentMuted = UserGuildSettings.isChannelMuted(guildId, channelId);
+	if (isParentMuted && selectedChannelId !== channelId) {
 		return null;
 	}
 	return (

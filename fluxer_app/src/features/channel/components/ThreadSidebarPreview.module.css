@@ -38,12 +38,21 @@
 	flex: 1 1 auto;
 	min-width: 0;
 	overflow: hidden;
+	border: none;
+	background: transparent;
+	padding: 0;
 	color: var(--header-primary);
 	font-size: 1rem;
 	font-weight: 600;
 	line-height: 1.25;
 	white-space: nowrap;
 	text-overflow: ellipsis;
+	text-align: left;
+	cursor: pointer;
+}
+
+.title:hover {
+	text-decoration: underline;
 }
 
 .actions {
