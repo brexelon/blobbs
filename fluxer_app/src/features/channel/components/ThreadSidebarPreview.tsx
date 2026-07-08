@@ -30,10 +30,6 @@ import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useEffect} from 'react';
 
-const OPEN_FULL_VIEW_DESCRIPTOR = msg({
-	message: 'Open full view',
-	comment: 'Tooltip on the thread preview title that opens the previewed thread in its full channel view.',
-});
 const NOTIFICATION_SETTINGS_MUTED_DESCRIPTOR = msg({
 	message: 'Notification settings (muted)',
 	comment: 'Tooltip on the thread preview notification button when the thread is muted. Keep it concise.',
@@ -153,17 +149,14 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 				<span className={styles.iconBadge} aria-hidden="true">
 					<ThreadIcon size={16} className={styles.icon} data-flx="channel.thread-sidebar-preview.icon" />
 				</span>
-				<Tooltip text={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}>
-					<button
-						type="button"
-						className={styles.title}
-						onClick={handleOpenFullView}
-						aria-label={i18n._(OPEN_FULL_VIEW_DESCRIPTOR)}
-						data-flx="channel.thread-sidebar-preview.title"
-					>
-						{threadName}
-					</button>
-				</Tooltip>
+				<button
+					type="button"
+					className={styles.title}
+					onClick={handleOpenFullView}
+					data-flx="channel.thread-sidebar-preview.title"
+				>
+					{threadName}
+				</button>
 				<div className={styles.actions} data-flx="channel.thread-sidebar-preview.actions">
 					<Tooltip text={notificationLabel}>
 						<Button
