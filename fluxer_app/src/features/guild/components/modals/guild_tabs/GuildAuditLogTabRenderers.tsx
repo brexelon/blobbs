@@ -27,6 +27,7 @@ import {
 	SECONDS_DURATION_PLURAL_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {formatPermissionLabel} from '@app/features/permissions/utils/PermissionUtils';
+import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {
 	GuildExplicitContentFilterTypes,
 	GuildMFALevel,
@@ -440,6 +441,38 @@ const CHANNEL_CHANGE_RENDERERS: Record<string, ChangeRenderer> = {
 				.
 			</Trans>
 		);
+	},
+	thread_auto_close_duration_seconds: (change, {i18n}) => {
+		const raw = safeScalarString(change.newValue, i18n);
+		const seconds = raw != null ? Number(raw) : 0;
+		if (!seconds || Number.isNaN(seconds)) {
+			return <Trans>Cleared the auto-close duration.</Trans>;
+		}
+		if (seconds % 86400 === 0) {
+			const days = seconds / 86400;
+			return (
+				<Trans>
+					Set auto-close to {renderInline(days, i18n)} <Plural value={days} one="day" other="days" />.
+				</Trans>
+			);
+		}
+		const hours = Math.round(seconds / 3600);
+		return (
+			<Trans>
+				Set auto-close to {renderInline(hours, i18n)} <Plural value={hours} one="hour" other="hours" />.
+			</Trans>
+		);
+	},
+	thread_state: (change, {i18n}) => {
+		const raw = safeScalarString(change.newValue, i18n);
+		const state = raw != null ? Number(raw) : ThreadStates.OPEN;
+		if (state === ThreadStates.ARCHIVED) {
+			return <Trans>Archived the thread.</Trans>;
+		}
+		if (state === ThreadStates.CLOSED) {
+			return <Trans>Closed the thread.</Trans>;
+		}
+		return <Trans>Opened the thread.</Trans>;
 	},
 	user_limit: (change, {i18n}) => {
 		const raw = safeScalarString(change.newValue, i18n);

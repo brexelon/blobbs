@@ -2,6 +2,8 @@
 
 .dangerZone {
 	display: flex;
+	flex-direction: column;
+	align-items: stretch;
 	margin-top: 1.5rem;
 	padding-top: 1rem;
 	border-top: 0.0625rem solid var(--background-modifier-accent);

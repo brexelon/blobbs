@@ -295,6 +295,16 @@ export class Channel {
 		if (this.contentWarningLevel !== other.contentWarningLevel) return false;
 		if (this.contentWarningText !== other.contentWarningText) return false;
 		if (this.rateLimitPerUser !== other.rateLimitPerUser) return false;
+		// Thread metadata (name/state/auto-close) can change independently of the
+		// fields above; without this a thread whose only change is its slowmode,
+		// auto-close window, or state would be treated as unchanged and the stale
+		// copy kept in the store until a full resync.
+		if (this.threadMetadata?.name !== other.threadMetadata?.name) return false;
+		if (this.threadMetadata?.state !== other.threadMetadata?.state) return false;
+		if (this.threadMetadata?.auto_close_duration_seconds !== other.threadMetadata?.auto_close_duration_seconds) {
+			return false;
+		}
+		if (this.threadMetadata?.auto_close_at !== other.threadMetadata?.auto_close_at) return false;
 		if (this.recipientIds.length !== other.recipientIds.length) return false;
 		for (let i = 0; i < this.recipientIds.length; i++) {
 			if (this.recipientIds[i] !== other.recipientIds[i]) return false;
