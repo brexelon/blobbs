@@ -2,6 +2,7 @@
 
 import {SystemMessage} from '@app/features/channel/components/SystemMessage';
 import {SystemMessageUsername} from '@app/features/channel/components/SystemMessageUsername';
+import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import {useSystemMessageData} from '@app/features/messaging/hooks/useSystemMessageData';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
@@ -46,6 +47,16 @@ export const ThreadCreatedMessage = observer(({message}: ThreadCreatedMessagePro
 				type="button"
 				className={styles.systemMessageLink}
 				onClick={openThread}
+				onContextMenu={(event) => {
+					if (threadId) {
+						openThreadContextMenu(event, {
+							threadId,
+							parentChannelId: message.channelId,
+							guildId: channel.guildId ?? null,
+							onGoToThread: openThread,
+						});
+					}
+				}}
 				data-flx="channel.thread-created-message.system-message-link.open-thread.button"
 			>
 				{threadName}

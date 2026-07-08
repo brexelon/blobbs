@@ -5,6 +5,7 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ThreadPreviewCard.module.css';
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
+import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
@@ -146,7 +147,20 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 		<div className={styles.container} data-flx="channel.thread-preview-card">
 			<div className={styles.connector} aria-hidden="true" />
 			<div className={styles.stack}>
-				<button type="button" className={styles.box} onClick={handleOpen} data-flx="channel.thread-preview-card.open">
+				<button
+					type="button"
+					className={styles.box}
+					onClick={handleOpen}
+					onContextMenu={(event) =>
+						openThreadContextMenu(event, {
+							threadId,
+							parentChannelId: message.channelId,
+							guildId,
+							onGoToThread: handleOpen,
+						})
+					}
+					data-flx="channel.thread-preview-card.open"
+				>
 					<span className={styles.iconBadge} aria-hidden="true">
 						<ThreadIcon size={14} className={styles.icon} data-flx="channel.thread-preview-card.icon" />
 					</span>

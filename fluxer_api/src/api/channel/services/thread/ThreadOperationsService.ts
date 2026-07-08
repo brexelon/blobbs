@@ -330,6 +330,33 @@ export class ThreadOperationsService {
 			row.name = data.name;
 			row.thread_name = data.name;
 		}
+		if (data.rate_limit_per_user !== undefined) {
+			row.rate_limit_per_user = data.rate_limit_per_user;
+		}
+		if (data.auto_close_duration_seconds !== undefined) {
+			if (!AUTO_CLOSE_DURATIONS.has(data.auto_close_duration_seconds)) {
+				throw InputValidationError.fromCode(
+					'auto_close_duration_seconds',
+					ValidationErrorCodes.INVALID_THREAD_AUTO_CLOSE_DURATION,
+				);
+			}
+			row.thread_auto_close_duration_seconds = data.auto_close_duration_seconds;
+			// Re-base the deadline off the same last activity under the new window
+			// (last activity = current deadline - old window), so a longer window
+			// grants more time and a shorter one takes effect immediately.
+			const oldDurationMs = (thread.threadAutoCloseDurationSeconds ?? 0) * 1000;
+			const lastActivityMs = thread.threadAutoCloseAt ? thread.threadAutoCloseAt.getTime() - oldDurationMs : Date.now();
+			const autoCloseAt = new Date(lastActivityMs + data.auto_close_duration_seconds * 1000);
+			row.thread_auto_close_at = autoCloseAt;
+			if (row.thread_state !== ThreadStates.ARCHIVED && thread.parentId != null) {
+				await this.threadRepository.insertAutoCloseEntry({
+					autoCloseAt,
+					threadId,
+					parentId: thread.parentId,
+					guildId,
+				});
+			}
+		}
 		const updated = await this.channelRepository.upsert(row);
 		if (data.name !== undefined && thread.threadOriginMessageId != null && thread.parentId != null) {
 			await this.threadRepository.annotateOriginMessage({

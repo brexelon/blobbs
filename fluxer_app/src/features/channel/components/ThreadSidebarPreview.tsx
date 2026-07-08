@@ -153,6 +153,7 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 					type="button"
 					className={styles.title}
 					onClick={handleOpenFullView}
+					onContextMenu={handleOpenMenu}
 					data-flx="channel.thread-sidebar-preview.title"
 				>
 					{threadName}
