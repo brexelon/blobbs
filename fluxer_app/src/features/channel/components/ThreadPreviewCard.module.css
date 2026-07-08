@@ -20,7 +20,16 @@
    bridges the card's top margin and bends into the icon badge centre. */
 .connector {
 	position: absolute;
-	left: calc(-1 * (0.5 * var(--message-avatar-size) + var(--message-gutter)));
+	left: calc(
+		-1 * (
+			var(--chat-horizontal-padding, var(--message-gutter)) +
+			var(--message-avatar-size) +
+			var(--message-gutter)
+		) + var(
+			--thread-preview-spine-x,
+			calc(var(--chat-horizontal-padding, var(--message-gutter)) + 0.5 * var(--message-avatar-size) - 1px)
+		)
+	);
 	--connector-elbow-y: calc(8px + 16px);
 	top: calc(-1 * (var(--thread-preview-connector-bridge) + var(--thread-preview-connector-overlap)));
 	width: calc(0.5 * var(--message-avatar-size) + var(--message-gutter) - 6px);
