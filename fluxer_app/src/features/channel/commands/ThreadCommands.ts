@@ -24,6 +24,8 @@ export interface ThreadCreateParams {
 export interface ThreadUpdateParams {
 	name?: string;
 	action?: ThreadStateAction;
+	auto_close_duration_seconds?: number;
+	rate_limit_per_user?: number;
 }
 
 export async function createThread(channelId: string, params: ThreadCreateParams): Promise<Channel> {

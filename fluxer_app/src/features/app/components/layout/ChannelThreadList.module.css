@@ -75,3 +75,8 @@
 	white-space: nowrap;
 	min-width: 0;
 }
+
+/* Darken a muted thread's name, matching how muted text channels read. */
+.nameMuted {
+	color: var(--text-tertiary-muted);
+}

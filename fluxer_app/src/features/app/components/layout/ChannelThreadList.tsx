@@ -82,6 +82,9 @@ const ThreadRow = observer(
 			},
 			[guildId, parentChannelId, threadId, name, state],
 		);
+		// Dim a muted thread's name (unless it's the active view), matching how muted
+		// text channels read in the sidebar.
+		const isMuted = UserGuildSettings.isChannelMuted(guildId, threadId);
 		return (
 			<button
 				type="button"
@@ -91,7 +94,7 @@ const ThreadRow = observer(
 				data-flx="app.channel-thread-list.row"
 			>
 				<span className={styles.connector} aria-hidden="true" />
-				<span className={styles.name}>{name}</span>
+				<span className={clsx(styles.name, isMuted && !isSelected && styles.nameMuted)}>{name}</span>
 			</button>
 		);
 	},
