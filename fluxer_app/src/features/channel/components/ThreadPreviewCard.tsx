@@ -5,7 +5,9 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ThreadPreviewCard.module.css';
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
+import GuildMembers from '@app/features/member/state/GuildMembers';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
+import Messages from '@app/features/messaging/state/MessagingMessages';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
@@ -36,7 +38,12 @@ interface ThreadPreviewData {
 /**
  * Resolves the thread's authoritative name + auto-close metadata from the parent
  * channel's thread list (accessible to anyone who can view the channel) and
- * best-effort fetches the thread's latest message for the preview row.
+ * surfaces its latest message for the preview row.
+ *
+ * The last message is live: the thread channel's `lastMessageId` (updated on
+ * every MESSAGE_CREATE the client receives for the thread) drives a re-fetch, and
+ * when the thread's messages are already loaded in the store we read the newest
+ * one straight from there — so the preview keeps up without an app refresh.
  */
 function useThreadPreview(parentChannelId: string, threadId: string | null): ThreadPreviewData {
 	const [data, setData] = useState<ThreadPreviewData>({
@@ -45,6 +52,11 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 		state: null,
 		lastMessage: null,
 	});
+	// Reactive live signals: re-fetch when a new message lands, and prefer the
+	// store's newest message whenever the thread is already loaded.
+	const liveLastMessageId = threadId ? (Channels.getChannel(threadId)?.lastMessageId ?? null) : null;
+	const storeCollection = threadId ? Messages.getCachedMessages(threadId) : undefined;
+	const storeLast = storeCollection?.ready ? storeCollection.last() : undefined;
 	useEffect(() => {
 		if (!threadId) {
 			setData({name: null, autoCloseAt: null, state: null, lastMessage: null});
@@ -73,8 +85,8 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 		return () => {
 			cancelled = true;
 		};
-	}, [parentChannelId, threadId]);
-	return data;
+	}, [parentChannelId, threadId, liveLastMessageId]);
+	return {...data, lastMessage: storeLast ?? data.lastMessage};
 }
 
 function formatCloseLabel(autoCloseAt: string | null, state: number | null): string | null {
@@ -130,7 +142,12 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 							{lastMessage ? (
 								<>
 									<Avatar user={lastMessage.author} size={16} />
-									<span className={styles.lastAuthor}>{lastMessage.author.displayName}:</span>
+									<span
+										className={styles.lastAuthor}
+										style={{color: GuildMembers.getMember(guildId ?? '', lastMessage.author.id)?.getColorString()}}
+									>
+										{lastMessage.author.displayName}:
+									</span>
 									<span className={styles.lastContent}>{lastMessage.content}</span>
 								</>
 							) : (
