@@ -1536,9 +1536,17 @@
    the preview card draws the elbow into its icon badge. */
 .messageThreadBlock {
 	position: relative;
-	--thread-preview-spine-x: calc(
-		var(--chat-horizontal-padding, var(--message-gutter)) + 0.5 * var(--message-avatar-size) - 1px
-	);
+	--thread-preview-spine-x: calc(0.5 * var(--message-avatar-size) - 1px);
+}
+
+.messageThreadBlock:has(.messageHasThreadPreview) {
+	--message-inline-outset: var(--message-mobile-margin);
+}
+
+@media (min-width: 768px) {
+	.messageThreadBlock:has(.messageHasThreadPreview) {
+		--message-inline-outset: var(--chat-horizontal-padding, var(--message-gutter));
+	}
 }
 
 .messageHasThreadPreview::after {
@@ -1546,7 +1554,7 @@
 	position: absolute;
 	z-index: 0;
 	box-sizing: border-box;
-	left: var(--thread-preview-spine-x);
+	left: calc(var(--message-inline-outset, var(--message-mobile-margin)) + var(--thread-preview-spine-x));
 	top: calc(
 		2 * var(--message-spacing-y) + var(--message-avatar-align-offset) + 0.5 * var(--message-avatar-size)
 	);
