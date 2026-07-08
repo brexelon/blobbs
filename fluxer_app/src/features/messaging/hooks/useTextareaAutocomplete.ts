@@ -74,7 +74,7 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
-import {Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import type {UserId} from '@fluxer/schema/src/branded/WireIds';
 import {useLingui} from '@lingui/react/macro';
 import {matchSorter} from 'match-sorter';
@@ -150,11 +150,24 @@ export function useTextareaAutocomplete({
 	const [memberSearchResults, setMemberSearchResults] = useState<Array<GuildMember>>([]);
 	const [isMemberSearchLoading, setIsMemberSearchLoading] = useState(false);
 	const permissionVersion = useSyncExternalStore(Permission.subscribe.bind(Permission), () => Permission.version);
+	// Mentions in a thread should reach anyone with access to its parent channel —
+	// thread membership is not required to be pinged into a thread. Resolve mention
+	// candidates and access checks against the parent for threads, the channel
+	// itself otherwise.
+	const mentionChannel = useMemo<Channel | null>(() => {
+		if (channel && channel.type === ChannelTypes.GUILD_THREAD && channel.parentId) {
+			return Channels.getChannel(channel.parentId) ?? channel;
+		}
+		return channel;
+	}, [channel]);
+	const mentionChannelId = mentionChannel?.id ?? '';
 	const guildMemberVersion = useSyncExternalStore(GuildMembers.subscribe.bind(GuildMembers), () =>
 		channel?.guildId ? GuildMembers.getGuildMemberVersion(channel.guildId) : 0,
 	);
 	const channelMemberListVersion = useSyncExternalStore(MemberSidebar.subscribe.bind(MemberSidebar), () =>
-		channel?.guildId && channel.id ? MemberSidebar.getChannelListVersion(channel.guildId, channel.id) : 0,
+		mentionChannel?.guildId && mentionChannelId
+			? MemberSidebar.getChannelListVersion(mentionChannel.guildId, mentionChannelId)
+			: 0,
 	);
 	const gifCacheRef = useRef<Map<string, Array<Gif>>>(new Map());
 	const currentSearchRef = useRef<string | null>(null);
@@ -316,8 +329,7 @@ export function useTextareaAutocomplete({
 		}
 		const searchQuery = autocompleteTriggerMatchedText;
 		const guildId = channel.guildId;
-		const channelId = channel.id;
-		const channelAccessibleMembers = collectChannelAccessibleMembers(guildId, channelId);
+		const channelAccessibleMembers = collectChannelAccessibleMembers(guildId, mentionChannelId || channel.id);
 		const isGuildFullyLoaded = GuildMembers.isGuildFullyLoaded(guildId);
 		currentGuildIdRef.current = guildId;
 		const sessionKey = `${guildId}:${searchQuery}`;
@@ -367,6 +379,7 @@ export function useTextareaAutocomplete({
 		autocompleteTriggerType,
 		channel?.guildId,
 		channel?.id,
+		mentionChannelId,
 		guildMemberVersion,
 		channelMemberListVersion,
 	]);
@@ -504,21 +517,21 @@ export function useTextareaAutocomplete({
 	);
 	const canViewChannel = useCallback(
 		(userId: string): boolean => {
-			if (!channel) {
+			if (!mentionChannel) {
 				return true;
 			}
-			return PermissionUtils.canUserAccessChannel(userId, channel);
+			return PermissionUtils.canUserAccessChannel(userId, mentionChannel);
 		},
-		[channel],
+		[mentionChannel],
 	);
 	const canMentionRoleInChannel = useCallback(
 		(roleId: string): boolean => {
-			if (!channel) {
+			if (!mentionChannel) {
 				return true;
 			}
-			return PermissionUtils.canRoleAccessChannel(roleId, channel);
+			return PermissionUtils.canRoleAccessChannel(roleId, mentionChannel);
 		},
-		[channel],
+		[mentionChannel],
 	);
 	useEffect(() => {
 		let options: Array<AutocompleteOption> = [];
@@ -565,8 +578,8 @@ export function useTextareaAutocomplete({
 					options = channel.isPersonalNotes() ? userOptions : [...userOptions, ...SPECIAL_MENTIONS];
 				} else {
 					const channelAccessibleMembers =
-						channel.guildId != null && channel.id.length > 0
-							? collectChannelAccessibleMembers(channel.guildId, channel.id)
+						channel.guildId != null && mentionChannelId.length > 0
+							? collectChannelAccessibleMembers(channel.guildId, mentionChannelId)
 							: [];
 					const useChannelMemberList = channelAccessibleMembers.length > 0;
 					const membersToUse = unionMembers(
