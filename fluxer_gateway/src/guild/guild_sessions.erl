@@ -123,8 +123,26 @@ filter_sessions_for_channel(Sessions, ChannelId, SessionIdOpt, State) ->
 filter_sessions_for_message(Sessions, ChannelId, MessageId, SessionIdOpt, State) ->
     filter_active_sessions(Sessions, SessionIdOpt, fun(S, _Sid) ->
         session_can_view_channel(S, ChannelId, State) andalso
-            session_can_access_message(S, ChannelId, MessageId, State)
+            (session_has_virtual_access(S, ChannelId, State) orelse
+                session_can_access_message(S, ChannelId, MessageId, State))
     end).
+
+%% Virtual access is granted only for threads — to joined members and to active
+%% previewers alike. The per-message access check computes permissions against the
+%% thread's own channel id, which does not resolve (threads carry no overwrites of
+%% their own), so message_update/message_delete would never reach a thread's
+%% viewers even though message_create does. A session that holds virtual access to
+%% the channel already receives its creates, so let it receive edits and deletions
+%% too; regular channels never carry virtual access, so their filtering is
+%% unchanged.
+-spec session_has_virtual_access(map(), channel_id(), guild_state()) -> boolean().
+session_has_virtual_access(SessionData, ChannelId, State) ->
+    case maps:get(user_id, SessionData, undefined) of
+        UserId when is_integer(UserId) ->
+            guild_virtual_channel_access:has_virtual_access(UserId, ChannelId, State);
+        _ ->
+            false
+    end.
 
 -spec session_can_access_message(map(), channel_id(), binary(), guild_state()) -> boolean().
 session_can_access_message(SessionData, ChannelId, MessageId, State) ->

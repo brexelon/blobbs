@@ -169,6 +169,40 @@ export const ThreadSettingsModal = observer(({threadId}: {threadId: string}) => 
 	}, [tabId]);
 	const {showUnsavedBanner, flashBanner, tabData} = useUnsavedChangesFlash(tabId);
 
+	// The thread's cached metadata (auto-close window, slowmode, name) can lag what
+	// the server has — a preview seed or an older sync may have populated it. Pull
+	// the authoritative copy when the modal opens so the controls reflect reality
+	// without an app refresh.
+	const parentId = thread?.parentId ?? null;
+	useEffect(() => {
+		if (!parentId) {
+			return;
+		}
+		let cancelled = false;
+		void ThreadCommands.listThreads(parentId)
+			.then((threads) => {
+				if (cancelled) {
+					return;
+				}
+				const wire = threads.find((candidate) => candidate.id === threadId);
+				if (wire) {
+					Channels.handleChannelCreate({channel: wire});
+				}
+			})
+			.catch(() => {});
+		return () => {
+			cancelled = true;
+		};
+	}, [parentId, threadId]);
+
+	// Mirror the latest store values into the form while the user hasn't started
+	// editing, so a fresh fetch or a THREAD_UPDATE from elsewhere is reflected live.
+	useEffect(() => {
+		if (!form.formState.isDirty) {
+			form.reset(remoteValues);
+		}
+	}, [remoteValues, form]);
+
 	useEffect(() => {
 		if (!thread) {
 			ModalCommands.pop();
