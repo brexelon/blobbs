@@ -8,17 +8,20 @@ import styles from '@app/features/channel/components/popouts/ChannelThreadsPopou
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
+import GuildMembers from '@app/features/member/state/GuildMembers';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
+import Messages from '@app/features/messaging/state/MessagingMessages';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {AvatarStack} from '@app/features/ui/avatars/AvatarStack';
 import {Button} from '@app/features/ui/button/Button';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
-import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
+import {User} from '@app/features/user/models/User';
 import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
@@ -96,6 +99,8 @@ const MORE_ACTIONS_DESCRIPTOR = msg({
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
+const MAX_JOINER_AVATARS = 5;
+
 const threadName = (thread: WireChannel): string => thread.thread_metadata?.name ?? thread.name ?? '';
 const threadState = (thread: WireChannel): number => thread.thread_metadata?.state ?? ThreadStates.OPEN;
 const isThreadJoined = (thread: WireChannel): boolean => Threads.isJoined(thread.id) || Boolean(thread.joined);
@@ -113,6 +118,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 	const {i18n} = useLingui();
 	const [threads, setThreads] = useState<ReadonlyArray<WireChannel>>([]);
 	const [lastMessages, setLastMessages] = useState<Record<string, Message | null>>({});
+	const [members, setMembers] = useState<Record<string, ReadonlyArray<User>>>({});
 	const [loadState, setLoadState] = useState<LoadState>('loading');
 	const [query, setQuery] = useState('');
 	const canCreate = Permission.can(Permissions.CREATE_THREADS, channel);
@@ -121,6 +127,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		let cancelled = false;
 		setLoadState('loading');
 		setLastMessages({});
+		setMembers({});
 		ThreadCommands.listThreads(channel.id)
 			.then(async (result) => {
 				if (cancelled) return;
@@ -128,19 +135,26 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 				setLoadState('loaded');
 				const entries = await Promise.all(
 					result.map(async (thread) => {
-						try {
-							const response = await http.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(thread.id), {
-								query: {limit: '1'},
-							});
-							const wire = response.body[0] ?? null;
-							return [thread.id, wire ? new Message(wire) : null] as const;
-						} catch {
-							return [thread.id, null] as const;
-						}
+						const [lastMessage, threadMembers] = await Promise.all([
+							http
+								.get<Array<WireMessage>>(Endpoints.CHANNEL_MESSAGES(thread.id), {query: {limit: '1'}})
+								.then((response) => (response.body[0] ? new Message(response.body[0]) : null))
+								.catch(() => null),
+							ThreadCommands.listThreadMembers(thread.id)
+								.then((rows) =>
+									[...rows]
+										// First to join first: the creator leads, newest joiner trails.
+										.sort((a, b) => a.joined_at.localeCompare(b.joined_at))
+										.map((row) => new User(row.user)),
+								)
+								.catch(() => [] as Array<User>),
+						]);
+						return [thread.id, {lastMessage, threadMembers}] as const;
 					}),
 				);
 				if (cancelled) return;
-				setLastMessages(Object.fromEntries(entries));
+				setLastMessages(Object.fromEntries(entries.map(([id, value]) => [id, value.lastMessage])));
+				setMembers(Object.fromEntries(entries.map(([id, value]) => [id, value.threadMembers])));
 			})
 			.catch((error) => {
 				if (cancelled) return;
@@ -201,7 +215,15 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 	const renderRow = (thread: WireChannel) => {
 		const name = threadName(thread);
 		const state = threadState(thread);
-		const lastMessage = lastMessages[thread.id] ?? null;
+		// Prefer the live store message (updates as new messages arrive for a
+		// loaded thread) over the snapshot fetched when the popout opened.
+		const storeCollection = Messages.getCachedMessages(thread.id);
+		const storeLast = storeCollection?.ready ? storeCollection.last() : undefined;
+		const lastMessage = storeLast ?? lastMessages[thread.id] ?? null;
+		const threadMembers = members[thread.id] ?? [];
+		const authorColor = lastMessage
+			? GuildMembers.getMember(channel.guildId ?? '', lastMessage.author.id)?.getColorString()
+			: undefined;
 		const badge =
 			state === ThreadStates.ARCHIVED
 				? i18n._(ARCHIVED_DESCRIPTOR)
@@ -233,7 +255,10 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 					<div className={styles.meta} data-flx="channel.channel-threads-popout.meta">
 						{lastMessage ? (
 							<span className={styles.metaMessage}>
-								<span className={styles.metaAuthor}>{lastMessage.author.displayName}:</span> {lastMessage.content}
+								<span className={styles.metaAuthor} style={{color: authorColor}}>
+									{lastMessage.author.displayName}:
+								</span>{' '}
+								{lastMessage.content}
 							</span>
 						) : (
 							<span className={styles.metaMessage}>{i18n._(NO_RECENT_MESSAGES_DESCRIPTOR)}</span>
@@ -241,7 +266,15 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 						{relative && <span className={styles.metaTime}> • {relative}</span>}
 					</div>
 				</div>
-				{lastMessage && <Avatar user={lastMessage.author} size={40} />}
+				{threadMembers.length > 0 && (
+					<AvatarStack
+						users={threadMembers}
+						size={28}
+						maxVisible={MAX_JOINER_AVATARS}
+						guildId={channel.guildId ?? null}
+						enableProfileModal={false}
+					/>
+				)}
 				<button
 					type="button"
 					className={styles.moreButton}
