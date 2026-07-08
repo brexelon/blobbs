@@ -4,7 +4,6 @@
 	position: relative;
 	display: flex;
 	--thread-preview-connector-bridge: 2px;
-	--thread-preview-connector-overlap: var(--message-spacing-y);
 	margin-top: var(--thread-preview-connector-bridge);
 	margin-bottom: 6px;
 	margin-left: calc(
@@ -15,24 +14,20 @@
 	padding-inline-end: var(--chat-horizontal-padding, var(--message-gutter));
 }
 
-/* Horizontal elbow into the box. The vertical spine from the origin avatar/icon
-   centre is drawn on the parent message (see Message.module.css); this segment
-   bridges the card's top margin and bends into the icon badge centre. */
+/* Elbow connector from the gap above the card into its icon badge centre. */
 .connector {
 	position: absolute;
 	box-sizing: border-box;
 	left: calc(
-		var(--thread-preview-spine-x, calc(0.5 * var(--message-avatar-size) - 1px)) -
+		0.5 * var(--message-avatar-size) - 1px -
 		var(--chat-horizontal-padding, var(--message-gutter)) -
 		var(--message-avatar-size) -
 		var(--message-gutter)
 	);
 	--connector-elbow-y: calc(8px + 16px);
-	top: calc(-1 * (var(--thread-preview-connector-bridge) + var(--thread-preview-connector-overlap)));
+	top: calc(-1 * var(--thread-preview-connector-bridge));
 	width: calc(0.5 * var(--message-avatar-size) + var(--message-gutter) - 6px);
-	height: calc(
-		var(--connector-elbow-y) + var(--thread-preview-connector-bridge) + var(--thread-preview-connector-overlap)
-	);
+	height: calc(var(--connector-elbow-y) + var(--thread-preview-connector-bridge));
 	border-left: 2px solid var(--background-modifier-accent);
 	border-bottom: 2px solid var(--background-modifier-accent);
 	border-bottom-left-radius: 8px;

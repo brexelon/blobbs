@@ -899,7 +899,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 					data-flx-compact={messageDisplayCompact ? 'true' : undefined}
 					data-flx-grouped={shouldGroup && shouldApplyGroupedLayout(message, prevMessage) ? 'true' : undefined}
 					tabIndex={keyboardModeEnabled ? -1 : undefined}
-					className={clsx(messageClasses, hasThreadPreview && styles.messageHasThreadPreview)}
+					className={messageClasses}
 					ref={messageRef}
 					onClickCapture={handleClickCapture}
 					onClick={handleAltClick}

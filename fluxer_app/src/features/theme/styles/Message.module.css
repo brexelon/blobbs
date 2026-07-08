@@ -1531,43 +1531,7 @@
 	align-self: center;
 }
 
-/* Thread preview cards render as a sibling below the message article. The vertical
-   spine starts at the avatar/icon vertical centre and runs to the message bottom;
-   the preview card draws the elbow into its icon badge. */
+/* Thread preview cards render as a sibling below the message article. */
 .messageThreadBlock {
 	position: relative;
-	--thread-preview-spine-x: calc(0.5 * var(--message-avatar-size) - 1px);
-}
-
-.messageThreadBlock:has(.messageHasThreadPreview) {
-	--message-inline-outset: var(--message-mobile-margin);
-}
-
-@media (min-width: 768px) {
-	.messageThreadBlock:has(.messageHasThreadPreview) {
-		--message-inline-outset: var(--chat-horizontal-padding, var(--message-gutter));
-	}
-}
-
-.messageHasThreadPreview::after {
-	content: '';
-	position: absolute;
-	z-index: 0;
-	box-sizing: border-box;
-	left: calc(var(--message-inline-outset, var(--message-mobile-margin)) + var(--thread-preview-spine-x));
-	top: calc(
-		2 * var(--message-spacing-y) + var(--message-avatar-align-offset) + 0.5 * var(--message-avatar-size)
-	);
-	bottom: 0;
-	width: 0;
-	border-left: 2px solid var(--background-modifier-accent);
-	pointer-events: none;
-}
-
-.messageHasThreadPreview:has(.systemMessageIconWrapper)::after {
-	top: calc(var(--message-spacing-y) + 0.15em + 0.5 * var(--system-message-icon-size));
-}
-
-.messageHasThreadPreview.messageNoText:not(:has(.systemMessageIconWrapper))::after {
-	top: calc(2 * var(--message-spacing-y) + 0.5 * var(--message-avatar-size));
 }
