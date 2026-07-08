@@ -2,6 +2,7 @@
 
 import {SystemMessage} from '@app/features/channel/components/SystemMessage';
 import {SystemMessageUsername} from '@app/features/channel/components/SystemMessageUsername';
+import Channels from '@app/features/channel/state/Channels';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import {useSystemMessageData} from '@app/features/messaging/hooks/useSystemMessageData';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
@@ -20,7 +21,11 @@ interface ThreadCreatedMessageProps {
 export const ThreadCreatedMessage = observer(({message}: ThreadCreatedMessageProps) => {
 	const {author, channel, guild} = useSystemMessageData(message);
 	const threadId = message.threadId ?? null;
-	const threadName = message.threadName ?? '';
+	// Prefer the live thread name from the store so a rename (THREAD_UPDATE) reflects
+	// immediately; the message's snapshot is only a fallback for a thread we no
+	// longer have cached.
+	const threadChannel = threadId ? Channels.getChannel(threadId) : null;
+	const threadName = threadChannel?.threadMetadata?.name ?? threadChannel?.name ?? message.threadName ?? '';
 	const openThread = useCallback(() => {
 		if (threadId && channel?.guildId) {
 			selectChannel(channel.guildId, threadId);

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {
 	ChannelTypes,
 	GUILD_TEXT_BASED_CHANNEL_TYPES,
@@ -24,12 +25,14 @@ import {
 	type UserID,
 } from '../../../BrandedTypes';
 import type {ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
+import type {GuildAuditLogService} from '../../../guild/GuildAuditLogService';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../../infrastructure/ISnowflakeService';
 import type {UserCacheService} from '../../../infrastructure/UserCacheService';
 import {Logger} from '../../../Logger';
 import {createRequestCache, type RequestCache} from '../../../middleware/RequestCacheMiddleware';
 import type {Channel} from '../../../models/Channel';
+import {serializeChannelForAudit} from '../../../utils/AuditSerializationUtils';
 import {mapChannelToResponse} from '../../ChannelMappers';
 import type {IChannelRepository} from '../../IChannelRepository';
 import {getAutoCloseBucket, type ThreadRepository} from '../../repositories/thread/ThreadRepository';
@@ -48,7 +51,46 @@ export class ThreadOperationsService {
 		private readonly snowflakeService: ISnowflakeService,
 		private readonly userCacheService: UserCacheService,
 		private readonly messagePersistenceService: MessagePersistenceService,
+		private readonly guildAuditLogService: GuildAuditLogService,
 	) {}
+
+	/**
+	 * Record a community audit log entry for a thread lifecycle action, mirroring
+	 * how channels are logged. Threads are channel rows, so the same channel
+	 * serializer/diff drives the change set. Failures are swallowed — the thread
+	 * mutation itself has already succeeded and must not be undone by a log write.
+	 */
+	private async recordThreadAuditLog(params: {
+		guildId: GuildID;
+		userId: UserID;
+		threadId: ChannelID;
+		action: AuditLogActionType;
+		before: Channel | null;
+		after: Channel | null;
+	}): Promise<void> {
+		const {guildId, userId, threadId, action, before, after} = params;
+		const changes = this.guildAuditLogService.computeChanges(
+			before ? serializeChannelForAudit(before) : null,
+			after ? serializeChannelForAudit(after) : null,
+		);
+		if (action === AuditLogActionType.THREAD_UPDATE && changes.length === 0) {
+			return;
+		}
+		try {
+			await this.guildAuditLogService
+				.createBuilder(guildId, userId)
+				.withAction(action, threadId.toString())
+				.withReason(null)
+				.withMetadata({type: ChannelTypes.GUILD_THREAD.toString()})
+				.withChanges(changes)
+				.commit();
+		} catch (error) {
+			Logger.error(
+				{error, guildId: guildId.toString(), userId: userId.toString(), action, targetId: threadId.toString()},
+				'Failed to record thread audit log',
+			);
+		}
+	}
 
 	async createThread(params: {
 		userId: UserID;
@@ -145,6 +187,14 @@ export class ThreadOperationsService {
 		const response = await this.mapThread(thread, true, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_CREATE', data: response});
 		await this.dispatchMemberEvent('THREAD_MEMBER_ADD', {threadId, guildId, userId});
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_CREATE,
+			before: null,
+			after: thread,
+		});
 		try {
 			if (originMessageId != null) {
 				// The thread grew out of an existing message: re-broadcast it so every
@@ -371,6 +421,14 @@ export class ThreadOperationsService {
 		}
 		const response = await this.mapThread(updated, undefined, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_UPDATE', data: response});
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_UPDATE,
+			before: thread,
+			after: updated,
+		});
 		return response;
 	}
 
@@ -401,6 +459,14 @@ export class ThreadOperationsService {
 				parent_id: thread.parentId?.toString() ?? null,
 				origin_message_id: thread.threadOriginMessageId?.toString() ?? null,
 			},
+		});
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_DELETE,
+			before: thread,
+			after: null,
 		});
 	}
 

@@ -145,6 +145,18 @@ const MESSAGE_UNPINNED_DESCRIPTOR = msg({
 	message: 'Message unpinned',
 	comment: 'Audit log entry label. A message was unpinned from a channel.',
 });
+const THREAD_CREATED_DESCRIPTOR = msg({
+	message: 'Thread created',
+	comment: 'Audit log entry label. Past-tense action describing that a thread was created.',
+});
+const THREAD_UPDATED_DESCRIPTOR = msg({
+	message: 'Thread updated',
+	comment: 'Audit log entry label. Past-tense action describing that a thread was edited.',
+});
+const THREAD_DELETED_DESCRIPTOR = msg({
+	message: 'Thread deleted',
+	comment: 'Audit log entry label. Past-tense action describing that a thread was deleted.',
+});
 const ALL_DESCRIPTOR = msg({
 	message: 'All',
 	comment: 'Audit log target-type filter option. Shows entries for every target type.',
@@ -385,6 +397,21 @@ export const AUDIT_LOG_ACTIONS: ReadonlyArray<AuditLogActionDefinition> = [
 	{
 		value: AuditLogActionType.MESSAGE_UNPIN,
 		label: MESSAGE_UNPINNED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
+	},
+	{
+		value: AuditLogActionType.THREAD_CREATE,
+		label: THREAD_CREATED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
+	},
+	{
+		value: AuditLogActionType.THREAD_UPDATE,
+		label: THREAD_UPDATED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
+	},
+	{
+		value: AuditLogActionType.THREAD_DELETE,
+		label: THREAD_DELETED_DESCRIPTOR,
 		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
 	},
 ];
