@@ -1,21 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-.tabBar {
-	display: flex;
-	align-items: center;
-	gap: 1rem;
-	margin-bottom: 1rem;
-	border-bottom: 0.0625rem solid var(--background-modifier-accent);
-}
-
-.tabActive {
-	padding: 0 0.125rem 0.625rem;
-	color: var(--text-primary);
-	font-size: 0.9375rem;
-	font-weight: 600;
-	border-bottom: 0.125rem solid var(--brand-primary, var(--accent-primary, #5865f2));
-}
-
 .dangerZone {
 	display: flex;
 	margin-top: 1.5rem;

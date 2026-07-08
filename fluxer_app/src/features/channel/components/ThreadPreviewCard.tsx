@@ -5,7 +5,9 @@ import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ThreadPreviewCard.module.css';
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
+import Threads from '@app/features/channel/state/Threads';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
+import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
@@ -28,6 +30,10 @@ import {useEffect, useState} from 'react';
 const NO_MESSAGES_YET_DESCRIPTOR = msg({
 	message: 'No messages yet',
 	comment: 'Placeholder in the thread box under a message when the thread has no replies yet.',
+});
+const EDITED_DESCRIPTOR = msg({
+	message: '(edited)',
+	comment: 'Suffix shown after a thread preview message that was edited. Keep the parentheses.',
 });
 
 // A short tail of recent messages is enough to keep the preview live: the newest
@@ -63,7 +69,13 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 	// the store's newest message (kept live by create/edit/delete handling).
 	const liveLastMessageId = threadId ? (Channels.getChannel(threadId)?.lastMessageId ?? null) : null;
 	const storeCollection = threadId ? Messages.getCachedMessages(threadId) : undefined;
-	const storeLast = storeCollection?.ready ? storeCollection.last() : undefined;
+	// Once the store has the thread's page it is authoritative: its
+	// MESSAGE_CREATE/UPDATE/DELETE handling keeps the newest message live —
+	// including edits and deletions, which never change lastMessageId and so would
+	// otherwise never refresh. When the store empties out (last message deleted) we
+	// fall through to "no messages" rather than the stale one-shot seed.
+	const storeReady = storeCollection?.ready ?? false;
+	const storeLast = storeCollection?.last() ?? null;
 	// Load the thread's latest page so edits and deletions (not just new messages)
 	// flow into the preview through the store.
 	useEffect(() => {
@@ -101,7 +113,7 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 			cancelled = true;
 		};
 	}, [parentChannelId, threadId, liveLastMessageId]);
-	return {...data, lastMessage: storeLast ?? data.lastMessage};
+	return {...data, lastMessage: storeReady ? storeLast : data.lastMessage};
 }
 
 function formatCloseLabel(autoCloseAt: string | null, state: number | null): string | null {
@@ -123,9 +135,24 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 	const guildId = Channels.getChannel(message.channelId)?.guildId ?? null;
 	const preview = useThreadPreview(message.channelId, threadId);
 	const storeThread = threadId ? Channels.getChannel(threadId) : null;
-	const threadName = preview.name ?? storeThread?.name ?? message.threadName ?? '';
+	// Prefer the live store name so a rename (THREAD_UPDATE) reflects immediately;
+	// the fetched metadata and the origin message's snapshot are only fallbacks.
+	const threadName = storeThread?.threadMetadata?.name ?? storeThread?.name ?? preview.name ?? message.threadName ?? '';
 	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
 	const lastMessage = preview.lastMessage;
+	// While the card is visible, take ephemeral access to the thread's live traffic
+	// (like the sidebar preview does) so edits and deletions — which never bump
+	// lastMessageId — stream into the store and refresh the row. Joined threads
+	// already receive this traffic, so only unjoined threads need the subscription.
+	useEffect(() => {
+		if (!guildId || !threadId || Threads.isJoined(threadId)) {
+			return;
+		}
+		GatewayConnection.socket?.subscribeThreadPreview({guildId, threadId});
+		return () => {
+			GatewayConnection.socket?.unsubscribeThreadPreview({guildId, threadId});
+		};
+	}, [guildId, threadId]);
 	const handleOpen = () => {
 		if (!threadId || !guildId) {
 			return;
@@ -177,6 +204,9 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 										{lastMessage.author.displayName}:
 									</span>
 									<span className={styles.lastContent}>{lastMessage.content}</span>
+									{lastMessage.editedTimestamp && (
+										<span className={styles.lastEdited}>{i18n._(EDITED_DESCRIPTOR)}</span>
+									)}
 								</>
 							) : (
 								<span className={styles.lastContent}>{i18n._(NO_MESSAGES_YET_DESCRIPTOR)}</span>

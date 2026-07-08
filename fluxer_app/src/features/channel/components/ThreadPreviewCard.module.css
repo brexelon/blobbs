@@ -116,6 +116,12 @@
 	min-width: 0;
 }
 
+.lastEdited {
+	flex-shrink: 0;
+	color: var(--text-muted);
+	font-size: 10px;
+}
+
 .caret {
 	color: var(--text-muted);
 	flex-shrink: 0;
