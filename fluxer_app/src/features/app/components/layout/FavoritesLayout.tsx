@@ -71,11 +71,15 @@ export const FavoritesLayout = observer(({children}: {children: React.ReactNode}
 				);
 			}
 			return (
-				<GuildSidebar
-					header={<FavoritesGuildHeader data-flx="app.favorites-layout.favorites-guild-header--2" />}
-					content={<FavoritesChannelListContent data-flx="app.favorites-layout.favorites-channel-list-content--2" />}
-					data-flx="app.favorites-layout.guild-sidebar--2"
-				/>
+				<div className={styles.mobileNavbarSlot} data-flx="app.favorites-layout.mobile-sidebar">
+					<GuildSidebar
+						header={<FavoritesGuildHeader data-flx="app.favorites-layout.favorites-guild-header--2" />}
+						content={
+							<FavoritesChannelListContent data-flx="app.favorites-layout.favorites-channel-list-content--2" />
+						}
+						data-flx="app.favorites-layout.guild-sidebar--2"
+					/>
+				</div>
 			);
 		}
 		return (

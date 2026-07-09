@@ -26,6 +26,7 @@
 	clip-path: inset(0);
 	scrollbar-width: none;
 	-ms-overflow-style: none;
+	-webkit-overflow-scrolling: touch;
 }
 
 .scroller::-webkit-scrollbar {
