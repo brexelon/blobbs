@@ -2,6 +2,7 @@
 
 import styles from '@app/features/channel/components/ChannelLayout.module.css';
 import Channels from '@app/features/channel/state/Channels';
+import Threads from '@app/features/channel/state/Threads';
 import Guilds from '@app/features/guild/state/Guilds';
 import {useParams} from '@app/features/platform/components/router/RouterReact';
 import {msg} from '@lingui/core/macro';
@@ -29,7 +30,11 @@ export const ChannelLayout = observer(({children}: ChannelLayoutProps) => {
 	const channel = Channels.getChannel(channelId);
 	const guildId = routeGuildId || channel?.guildId;
 	const guild = guildId ? Guilds.getGuild(guildId) : null;
-	if (guild && !channel) {
+	// A joined thread's channel is restored from the server after connect, so on a
+	// refresh its URL resolves to no channel until that finishes. Don't flash the
+	// "channel not found" state for a thread that may still be loading — wait until
+	// thread restoration is done before deciding the channel is really missing.
+	if (guild && !channel && Threads.restored) {
 		return (
 			<main
 				className={styles.channelNotFoundContainer}
