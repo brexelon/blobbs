@@ -118,6 +118,7 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 	const hideMutedChannels = userGuildSettings?.hide_muted_channels ?? false;
 	const showFadedUnreadOnMutedChannels = Accessibility.showFadedUnreadOnMutedChannels;
 	const isMobile = MobileLayout.enabled;
+	const showMobileBottomNav = MobileLayout.shouldShowBottomNav(location.pathname);
 	const canViewMembers =
 		!isMobile && ((Permission.getGuildPermissions(guild.id) ?? 0n) & MEMBERS_PAGE_PERMISSIONS) !== 0n;
 	const guildPrefix = `/channels/${guild.id}/`;
@@ -289,6 +290,7 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 			<Scroller
 				ref={scrollerRef}
 				className={styles.channelListScroller}
+				contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
 				onScroll={handleScroll}
 				onResize={handleResize}
 				key={guild.id}

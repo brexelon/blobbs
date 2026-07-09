@@ -78,13 +78,8 @@
 	);
 }
 
-:global(html.mobile-layout) .guildListContent {
-	padding-bottom: calc(
-		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
-		var(--mobile-bottom-nav-height) +
-		env(safe-area-inset-bottom, 0) +
-		var(--spacing-2)
-	);
+.guildListScrollerContentMobile {
+	padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0));
 }
 
 .guildListTopSection,

@@ -328,6 +328,7 @@ const GuildList = observer(() => {
 	const scrollPersistRafRef = useRef<number | null>(null);
 	const location = useLocation();
 	const keyboardModeEnabled = KeyboardMode.keyboardModeEnabled;
+	const showMobileBottomNav = MobileLayout.shouldShowBottomNav(location.pathname);
 	const [visibleUnavailableCount, setVisibleUnavailableCount] = useState(unavailableCount);
 	const unavailableIndicatorHideTimer = useRef<NodeJS.Timeout | null>(null);
 	const hasUnavailableGuilds = visibleUnavailableCount > 0;
@@ -671,6 +672,7 @@ const GuildList = observer(() => {
 			<Scroller
 				ref={scrollRef}
 				className={styles.guildListScrollContainer}
+				contentClassName={showMobileBottomNav ? styles.guildListScrollerContentMobile : undefined}
 				showTrack={false}
 				onScroll={handleScroll}
 				onWheel={handleWheel}

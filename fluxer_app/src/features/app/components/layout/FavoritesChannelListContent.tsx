@@ -43,6 +43,7 @@ import {Scroller} from '@app/features/ui/components/Scroller';
 import {StatusAwareAvatar} from '@app/features/ui/components/StatusAwareAvatar';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import KeyboardMode from '@app/features/ui/state/KeyboardMode';
+import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import Users from '@app/features/user/state/Users';
@@ -641,6 +642,8 @@ const UncategorizedGroup = ({children}: {children: React.ReactNode}) => {
 };
 export const FavoritesChannelListContent = observer(() => {
 	const {i18n} = useLingui();
+	const location = useLocation();
+	const showMobileBottomNav = MobileLayout.shouldShowBottomNav(location.pathname);
 	const favorites = Favorites.sortedChannels;
 	const categories = Favorites.sortedCategories;
 	const hideMutedChannels = Favorites.hideMutedChannels;
@@ -685,6 +688,7 @@ export const FavoritesChannelListContent = observer(() => {
 		return (
 			<Scroller
 				className={styles.channelListScroller}
+				contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
 				key="favorites-channel-list-empty-scroller"
 				data-flx="app.favorites-channel-list-content.channel-list-scroller"
 			>
@@ -703,6 +707,7 @@ export const FavoritesChannelListContent = observer(() => {
 	return (
 		<Scroller
 			className={styles.channelListScroller}
+			contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
 			key="favorites-channel-list-scroller"
 			data-flx="app.favorites-channel-list-content.channel-list-scroller--2"
 		>
