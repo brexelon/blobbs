@@ -11,6 +11,7 @@ import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
+import {getMessagePreviewText} from '@app/features/messaging/utils/MessagePreviewText';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
@@ -254,7 +255,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 								<span className={styles.metaAuthor} style={{color: authorColor}}>
 									{lastMessage.author.displayName}:
 								</span>{' '}
-								{lastMessage.content}
+								{getMessagePreviewText(lastMessage, i18n)}
 							</span>
 						) : (
 							<span className={styles.metaMessage}>{i18n._(NO_RECENT_MESSAGES_DESCRIPTOR)}</span>
