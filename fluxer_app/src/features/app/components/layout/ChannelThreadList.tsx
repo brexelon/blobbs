@@ -84,13 +84,17 @@ const ThreadRow = observer(
 			},
 			[guildId, parentChannelId, threadId, name, state],
 		);
-		// Dim a muted thread's name (unless it's the active view), matching how muted
-		// text channels read in the sidebar.
+		// Colour the thread name like a text channel: unread brightens to primary, a
+		// muted thread stays dimmed even when unread, and everything else rests at the
+		// muted colour. A thread has its own channel id, so its read state is direct.
 		const isMuted = UserGuildSettings.isChannelMuted(guildId, threadId);
-		// Surface unread mentions on the thread just like a text channel: a thread has
-		// its own channel id, so its mention count lives in the read state directly.
+		const hasUnread = ReadStates.getUnreadCount(threadId) > 0;
 		const mentionCount = ReadStates.getMentionCount(threadId);
 		const showMentionBadge = !isSelected && mentionCount > 0;
+		const nameClassName = clsx(
+			styles.name,
+			!isSelected && (isMuted ? styles.nameMuted : hasUnread && styles.nameUnread),
+		);
 		return (
 			<button
 				type="button"
@@ -100,7 +104,7 @@ const ThreadRow = observer(
 				data-flx="app.channel-thread-list.row"
 			>
 				<span className={styles.connector} aria-hidden="true" />
-				<span className={clsx(styles.name, isMuted && !isSelected && styles.nameMuted)}>{name}</span>
+				<span className={nameClassName}>{name}</span>
 				{showMentionBadge && (
 					<MentionBadge mentionCount={mentionCount} size="small" data-flx="app.channel-thread-list.mention-badge" />
 				)}

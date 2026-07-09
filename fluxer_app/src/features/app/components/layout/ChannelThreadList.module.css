@@ -14,7 +14,8 @@
 	border: none;
 	background: transparent;
 	border-radius: 4px;
-	color: var(--channels-default, var(--text-muted));
+	/* Match a regular text channel's resting (read, unfocused) name color. */
+	color: var(--text-tertiary-muted);
 	cursor: pointer;
 	font-size: 14px;
 	min-height: 26px;
@@ -77,7 +78,13 @@
 	min-width: 0;
 }
 
-/* Darken a muted thread's name, matching how muted text channels read. */
+/* An unread thread brightens like an unread text channel. */
+.nameUnread {
+	color: var(--text-primary);
+}
+
+/* A muted thread never brightens, staying at the resting color like a muted
+ * text channel — this keeps it dimmed even when it has unread messages. */
 .nameMuted {
 	color: var(--text-tertiary-muted);
 }
