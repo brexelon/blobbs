@@ -300,6 +300,9 @@ catalogs:
     react-dnd-multi-backend:
       specifier: 9.0.0
       version: 9.0.0
+    react-dnd-touch-backend:
+      specifier: 16.0.1
+      version: 16.0.1
     react-dom:
       specifier: 19.2.4
       version: 19.2.4
@@ -1462,6 +1465,9 @@ importers:
       react-dnd-multi-backend:
         specifier: 'catalog:'
         version: 9.0.0(dnd-core@16.0.1)(react-dnd@16.0.1(@types/node@25.3.0)(@types/react@19.2.14)(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-dnd-touch-backend:
+        specifier: 'catalog:'
+        version: 16.0.1
       react-dom:
         specifier: 'catalog:'
         version: 19.2.4(react@19.2.4)
@@ -9904,6 +9910,9 @@ packages:
       react: ^16.14.0 || ^17.0.2 || ^18.0.0 || ^19.0.0
       react-dnd: ^16.0.1
 
+  react-dnd-touch-backend@16.0.1:
+    resolution: {integrity: sha512-NonoCABzzjyWGZuDxSG77dbgMZ2Wad7eQiCd/ECtsR2/NBLTjGksPUx9UPezZ1nQ/L7iD130Tz3RUshL/ClKLA==}
+
   react-dnd@16.0.1:
     resolution: {integrity: sha512-QeoM/i73HHu2XF9aKksIUuamHPDvRglEwdHL4jsp784BgUuWcg6mzfxT0QDdQz8Wj0qyRKx2eMg8iZtWvU4E2Q==}
     peerDependencies:
@@ -10539,6 +10548,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -10725,6 +10735,7 @@ packages:
 
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   valibot@1.2.0:
@@ -19957,6 +19968,11 @@ snapshots:
       react: 19.2.4
       react-dnd: 16.0.1(@types/node@25.3.0)(@types/react@19.2.14)(react@19.2.4)
 
+  react-dnd-touch-backend@16.0.1:
+    dependencies:
+      '@react-dnd/invariant': 4.0.2
+      dnd-core: 16.0.1
+
   react-dnd@16.0.1(@types/node@25.3.0)(@types/react@19.2.14)(react@19.2.4):
     dependencies:
       '@react-dnd/invariant': 4.0.2
@@ -20071,7 +20087,7 @@ snapshots:
 
   redux@4.2.1:
     dependencies:
-      '@babel/runtime': 7.28.6
+      '@babel/runtime': 7.29.7
 
   reflect-metadata@0.2.2: {}
 
