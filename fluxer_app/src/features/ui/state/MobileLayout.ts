@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {Routes} from '@app/app/Routes';
 import {Platform} from '@app/features/platform/types/Platform';
 import {deferUntilModulesLoaded} from '@app/features/platform/utils/DeferUntilModulesLoaded';
 import {makePersistent} from '@app/features/platform/utils/MobXPersistence';
@@ -96,6 +97,19 @@ class MobileLayout {
 
 	isChatExpanded(): boolean {
 		return this.chatExpanded;
+	}
+
+	shouldShowBottomNav(pathname: string): boolean {
+		if (!this.enabled) {
+			return false;
+		}
+		return (
+			pathname === Routes.ME ||
+			pathname === Routes.FAVORITES ||
+			pathname === Routes.NOTIFICATIONS ||
+			pathname === Routes.YOU ||
+			(Routes.isGuildChannelRoute(pathname) && pathname.split('/').length === 3)
+		);
 	}
 }
 
