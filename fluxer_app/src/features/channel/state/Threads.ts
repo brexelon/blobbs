@@ -20,20 +20,31 @@ class Threads {
 	private readonly joinedThreadIds = observable.set<string>();
 	private previewThreadId: string | null = null;
 	private readonly memberListVersions = observable.map<string, number>();
+	// True once the joined-thread membership has been restored from the server
+	// after (re)connect. Consumers use this to avoid treating a not-yet-loaded
+	// thread as a missing channel — e.g. redirecting away from a thread URL on
+	// refresh before its channel has been seeded.
+	restored = false;
 
 	constructor() {
 		makeObservable<Threads, 'joinedThreadIds' | 'previewThreadId' | 'memberListVersions'>(this, {
 			joinedThreadIds: observable,
 			previewThreadId: observable,
 			memberListVersions: observable,
+			restored: observable,
 			join: action,
 			leave: action,
 			setJoinedThreads: action,
+			markRestored: action,
 			setPreview: action,
 			bumpMemberListVersion: action,
 			clear: action,
 			activeThreadIds: computed,
 		});
+	}
+
+	markRestored(): void {
+		this.restored = true;
 	}
 
 	/**

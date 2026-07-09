@@ -11,6 +11,7 @@ import {NagbarButton} from '@app/features/app/components/layout/NagbarButton';
 import {PRODUCT_NAME} from '@app/features/app/config/I18nDisplayConstants';
 import {MatureContentChannelGate} from '@app/features/channel/components/MatureContentChannelGate';
 import Channels from '@app/features/channel/state/Channels';
+import Threads from '@app/features/channel/state/Threads';
 import * as GuildCommands from '@app/features/guild/commands/GuildCommands';
 import GuildAvailability from '@app/features/guild/state/GuildAvailability';
 import GuildMatureContentAgree, {MatureContentGateReason} from '@app/features/guild/state/GuildMatureContentAgree';
@@ -438,6 +439,11 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 	}, [nagbarCount]);
 	useEffect(() => {
 		if (!guild || !channelId || guildUnavailable || guildNotFound) return;
+		// Joined threads are restored from the server after connect, so on a refresh
+		// a thread URL points to a channel that isn't seeded yet. Wait for that
+		// restore before treating the channel as missing, otherwise we'd redirect the
+		// user away from the thread they were viewing to the default channel.
+		if (!Threads.restored) return;
 		const currentChannel = Channels.getChannel(channelId);
 		const currentPath = Navigation.pathname;
 		const expectedPath = Routes.guildChannel(guildId, channelId);
@@ -446,7 +452,7 @@ export const GuildLayout = observer(({children}: {children: React.ReactNode}) =>
 				Navigation.navigateToGuild(guildId, firstAccessibleTextChannel.id, undefined, 'replace');
 			}
 		}
-	}, [guild, guildId, channelId, firstAccessibleTextChannel, guildUnavailable, guildNotFound]);
+	}, [guild, guildId, channelId, firstAccessibleTextChannel, guildUnavailable, guildNotFound, Threads.restored]);
 	const guildNagbars = (
 		<>
 			{showStaffOnlyGuildNagbar && guildId && (

@@ -83,8 +83,10 @@
 	color: var(--text-secondary);
 }
 
-/* A muted thread never brightens, staying at the resting color like a muted
- * text channel — this keeps it dimmed even when it has unread messages. */
+/* A muted thread reads dimmer than an unmuted one, matching how muted text
+ * channels apply channelItemMutedState (tertiary-muted + reduced opacity). It
+ * never brightens on unread. */
 .nameMuted {
 	color: var(--text-tertiary-muted);
+	opacity: 0.5;
 }

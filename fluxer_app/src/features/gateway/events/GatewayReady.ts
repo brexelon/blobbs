@@ -206,5 +206,9 @@ async function seedJoinedThreads(): Promise<void> {
 		});
 	} catch (error) {
 		logger.warn('Failed to restore joined threads after READY', error);
+	} finally {
+		// Signal that thread restoration is done (success or not) so views waiting to
+		// resolve a thread URL don't redirect away before the thread was seeded.
+		Threads.markRestored();
 	}
 }
