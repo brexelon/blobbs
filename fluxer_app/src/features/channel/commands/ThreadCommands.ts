@@ -87,6 +87,15 @@ export async function leaveThread(threadId: string): Promise<void> {
 	}
 }
 
+export async function removeThreadMember(threadId: string, userId: string): Promise<void> {
+	try {
+		await http.delete(Endpoints.THREAD_MEMBER(threadId, userId));
+	} catch (error) {
+		logger.error(`Failed to remove member ${userId} from thread ${threadId}:`, error);
+		throw error;
+	}
+}
+
 export async function updateThread(threadId: string, params: ThreadUpdateParams): Promise<Channel> {
 	try {
 		const response = await http.patch<Channel>(Endpoints.THREAD(threadId), {body: params});

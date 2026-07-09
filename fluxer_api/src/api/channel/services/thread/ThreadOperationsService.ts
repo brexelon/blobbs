@@ -383,6 +383,46 @@ export class ThreadOperationsService {
 		await this.dispatchMemberEvent('THREAD_MEMBER_REMOVE', {threadId, guildId: thread.guildId!, userId});
 	}
 
+	/**
+	 * Moderator action: remove another member from a thread. Requires Manage
+	 * Channels in the parent channel. Announces the removal with a system message
+	 * in the thread ("X removed Y from the thread") so it reads like the group DM
+	 * recipient-removal notice.
+	 */
+	async removeThreadMember(params: {
+		moderatorUserId: UserID;
+		threadId: ChannelID;
+		targetUserId: UserID;
+	}): Promise<void> {
+		const {moderatorUserId, threadId, targetUserId} = params;
+		const thread = await this.loadThread(threadId);
+		const guildId = thread.guildId!;
+		const auth = await this.authService.getChannelAuthenticated({
+			userId: moderatorUserId,
+			channelId: thread.parentId ?? threadId,
+		});
+		await auth.checkPermission(Permissions.MANAGE_CHANNELS);
+		if (!(await this.threadRepository.isMember(threadId, targetUserId))) {
+			return;
+		}
+		await this.threadRepository.removeMember({threadId, userId: targetUserId});
+		await this.dispatchMemberEvent('THREAD_MEMBER_REMOVE', {threadId, guildId, userId: targetUserId});
+		try {
+			const messageId = createMessageID(await this.snowflakeService.generateForChannel(threadId.toString()));
+			const message = await this.messagePersistenceService.createSystemMessage({
+				messageId,
+				channelId: threadId,
+				userId: moderatorUserId,
+				type: MessageTypes.THREAD_MEMBER_REMOVE,
+				guildId,
+				mentionUserIds: [targetUserId],
+			});
+			await dispatchMessageCreateBroadcast({gatewayService: this.gatewayService, channel: thread, message});
+		} catch (error) {
+			Logger.warn({error, threadId: threadId.toString()}, 'Failed to post thread member removal system message');
+		}
+	}
+
 	async updateThread(params: {
 		userId: UserID;
 		threadId: ChannelID;

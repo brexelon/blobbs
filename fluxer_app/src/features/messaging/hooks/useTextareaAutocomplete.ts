@@ -161,6 +161,24 @@ export function useTextareaAutocomplete({
 		return channel;
 	}, [channel]);
 	const mentionChannelId = mentionChannel?.id ?? '';
+	// A thread only loads its own members into the member cache (its member list is
+	// the active subscription), so without help the mention list would be limited to
+	// thread members. Request the guild's members so anyone with access to the parent
+	// channel can be mentioned, matching a regular text channel; the candidate list
+	// is still access-filtered against the parent below.
+	const isThreadComposer = channel?.type === ChannelTypes.GUILD_THREAD;
+	const threadComposerGuildId = isThreadComposer ? (channel?.guildId ?? null) : null;
+	useEffect(() => {
+		if (!threadComposerGuildId) {
+			return;
+		}
+		GuildMembers.requestMembersInBackground({
+			guildIds: [threadComposerGuildId],
+			query: '',
+			limit: 100,
+			presences: true,
+		});
+	}, [threadComposerGuildId]);
 	const guildMemberVersion = useSyncExternalStore(GuildMembers.subscribe.bind(GuildMembers), () =>
 		channel?.guildId ? GuildMembers.getGuildMemberVersion(channel.guildId) : 0,
 	);
