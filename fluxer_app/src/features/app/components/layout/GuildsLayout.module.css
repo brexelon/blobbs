@@ -74,7 +74,15 @@
 	min-width: 0;
 	padding-bottom: calc(
 		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
-		var(--layout-mobile-bottom-nav-reserved-height, 0) +
+		var(--spacing-2)
+	);
+}
+
+:global(html.mobile-layout) .guildListContent {
+	padding-bottom: calc(
+		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
+		var(--mobile-bottom-nav-height) +
+		env(safe-area-inset-bottom, 0) +
 		var(--spacing-2)
 	);
 }
