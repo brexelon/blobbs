@@ -78,9 +78,9 @@
 	min-width: 0;
 }
 
-/* An unread thread brightens like an unread text channel. */
+/* An unread thread brightens like an unread text channel (channelItemHighlight). */
 .nameUnread {
-	color: var(--text-primary);
+	color: var(--text-secondary);
 }
 
 /* A muted thread never brightens, staying at the resting color like a muted

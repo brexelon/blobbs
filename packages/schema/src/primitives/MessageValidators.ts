@@ -34,6 +34,11 @@ export const MessageTypeSchema = withOpenApiType(
 			[MessageTypes.USER_JOIN, 'USER_JOIN', 'A system message indicating a user joined'],
 			[MessageTypes.THREAD_CREATED, 'THREAD_CREATED', 'A system message indicating a thread was created'],
 			[MessageTypes.REPLY, 'REPLY', 'A reply message'],
+			[
+				MessageTypes.THREAD_MEMBER_REMOVE,
+				'THREAD_MEMBER_REMOVE',
+				'A system message indicating a member was removed from a thread',
+			],
 		],
 		'The type of message',
 	),

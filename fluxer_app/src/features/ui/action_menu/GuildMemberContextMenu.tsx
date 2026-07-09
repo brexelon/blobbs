@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Authentication from '@app/features/auth/state/Authentication';
+import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import Channels from '@app/features/channel/state/Channels';
 import DeveloperMode from '@app/features/devtools/state/DeveloperMode';
 import {TransferOwnershipModal} from '@app/features/guild/components/modals/TransferOwnershipModal';
@@ -52,13 +53,15 @@ import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import {MenuItem} from '@app/features/ui/action_menu/MenuItem';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
+import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
 import type {User} from '@app/features/user/models/User';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
-import {Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {RelationshipTypes} from '@fluxer/constants/src/UserConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
+import {UserMinusIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback} from 'react';
@@ -66,6 +69,14 @@ import {useCallback} from 'react';
 const BAN_MEMBER_DESCRIPTOR = msg({
 	message: 'Ban member',
 	comment: 'Moderation action that bans the selected member from the community.',
+});
+const REMOVE_FROM_THREAD_DESCRIPTOR = msg({
+	message: 'Remove from Thread',
+	comment: 'Moderation action that removes the selected member from the current thread.',
+});
+const REMOVE_FROM_THREAD_FAILED_DESCRIPTOR = msg({
+	message: 'Could not remove the member from the thread. Please try again.',
+	comment: 'Error toast shown when removing a member from a thread fails.',
 });
 
 interface GuildMemberContextMenuProps {
@@ -156,6 +167,23 @@ export const GuildMemberContextMenu: React.FC<GuildMemberContextMenuProps> = obs
 				)),
 			);
 		}, [guildId, user, onClose]);
+		// In a thread, a moderator with Manage Channels in the parent can remove a
+		// member. This is distinct from a server kick and is gated on the parent.
+		const threadParentChannelId = channel?.type === ChannelTypes.GUILD_THREAD ? (channel.parentId ?? channelId) : null;
+		const canRemoveFromThread =
+			channel?.type === ChannelTypes.GUILD_THREAD &&
+			!isCurrentUser &&
+			threadParentChannelId != null &&
+			Permission.can(Permissions.MANAGE_CHANNELS, {guildId, channelId: threadParentChannelId});
+		const handleRemoveFromThread = useCallback(() => {
+			if (!channelId) {
+				return;
+			}
+			onClose();
+			void ThreadCommands.removeThreadMember(channelId, user.id).catch(() => {
+				ToastCommands.createToast({type: 'error', children: i18n._(REMOVE_FROM_THREAD_FAILED_DESCRIPTOR)});
+			});
+		}, [channelId, user.id, onClose, i18n]);
 		const handleKickMember = useCallback(() => {
 			ModalCommands.pushAfterBottomSheetClose(
 				onClose,
@@ -301,6 +329,24 @@ export const GuildMemberContextMenu: React.FC<GuildMemberContextMenuProps> = obs
 							developerMode={isDeveloper}
 							data-flx="ui.action-menu.guild-member-context-menu.staff-developer-user-controls-menu-item"
 						/>
+					</MenuGroup>
+				)}
+				{canRemoveFromThread && (
+					<MenuGroup data-flx="ui.action-menu.guild-member-context-menu.menu-group--thread">
+						<MenuItem
+							icon={
+								<UserMinusIcon
+									size={16}
+									weight="bold"
+									data-flx="ui.action-menu.guild-member-context-menu.remove-from-thread-icon"
+								/>
+							}
+							onClick={handleRemoveFromThread}
+							danger
+							data-flx="ui.action-menu.guild-member-context-menu.menu-item.remove-from-thread"
+						>
+							{i18n._(REMOVE_FROM_THREAD_DESCRIPTOR)}
+						</MenuItem>
 					</MenuGroup>
 				)}
 				{hasModerationActions && (

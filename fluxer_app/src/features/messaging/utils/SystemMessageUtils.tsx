@@ -119,6 +119,15 @@ const REMOVED_SOMEONE_FROM_THE_GROUP_DESCRIPTOR = msg({
 	message: '{username} removed someone from the group.',
 	comment: 'System message in a group DM when a member removes someone whose user record is not resolvable locally.',
 });
+const REMOVED_FROM_THE_THREAD_DESCRIPTOR = msg({
+	message: '{username} removed {userName} from the thread.',
+	comment:
+		'System message in a thread when a moderator removes a member. username is the moderator, userName is the removed user.',
+});
+const REMOVED_SOMEONE_FROM_THE_THREAD_DESCRIPTOR = msg({
+	message: '{username} removed someone from the thread.',
+	comment: 'System message in a thread when a moderator removes a member whose user record is not resolvable locally.',
+});
 const CHANGED_THE_CHANNEL_NAME_TO_DESCRIPTOR = msg({
 	message: '{username} changed the channel name to {newName}.',
 	comment: 'System message in a group DM when a member renames the channel. newName is the new channel name.',
@@ -238,6 +247,17 @@ export const SystemMessageUtils = {
 				return i18n._(STARTED_A_CALL_DESCRIPTOR, {username});
 			case MessageTypes.THREAD_CREATED:
 				return i18n._(STARTED_A_THREAD_DESCRIPTOR, {username, threadName: message.threadName ?? ''});
+			case MessageTypes.THREAD_MEMBER_REMOVE: {
+				const removedUserId = message.mentions && message.mentions.length > 0 ? message.mentions[0].id : null;
+				const removedUser = removedUserId ? Users.getUser(removedUserId) : null;
+				if (removedUser) {
+					return i18n._(REMOVED_FROM_THE_THREAD_DESCRIPTOR, {
+						username,
+						userName: NicknameUtils.getDisplayName(removedUser),
+					});
+				}
+				return i18n._(REMOVED_SOMEONE_FROM_THE_THREAD_DESCRIPTOR, {username});
+			}
 			default:
 				return null;
 		}

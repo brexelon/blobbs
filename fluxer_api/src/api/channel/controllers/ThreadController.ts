@@ -2,10 +2,10 @@
 
 import {ChannelResponse} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import {ThreadCreateRequest, ThreadUpdateRequest} from '@fluxer/schema/src/domains/channel/ThreadRequestSchemas';
-import {ChannelIdParam, ThreadIdParam} from '@fluxer/schema/src/domains/common/CommonParamSchemas';
+import {ChannelIdParam, ThreadIdParam, UserIdParam} from '@fluxer/schema/src/domains/common/CommonParamSchemas';
 import {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {z} from 'zod';
-import {createChannelID} from '../../BrandedTypes';
+import {createChannelID, createUserID} from '../../BrandedTypes';
 import {LoginRequired} from '../../middleware/AuthMiddleware';
 import {RateLimitMiddleware} from '../../middleware/RateLimitMiddleware';
 import {OpenAPI} from '../../middleware/ResponseTypeMiddleware';
@@ -16,6 +16,8 @@ import {Validator} from '../../Validator';
 const ThreadListResponse = z.object({
 	threads: z.array(ChannelResponse).describe('Threads under this channel, ordered by most recent activity'),
 });
+
+const ThreadMemberParam = ThreadIdParam.merge(UserIdParam);
 
 const ThreadMembersResponse = z.object({
 	members: z
@@ -168,6 +170,32 @@ export function ThreadController(app: HonoApp) {
 			const user = ctx.get('user');
 			const threadId = createChannelID(ctx.req.valid('param').thread_id);
 			await ctx.get('channelService').threads.leaveThread({userId: user.id, threadId});
+			return ctx.body(null, 204);
+		},
+	);
+	app.delete(
+		'/threads/:thread_id/members/:user_id',
+		RateLimitMiddleware(RateLimitConfigs.CHANNEL_UPDATE),
+		LoginRequired,
+		Validator('param', ThreadMemberParam),
+		OpenAPI({
+			operationId: 'remove_thread_member',
+			summary: 'Remove a thread member',
+			description:
+				'Removes another member from a thread and announces it with a system message. Requires the Manage Channels permission in the parent channel.',
+			responseSchema: null,
+			statusCode: 204,
+			security: ['botToken', 'bearerToken', 'sessionToken'],
+			tags: 'Channels',
+		}),
+		async (ctx) => {
+			const user = ctx.get('user');
+			const {thread_id, user_id} = ctx.req.valid('param');
+			await ctx.get('channelService').threads.removeThreadMember({
+				moderatorUserId: user.id,
+				threadId: createChannelID(thread_id),
+				targetUserId: createUserID(user_id),
+			});
 			return ctx.body(null, 204);
 		},
 	);

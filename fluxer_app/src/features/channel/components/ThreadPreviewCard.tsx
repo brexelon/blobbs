@@ -11,6 +11,7 @@ import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
+import {getMessagePreviewText} from '@app/features/messaging/utils/MessagePreviewText';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
@@ -208,7 +209,7 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 									>
 										{lastMessage.author.displayName}:
 									</span>
-									<span className={styles.lastContent}>{lastMessage.content}</span>
+									<span className={styles.lastContent}>{getMessagePreviewText(lastMessage, i18n)}</span>
 									{lastMessage.editedTimestamp && (
 										<span className={styles.lastEdited}>{i18n._(EDITED_DESCRIPTOR)}</span>
 									)}

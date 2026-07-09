@@ -8,6 +8,7 @@ import {PinSystemMessage} from '@app/features/channel/components/PinSystemMessag
 import {RecipientAddMessage} from '@app/features/channel/components/RecipientAddMessage';
 import {RecipientRemoveMessage} from '@app/features/channel/components/RecipientRemoveMessage';
 import {ThreadCreatedMessage} from '@app/features/channel/components/ThreadCreatedMessage';
+import {ThreadMemberRemoveMessage} from '@app/features/channel/components/ThreadMemberRemoveMessage';
 import {UnknownMessage} from '@app/features/channel/components/UnknownMessage';
 import {UserMessage} from '@app/features/channel/components/UserMessage';
 import type {Channel} from '@app/features/channel/models/Channel';
@@ -45,6 +46,13 @@ export function getMessageComponent(
 				<ThreadCreatedMessage
 					message={message}
 					data-flx="messaging.message-component-utils.get-message-component.thread-created-message"
+				/>
+			);
+		case MessageTypes.THREAD_MEMBER_REMOVE:
+			return (
+				<ThreadMemberRemoveMessage
+					message={message}
+					data-flx="messaging.message-component-utils.get-message-component.thread-member-remove-message"
 				/>
 			);
 		case MessageTypes.RECIPIENT_ADD:
