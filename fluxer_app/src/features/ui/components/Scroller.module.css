@@ -51,6 +51,12 @@
 	min-width: 0;
 }
 
+.scrollerChildrenContentSized {
+	flex: 0 0 auto;
+	min-height: auto;
+	width: 100%;
+}
+
 .horizontal .scrollerChildren {
 	margin-inline-end: 0;
 	flex-direction: row;
