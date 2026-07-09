@@ -58,6 +58,7 @@ import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import type * as ProfileDisplayUtils from '@app/features/user/utils/ProfileDisplayUtils';
 import {
+	GLOBAL_PROFILE_MEMBERSHIP,
 	getProfileMembershipDisplayName,
 	resolveProfileGuildMembership,
 	toProfileDisplayContext,
@@ -222,11 +223,14 @@ export const UserProfileModal: UserProfileModalComponent = observer(
 		}, [displayUser, i18n.locale]);
 		const effectiveProfile: Profile | null = displayProfile ?? profile ?? profileFallback;
 		const resolvedProfile: Profile = effectiveProfile ?? fallbackProfile;
-		const displayMembership = resolveProfileGuildMembership(displayProfile, {
-			fallbackGuildId: guildId,
-			userId,
-			allowStoreFallback: Boolean(displayProfile),
-		});
+		const displayMembership =
+			showGlobalProfile && hasGuildProfile
+				? GLOBAL_PROFILE_MEMBERSHIP
+				: resolveProfileGuildMembership(displayProfile, {
+						fallbackGuildId: guildId,
+						userId,
+						allowStoreFallback: Boolean(displayProfile),
+					});
 		const displayUserName = getProfileMembershipDisplayName(
 			displayUser,
 			displayMembership,

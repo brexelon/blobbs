@@ -20,6 +20,10 @@
 	padding-right: var(--spacing-2);
 }
 
+:global(html.mobile-layout) .navigationContainer {
+	padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0));
+}
+
 .topDropZone {
 	position: relative;
 	height: 0.625rem;
@@ -59,8 +63,11 @@
 .bottomSpacer {
 	height: calc(
 		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
-		var(--layout-mobile-bottom-nav-reserved-height, 0) +
 		var(--spacing-2)
 	);
 	flex: 0 0 auto;
+}
+
+:global(html.mobile-layout) .bottomSpacer {
+	height: var(--spacing-2);
 }
