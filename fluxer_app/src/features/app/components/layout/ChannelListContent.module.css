@@ -57,6 +57,10 @@
 }
 
 .bottomSpacer {
-	height: calc(var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) + var(--spacing-2));
+	height: calc(
+		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
+		var(--layout-mobile-bottom-nav-reserved-height, 0) +
+		var(--spacing-2)
+	);
 	flex: 0 0 auto;
 }
