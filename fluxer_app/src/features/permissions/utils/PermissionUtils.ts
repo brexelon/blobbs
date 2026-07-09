@@ -69,9 +69,15 @@ export function getChannelAccessPermission(_channelType: number): bigint {
 	return Permissions.VIEW_CHANNEL;
 }
 
+type ChannelPermissionContext = {
+	guildId?: string | null;
+	type: number;
+	toJSON: () => Channel;
+};
+
 export function canUserAccessChannel(
 	userId: string,
-	channel: {guildId: string | null; type: number; toJSON: () => Channel},
+	channel: ChannelPermissionContext,
 	options?: {allowUnknownMember?: boolean},
 ): boolean {
 	if (channel.guildId == null) {
@@ -86,7 +92,7 @@ export function canUserAccessChannel(
 
 export function canRoleAccessChannel(
 	roleId: string,
-	channel: {guildId: string | null; type: number; toJSON: () => Channel},
+	channel: ChannelPermissionContext,
 ): boolean {
 	if (channel.guildId == null) {
 		return false;

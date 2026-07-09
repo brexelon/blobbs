@@ -114,13 +114,14 @@ export function collectChannelAccessibleMembers(guildId: string, channelId: stri
 
 export function filterMentionableRolesForChannel(
 	guildId: string,
-	roles: ReadonlyArray<GuildRole>,
-	channelMembers: ReadonlyArray<GuildMember>,
+	roles: Iterable<GuildRole>,
+	channelMembers: Iterable<GuildMember>,
 	canMentionEveryone: boolean,
 	canMentionRoleInChannel?: (roleId: string) => boolean,
 ): Array<GuildRole> {
-	const mentionableRoles = roles.filter((role) => canMentionEveryone || role.mentionable);
-	if (channelMembers.length === 0) {
+	const roleList = [...roles];
+	const mentionableRoles = roleList.filter((role) => canMentionEveryone || role.mentionable);
+	if ([...channelMembers].length === 0) {
 		return mentionableRoles.filter((role) => canMentionRoleInChannel?.(role.id) ?? true);
 	}
 	const roleIdsInChannel = new Set<string>([guildId]);
