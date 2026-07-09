@@ -4,6 +4,7 @@ import {
 	DEFAULT_THREAD_AUTO_CLOSE_DURATION_SECONDS,
 	THREAD_AUTO_CLOSE_DURATIONS_SECONDS,
 } from '@fluxer/constants/src/ChannelConstants';
+import {CHANNEL_RATE_LIMIT_PER_USER_MAX, CHANNEL_RATE_LIMIT_PER_USER_MIN} from '@fluxer/constants/src/LimitConstants';
 import {GeneralChannelNameType} from '@fluxer/schema/src/primitives/ChannelValidators';
 import {createNamedLiteralUnion, SnowflakeType} from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {z} from 'zod';
@@ -35,9 +36,28 @@ export const ThreadUpdateRequest = z
 	.object({
 		name: GeneralChannelNameType.optional().describe('A new display name for the thread'),
 		action: ThreadStateAction.optional().describe('A lifecycle transition to apply to the thread'),
+		auto_close_duration_seconds: AutoCloseDurationType.optional().describe(
+			'A new inactivity window before the thread auto-closes (1h, 24h, 3d, or 7d in seconds)',
+		),
+		rate_limit_per_user: z
+			.number()
+			.int()
+			.min(CHANNEL_RATE_LIMIT_PER_USER_MIN)
+			.max(CHANNEL_RATE_LIMIT_PER_USER_MAX)
+			.optional()
+			.describe(
+				`A new slowmode delay in seconds (${CHANNEL_RATE_LIMIT_PER_USER_MIN}-${CHANNEL_RATE_LIMIT_PER_USER_MAX})`,
+			),
 	})
-	.refine((value) => value.name !== undefined || value.action !== undefined, {
-		message: 'At least one of name or action must be provided',
-	});
+	.refine(
+		(value) =>
+			value.name !== undefined ||
+			value.action !== undefined ||
+			value.auto_close_duration_seconds !== undefined ||
+			value.rate_limit_per_user !== undefined,
+		{
+			message: 'At least one field must be provided',
+		},
+	);
 
 export type ThreadUpdateRequest = z.infer<typeof ThreadUpdateRequest>;

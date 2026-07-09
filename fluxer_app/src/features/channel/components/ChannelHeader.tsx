@@ -43,6 +43,7 @@ import {EditGroupModal} from '@app/features/channel/components/modals/EditGroupM
 import type {Channel} from '@app/features/channel/models/Channel';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
 import {isGroupDmFull} from '@app/features/channel/utils/GroupDmUtils';
+import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import {
 	ADD_TO_FAVORITES_DESCRIPTOR,
 	CHANNEL_ADDED_TO_FAVORITES_DESCRIPTOR,
@@ -377,17 +378,26 @@ export const ChannelHeader = observer(
 		};
 		const handleContextMenu = useCallback(
 			(event: React.MouseEvent) => {
-				if (channel && isGuildChannel) {
-					event.preventDefault();
-					event.stopPropagation();
-					ContextMenuCommands.openFromEvent(event, ({onClose}) => (
-						<ChannelContextMenu
-							channel={channel}
-							onClose={onClose}
-							data-flx="channel.channel-header.handle-context-menu.channel-context-menu"
-						/>
-					));
+				if (!channel || !isGuildChannel) {
+					return;
 				}
+				event.preventDefault();
+				event.stopPropagation();
+				if (channel.type === ChannelTypes.GUILD_THREAD) {
+					openThreadContextMenu(event, {
+						threadId: channel.id,
+						parentChannelId: channel.parentId ?? channel.id,
+						guildId: channel.guildId ?? null,
+					});
+					return;
+				}
+				ContextMenuCommands.openFromEvent(event, ({onClose}) => (
+					<ChannelContextMenu
+						channel={channel}
+						onClose={onClose}
+						data-flx="channel.channel-header.handle-context-menu.channel-context-menu"
+					/>
+				));
 			},
 			[channel, isGuildChannel],
 		);

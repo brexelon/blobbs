@@ -565,6 +565,24 @@ export const renderEntrySummary = (args: {
 					{actor} deleted the channel {namedTarget}.
 				</Trans>,
 			);
+		case AuditLogActionType.THREAD_CREATE:
+			return withBecause(
+				<Trans>
+					{actor} created the thread {namedTarget}.
+				</Trans>,
+			);
+		case AuditLogActionType.THREAD_UPDATE:
+			return withBecause(
+				<Trans>
+					{actor} updated the thread {namedTarget}.
+				</Trans>,
+			);
+		case AuditLogActionType.THREAD_DELETE:
+			return withBecause(
+				<Trans>
+					{actor} deleted the thread {namedTarget}.
+				</Trans>,
+			);
 		case AuditLogActionType.CHANNEL_OVERWRITE_CREATE:
 			return channelNode
 				? withBecause(

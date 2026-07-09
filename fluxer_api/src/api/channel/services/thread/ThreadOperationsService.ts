@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {
 	ChannelTypes,
 	GUILD_TEXT_BASED_CHANNEL_TYPES,
@@ -24,6 +25,7 @@ import {
 	type UserID,
 } from '../../../BrandedTypes';
 import type {ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
+import type {GuildAuditLogService} from '../../../guild/GuildAuditLogService';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../../infrastructure/ISnowflakeService';
 import type {UserCacheService} from '../../../infrastructure/UserCacheService';
@@ -48,7 +50,61 @@ export class ThreadOperationsService {
 		private readonly snowflakeService: ISnowflakeService,
 		private readonly userCacheService: UserCacheService,
 		private readonly messagePersistenceService: MessagePersistenceService,
+		private readonly guildAuditLogService: GuildAuditLogService,
 	) {}
+
+	/**
+	 * Record a community audit log entry for a thread lifecycle action, mirroring
+	 * how channels are logged. Threads are channel rows, so the same channel
+	 * serializer/diff drives the change set. Failures are swallowed — the thread
+	 * mutation itself has already succeeded and must not be undone by a log write.
+	 */
+	/**
+	 * Snapshot the thread fields that are meaningful in an audit diff: name,
+	 * slowmode, auto-close window, and lifecycle state. Unlike the generic channel
+	 * serializer this includes the thread-only fields, so an auto-close or state
+	 * change is recorded (and rendered) rather than producing an empty change set.
+	 */
+	private serializeThreadForAudit(thread: Channel): Record<string, unknown> {
+		return {
+			name: thread.name ?? null,
+			rate_limit_per_user: thread.rateLimitPerUser,
+			thread_auto_close_duration_seconds: thread.threadAutoCloseDurationSeconds ?? null,
+			thread_state: thread.threadState ?? null,
+		};
+	}
+
+	private async recordThreadAuditLog(params: {
+		guildId: GuildID;
+		userId: UserID;
+		threadId: ChannelID;
+		action: AuditLogActionType;
+		before: Channel | null;
+		after: Channel | null;
+	}): Promise<void> {
+		const {guildId, userId, threadId, action, before, after} = params;
+		const changes = this.guildAuditLogService.computeChanges(
+			before ? this.serializeThreadForAudit(before) : null,
+			after ? this.serializeThreadForAudit(after) : null,
+		);
+		if (action === AuditLogActionType.THREAD_UPDATE && changes.length === 0) {
+			return;
+		}
+		try {
+			await this.guildAuditLogService
+				.createBuilder(guildId, userId)
+				.withAction(action, threadId.toString())
+				.withReason(null)
+				.withMetadata({type: ChannelTypes.GUILD_THREAD.toString()})
+				.withChanges(changes)
+				.commit();
+		} catch (error) {
+			Logger.error(
+				{error, guildId: guildId.toString(), userId: userId.toString(), action, targetId: threadId.toString()},
+				'Failed to record thread audit log',
+			);
+		}
+	}
 
 	async createThread(params: {
 		userId: UserID;
@@ -145,6 +201,14 @@ export class ThreadOperationsService {
 		const response = await this.mapThread(thread, true, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_CREATE', data: response});
 		await this.dispatchMemberEvent('THREAD_MEMBER_ADD', {threadId, guildId, userId});
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_CREATE,
+			before: null,
+			after: thread,
+		});
 		try {
 			if (originMessageId != null) {
 				// The thread grew out of an existing message: re-broadcast it so every
@@ -169,6 +233,25 @@ export class ThreadOperationsService {
 			Logger.warn({error, threadId: threadId.toString()}, 'Failed to surface thread creation in channel');
 		}
 		return response;
+	}
+
+	private async postThreadNameChangeSystemMessage(params: {
+		thread: Channel;
+		guildId: GuildID;
+		userId: UserID;
+		newName: string;
+	}): Promise<void> {
+		const {thread, guildId, userId, newName} = params;
+		const messageId = createMessageID(await this.snowflakeService.generateForChannel(thread.id.toString()));
+		const message = await this.messagePersistenceService.createSystemMessage({
+			messageId,
+			channelId: thread.id,
+			userId,
+			type: MessageTypes.CHANNEL_NAME_CHANGE,
+			content: newName,
+			guildId,
+		});
+		await dispatchMessageCreateBroadcast({gatewayService: this.gatewayService, channel: thread, message});
 	}
 
 	private async broadcastOriginMessageUpdate(params: {parent: Channel; messageId: MessageID}): Promise<void> {
@@ -330,6 +413,33 @@ export class ThreadOperationsService {
 			row.name = data.name;
 			row.thread_name = data.name;
 		}
+		if (data.rate_limit_per_user !== undefined) {
+			row.rate_limit_per_user = data.rate_limit_per_user;
+		}
+		if (data.auto_close_duration_seconds !== undefined) {
+			if (!AUTO_CLOSE_DURATIONS.has(data.auto_close_duration_seconds)) {
+				throw InputValidationError.fromCode(
+					'auto_close_duration_seconds',
+					ValidationErrorCodes.INVALID_THREAD_AUTO_CLOSE_DURATION,
+				);
+			}
+			row.thread_auto_close_duration_seconds = data.auto_close_duration_seconds;
+			// Re-base the deadline off the same last activity under the new window
+			// (last activity = current deadline - old window), so a longer window
+			// grants more time and a shorter one takes effect immediately.
+			const oldDurationMs = (thread.threadAutoCloseDurationSeconds ?? 0) * 1000;
+			const lastActivityMs = thread.threadAutoCloseAt ? thread.threadAutoCloseAt.getTime() - oldDurationMs : Date.now();
+			const autoCloseAt = new Date(lastActivityMs + data.auto_close_duration_seconds * 1000);
+			row.thread_auto_close_at = autoCloseAt;
+			if (row.thread_state !== ThreadStates.ARCHIVED && thread.parentId != null) {
+				await this.threadRepository.insertAutoCloseEntry({
+					autoCloseAt,
+					threadId,
+					parentId: thread.parentId,
+					guildId,
+				});
+			}
+		}
 		const updated = await this.channelRepository.upsert(row);
 		if (data.name !== undefined && thread.threadOriginMessageId != null && thread.parentId != null) {
 			await this.threadRepository.annotateOriginMessage({
@@ -344,6 +454,23 @@ export class ThreadOperationsService {
 		}
 		const response = await this.mapThread(updated, undefined, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_UPDATE', data: response});
+		if (data.name !== undefined && data.name !== thread.name) {
+			// Announce the rename inside the thread with a system message, mirroring the
+			// channel rename notice. A failure here must not fail the update itself.
+			try {
+				await this.postThreadNameChangeSystemMessage({thread: updated, guildId, userId, newName: data.name});
+			} catch (error) {
+				Logger.warn({error, threadId: threadId.toString()}, 'Failed to post thread rename system message');
+			}
+		}
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_UPDATE,
+			before: thread,
+			after: updated,
+		});
 		return response;
 	}
 
@@ -374,6 +501,14 @@ export class ThreadOperationsService {
 				parent_id: thread.parentId?.toString() ?? null,
 				origin_message_id: thread.threadOriginMessageId?.toString() ?? null,
 			},
+		});
+		await this.recordThreadAuditLog({
+			guildId,
+			userId,
+			threadId,
+			action: AuditLogActionType.THREAD_DELETE,
+			before: thread,
+			after: null,
 		});
 	}
 

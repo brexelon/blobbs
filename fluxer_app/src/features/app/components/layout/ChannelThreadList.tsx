@@ -4,7 +4,9 @@ import styles from '@app/features/app/components/layout/ChannelThreadList.module
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
+import ReadStates from '@app/features/read_state/state/ReadStates';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
+import {MentionBadge} from '@app/features/ui/components/MentionBadge';
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {clsx} from 'clsx';
@@ -82,6 +84,13 @@ const ThreadRow = observer(
 			},
 			[guildId, parentChannelId, threadId, name, state],
 		);
+		// Dim a muted thread's name (unless it's the active view), matching how muted
+		// text channels read in the sidebar.
+		const isMuted = UserGuildSettings.isChannelMuted(guildId, threadId);
+		// Surface unread mentions on the thread just like a text channel: a thread has
+		// its own channel id, so its mention count lives in the read state directly.
+		const mentionCount = ReadStates.getMentionCount(threadId);
+		const showMentionBadge = !isSelected && mentionCount > 0;
 		return (
 			<button
 				type="button"
@@ -91,7 +100,10 @@ const ThreadRow = observer(
 				data-flx="app.channel-thread-list.row"
 			>
 				<span className={styles.connector} aria-hidden="true" />
-				<span className={styles.name}>{name}</span>
+				<span className={clsx(styles.name, isMuted && !isSelected && styles.nameMuted)}>{name}</span>
+				{showMentionBadge && (
+					<MentionBadge mentionCount={mentionCount} size="small" data-flx="app.channel-thread-list.mention-badge" />
+				)}
 			</button>
 		);
 	},

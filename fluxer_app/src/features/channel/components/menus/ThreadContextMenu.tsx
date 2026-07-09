@@ -3,11 +3,16 @@
 import {ConfirmModal} from '@app/features/app/components/dialogs/ConfirmModal';
 import type {ThreadStateAction} from '@app/features/channel/commands/ThreadCommands';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
+import {ThreadSettingsModal} from '@app/features/channel/components/modals/ThreadSettingsModal';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import Permission from '@app/features/permissions/state/Permission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
-import {DeleteIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
+import {DeleteIcon, EditIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
+import {
+	ChannelNotificationSettingsMenuItem,
+	MuteChannelMenuItem,
+} from '@app/features/ui/action_menu/items/ChannelMenuItems';
 import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import {MenuItem} from '@app/features/ui/action_menu/MenuItem';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
@@ -55,6 +60,10 @@ const ARCHIVE_THREAD_DESCRIPTOR = msg({
 const UNARCHIVE_THREAD_DESCRIPTOR = msg({
 	message: 'Unarchive Thread',
 	comment: 'Thread context menu item that unarchives a thread (moderators only).',
+});
+const EDIT_THREAD_DESCRIPTOR = msg({
+	message: 'Edit Thread',
+	comment: 'Thread context menu item that opens the thread settings modal (moderators only).',
 });
 const DELETE_THREAD_DESCRIPTOR = msg({
 	message: 'Delete Thread',
@@ -108,6 +117,7 @@ export const ThreadContextMenu = observer(
 		onGoToThread,
 	}: ThreadContextMenuProps) => {
 		const {i18n} = useLingui();
+		const threadChannel = Channels.getChannel(threadId);
 		const canManage = Permission.can(Permissions.MANAGE_CHANNELS, {
 			channelId: parentChannelId,
 			guildId: guildId ?? undefined,
@@ -161,6 +171,11 @@ export const ThreadContextMenu = observer(
 			}
 		};
 
+		const handleEdit = () => {
+			onClose();
+			ModalCommands.push(modal(() => <ThreadSettingsModal threadId={threadId} />));
+		};
+
 		const handleDelete = () => {
 			onClose();
 			ModalCommands.push(
@@ -205,8 +220,25 @@ export const ThreadContextMenu = observer(
 						</MenuItem>
 					)}
 				</MenuGroup>
+				{threadChannel != null && (
+					<MenuGroup data-flx="channel.thread-context-menu.notifications-group">
+						<MuteChannelMenuItem
+							channel={threadChannel}
+							onClose={onClose}
+							data-flx="channel.thread-context-menu.mute"
+						/>
+						<ChannelNotificationSettingsMenuItem
+							channel={threadChannel}
+							onClose={onClose}
+							data-flx="channel.thread-context-menu.notification-settings"
+						/>
+					</MenuGroup>
+				)}
 				{canManage && (
 					<MenuGroup data-flx="channel.thread-context-menu.moderation-group">
+						<MenuItem icon={<EditIcon size={16} />} onClick={handleEdit} data-flx="channel.thread-context-menu.edit">
+							{i18n._(EDIT_THREAD_DESCRIPTOR)}
+						</MenuItem>
 						{isOpen && (
 							<MenuItem
 								icon={<LockSimpleIcon size={16} />}

@@ -70,8 +70,14 @@
 }
 
 .name {
+	flex: 1 1 auto;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	min-width: 0;
+}
+
+/* Darken a muted thread's name, matching how muted text channels read. */
+.nameMuted {
+	color: var(--text-tertiary-muted);
 }
