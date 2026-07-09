@@ -67,13 +67,18 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 	// Reactive live signals: re-fetch metadata when a new message lands, and prefer
 	// the store's newest message (kept live by create/edit/delete handling).
 	const liveLastMessageId = threadId ? (Channels.getChannel(threadId)?.lastMessageId ?? null) : null;
+	// The per-channel message cache is a plain Map, so reading it is not reactive on
+	// its own. Observe the store's change counter — bumped on every create, edit,
+	// and delete — so an in-place edit or deletion (which leaves lastMessageId
+	// unchanged) still re-renders the preview. Without this the card only refreshed
+	// when lastMessageId changed, i.e. on new messages but never on edits/deletes.
+	const messagesVersion = Messages.version;
 	const storeCollection = threadId ? Messages.getCachedMessages(threadId) : undefined;
 	// Once the store has the thread's page it is authoritative: its
 	// MESSAGE_CREATE/UPDATE/DELETE handling keeps the newest message live —
-	// including edits and deletions, which never change lastMessageId and so would
-	// otherwise never refresh. When the store empties out (last message deleted) we
-	// fall through to "no messages" rather than the stale one-shot seed.
-	const storeReady = storeCollection?.ready ?? false;
+	// including edits and deletions. When the store empties out (last message
+	// deleted) we fall through to "no messages" rather than the stale one-shot seed.
+	const storeReady = messagesVersion >= 0 && (storeCollection?.ready ?? false);
 	const storeLast = storeCollection?.last() ?? null;
 	// Load the thread's latest page so edits and deletions (not just new messages)
 	// flow into the preview through the store.
