@@ -25,7 +25,6 @@ import {GuildFolderContextMenu} from '@app/features/ui/action_menu/GuildFolderCo
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {MentionBadgeAnimated} from '@app/features/ui/components/MentionBadge';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
-import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
@@ -203,7 +202,6 @@ export const GuildFolderItem = observer((props: GuildFolderItemProps) => {
 	const focusableRef = useRef<HTMLDivElement | null>(null);
 	const focusRingTargetRef = useRef<HTMLDivElement | null>(null);
 	const itemRef = useRef<HTMLElement | null>(null);
-	const mobileLayout = MobileLayout;
 	const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'inside' | null>(null);
 	const dropTargetRectRef = useRef<DOMRect | null>(null);
 	const setFolderDropIndicator = useCallback((indicator: 'top' | 'bottom' | 'inside' | null) => {
@@ -305,14 +303,16 @@ export const GuildFolderItem = observer((props: GuildFolderItemProps) => {
 				onDragStateChange?.(dragItemData);
 				return dragItemData;
 			},
-			canDrag: !mobileLayout.enabled,
+			// Draggable on mobile as well; the active DnD backend decides which pointer types drag,
+			// and the touch backend requires a deliberate press-and-move so lists still scroll.
+			canDrag: true,
 			collect: (monitor) => ({isDragging: monitor.isDragging()}),
 			end: () => {
 				onDragStateChange?.(null);
 				resetFolderDropIndicator();
 			},
 		}),
-		[dragItemData, mobileLayout.enabled, onDragStateChange, resetFolderDropIndicator],
+		[dragItemData, onDragStateChange, resetFolderDropIndicator],
 	);
 	const [{isOver}, dropRef] = useDrop(
 		() => ({

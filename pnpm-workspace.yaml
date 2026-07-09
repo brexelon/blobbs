@@ -134,6 +134,7 @@ catalog:
   react-dnd-accessible-backend: 2.1.0
   react-dnd-html5-backend: 16.0.1
   react-dnd-multi-backend: 9.0.0
+  react-dnd-touch-backend: 16.0.1
   react-dom: 19.2.4
   react-hook-form: 7.71.2
   react-hotkeys-hook: 5.2.4

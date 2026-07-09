@@ -385,7 +385,9 @@ export const GuildListItem = observer(
 			}),
 			[guild.id, insideFolderId, isLastInsideFolder],
 		);
-		const dndEnabled = !mobileLayout.enabled && !disableDrag;
+		// Drag is allowed on mobile too: the touch backend gates the gesture behind a short
+		// press-and-move so lists still scroll. The active backend decides which pointer types drag.
+		const dndEnabled = !disableDrag;
 		const [{isDragging}, dragRef, preview] = useDrag(
 			() => ({
 				type: DND_TYPES.GUILD_ITEM,
