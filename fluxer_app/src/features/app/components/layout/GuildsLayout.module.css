@@ -48,6 +48,7 @@
 	background-color: var(--background-secondary);
 	position: relative;
 	z-index: var(--z-index-elevated-1);
+	overflow: hidden;
 }
 
 .guildListScrollContainer {
@@ -140,6 +141,7 @@
 }
 
 .contentInner {
+	flex: 1;
 	height: 100%;
 	min-height: 0;
 	max-height: 100%;

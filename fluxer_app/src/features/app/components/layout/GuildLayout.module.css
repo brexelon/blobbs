@@ -191,7 +191,13 @@
 	background-color: rgba(255, 255, 255, 0.9);
 }
 .mobileNavbarSlot {
-	display: contents;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .mobileNavbarHidden {
