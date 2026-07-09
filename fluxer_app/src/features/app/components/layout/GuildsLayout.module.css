@@ -42,7 +42,7 @@
 	grid-column: 1;
 	grid-row: 1;
 	min-height: 0;
-	height: calc(100% - var(--layout-user-area-reserved-height, 0) - var(--layout-mobile-bottom-nav-reserved-height, 0));
+	height: calc(100% - var(--layout-user-area-reserved-height, 0));
 	width: var(--layout-guild-list-width);
 	min-width: 0;
 	background-color: var(--background-secondary);
@@ -74,6 +74,7 @@
 	min-width: 0;
 	padding-bottom: calc(
 		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0)) +
+		var(--layout-mobile-bottom-nav-reserved-height, 0) +
 		var(--spacing-2)
 	);
 }
