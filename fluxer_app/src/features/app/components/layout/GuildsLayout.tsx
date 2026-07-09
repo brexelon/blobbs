@@ -38,6 +38,7 @@ import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
 import ReadStates from '@app/features/read_state/state/ReadStates';
 import * as DimensionCommands from '@app/features/ui/commands/DimensionCommands';
 import {Scroller, type ScrollerHandle} from '@app/features/ui/components/Scroller';
+import scrollerStyles from '@app/features/ui/components/Scroller.module.css';
 import Dimension from '@app/features/ui/state/Dimension';
 import KeyboardMode from '@app/features/ui/state/KeyboardMode';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
@@ -672,7 +673,7 @@ const GuildList = observer(() => {
 			<Scroller
 				ref={scrollRef}
 				className={styles.guildListScrollContainer}
-				contentClassName={showMobileBottomNav ? styles.guildListScrollerContentMobile : undefined}
+				contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 				showTrack={false}
 				onScroll={handleScroll}
 				onWheel={handleWheel}
@@ -825,6 +826,9 @@ const GuildList = observer(() => {
 						)}
 						<HelpButton data-flx="app.guilds-layout.guild-list.help-button" />
 					</div>
+					{showMobileBottomNav && (
+						<div className={styles.guildListBottomSpacer} aria-hidden="true" data-flx="app.guilds-layout.guild-list.bottom-spacer" />
+					)}
 				</div>
 			</Scroller>
 			<ScrollIndicatorOverlay

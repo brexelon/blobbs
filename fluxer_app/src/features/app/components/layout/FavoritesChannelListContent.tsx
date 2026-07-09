@@ -6,6 +6,7 @@ import channelItemStyles from '@app/features/app/components/layout/ChannelItem.m
 import {ChannelItemIcon} from '@app/features/app/components/layout/ChannelItemIcon';
 import channelItemSurfaceStyles from '@app/features/app/components/layout/ChannelItemSurface.module.css';
 import styles from '@app/features/app/components/layout/ChannelListContent.module.css';
+import scrollerStyles from '@app/features/ui/components/Scroller.module.css';
 import {ChannelListSkeleton} from '@app/features/app/components/layout/ChannelListSkeleton';
 import {computeVerticalDropPosition} from '@app/features/app/components/layout/dnd/DndDropPosition';
 import favoritesChannelListStyles from '@app/features/app/components/layout/FavoritesChannelListContent.module.css';
@@ -688,7 +689,7 @@ export const FavoritesChannelListContent = observer(() => {
 		return (
 			<Scroller
 				className={styles.channelListScroller}
-				contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
+				contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 				key="favorites-channel-list-empty-scroller"
 				data-flx="app.favorites-channel-list-content.channel-list-scroller"
 			>
@@ -699,7 +700,10 @@ export const FavoritesChannelListContent = observer(() => {
 					data-flx="app.favorites-channel-list-content.region.context-menu"
 				>
 					<ChannelListSkeleton data-flx="app.favorites-channel-list-content.channel-list-skeleton" />
-					<div className={styles.bottomSpacer} data-flx="app.favorites-channel-list-content.bottom-spacer.empty" />
+					<div
+						className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
+						data-flx="app.favorites-channel-list-content.bottom-spacer.empty"
+					/>
 				</div>
 			</Scroller>
 		);
@@ -707,7 +711,7 @@ export const FavoritesChannelListContent = observer(() => {
 	return (
 		<Scroller
 			className={styles.channelListScroller}
-			contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
+			contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 			key="favorites-channel-list-scroller"
 			data-flx="app.favorites-channel-list-content.channel-list-scroller--2"
 		>
@@ -773,7 +777,10 @@ export const FavoritesChannelListContent = observer(() => {
 						);
 					})}
 				</div>
-				<div className={styles.bottomSpacer} data-flx="app.favorites-channel-list-content.bottom-spacer" />
+				<div
+					className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
+					data-flx="app.favorites-channel-list-content.bottom-spacer"
+				/>
 			</div>
 		</Scroller>
 	);

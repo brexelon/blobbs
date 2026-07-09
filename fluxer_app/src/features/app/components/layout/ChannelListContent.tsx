@@ -6,6 +6,7 @@ import {ChannelItem} from '@app/features/app/components/layout/ChannelItem';
 import channelItemStyles from '@app/features/app/components/layout/ChannelItem.module.css';
 import {ChannelItemContent} from '@app/features/app/components/layout/ChannelItemContent';
 import styles from '@app/features/app/components/layout/ChannelListContent.module.css';
+import scrollerStyles from '@app/features/ui/components/Scroller.module.css';
 import {ChannelThreadList} from '@app/features/app/components/layout/ChannelThreadList';
 import {
 	CollapsedCategoryVoiceParticipants,
@@ -289,15 +290,15 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 		>
 			<Scroller
 				ref={scrollerRef}
-				className={styles.channelListScroller}
-				contentClassName={showMobileBottomNav ? styles.channelListScrollerContentMobile : undefined}
+				className={clsx(styles.channelListScroller, showMobileBottomNav && styles.channelListScrollerMobile)}
+				contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 				onScroll={handleScroll}
 				onResize={handleResize}
 				key={guild.id}
 				data-flx="app.channel-list-content.channel-list-scroller"
 			>
 				<div
-					className={styles.navigationContainer}
+					className={clsx(styles.navigationContainer, showMobileBottomNav && styles.navigationContainerMobile)}
 					onContextMenu={handleContextMenu}
 					role="navigation"
 					aria-label={i18n._(CHANNELS_DESCRIPTOR, {guildName: guild.name})}
@@ -576,7 +577,10 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 							/>
 						</div>
 					)}
-					<div className={styles.bottomSpacer} data-flx="app.channel-list-content.bottom-spacer" />
+					<div
+						className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
+						data-flx="app.channel-list-content.bottom-spacer"
+					/>
 				</div>
 			</Scroller>
 			<ScrollIndicatorOverlay
