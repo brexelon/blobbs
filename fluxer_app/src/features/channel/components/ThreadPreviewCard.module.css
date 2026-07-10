@@ -69,7 +69,7 @@
    avatar so there is the same small gap between the profile picture and the
    connector as the system message has below its icon. */
 .connectorAvatarSized {
-	top: calc(var(--message-avatar-size) + 8px);
+	top: calc(var(--message-avatar-size) + 12px);
 }
 
 /* The auto-close footer sits below the card box, pushing the icon badge further
