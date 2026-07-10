@@ -595,15 +595,11 @@ export const UserMessage = observer(() => {
 						)
 					}
 				</CompactMessageLayout>
+				{message.threadId != null && <ThreadPreviewConnector message={message} inline />}
 				<div className={styles.container} data-flx="channel.user-message.container--2">
 					<MessageAttachments data-flx="channel.user-message.message-attachments--2" />
 					{renderFailedFooter()}
-					{message.threadId != null && (
-						<>
-							<ThreadPreviewConnector message={message} inline />
-							<ThreadPreviewCard message={message} inline />
-						</>
-					)}
+					{message.threadId != null && <ThreadPreviewCard message={message} inline />}
 				</div>
 			</SpoilerSyncProvider>
 		);
@@ -720,6 +716,7 @@ export const UserMessage = observer(() => {
 					<div className={styles.messageGutterRight} data-flx="channel.user-message.message-gutter-right--2" />
 				</>
 			)}
+			{message.threadId != null && <ThreadPreviewConnector message={message} inline avatarSized />}
 			<div className={styles.container} data-flx="channel.user-message.container--3">
 				{((!message.content && !isEditing) || (shouldHideContent && !isEditing)) && !shouldGroup && jumpHeading}
 				{((!message.content && !isEditing) || (shouldHideContent && !isEditing)) && !shouldGroup && (
@@ -781,12 +778,7 @@ export const UserMessage = observer(() => {
 				)}
 				<MessageAttachments data-flx="channel.user-message.message-attachments--3" />
 				{renderFailedFooter()}
-				{message.threadId != null && (
-					<>
-						<ThreadPreviewConnector message={message} inline />
-						<ThreadPreviewCard message={message} inline />
-					</>
-				)}
+				{message.threadId != null && <ThreadPreviewCard message={message} inline />}
 			</div>
 		</SpoilerSyncProvider>
 	);
