@@ -16,6 +16,16 @@
 	padding-inline-end: var(--chat-horizontal-padding, var(--message-gutter));
 }
 
+/* Inline variant: the card is placed inside the origin message's grid (the
+   below-content "container" area) so the message + card read and select as one
+   message. The grid already positions it under the content column, so drop the
+   sibling alignment offsets. */
+.containerInline {
+	margin-left: 0;
+	margin-bottom: 0;
+	padding-inline-end: 0;
+}
+
 /*
  * Elbow connector linking the origin message to this card. It is anchored to the
  * whole message+card block (.messageThreadBlock) rather than to the card, so the
@@ -29,7 +39,9 @@
 	position: absolute;
 	box-sizing: border-box;
 	left: calc(0.5 * var(--message-avatar-size) - 1px);
-	top: calc(0.5 * var(--message-avatar-size));
+	/* Start a little below the message's avatar/thread icon so there is a small
+	   gap between the icon and the connector, matching Discord. */
+	top: calc(0.5 * var(--message-avatar-size) + 6px);
 	/* Bottom lands on the icon badge's vertical centre: the badge sits 8px below
 	   the box's top with a 16px half-height (32px badge), + 1px border. */
 	bottom: 25px;
@@ -38,6 +50,13 @@
 	border-bottom: 2px solid var(--background-modifier-accent);
 	border-bottom-left-radius: 8px;
 	pointer-events: none;
+}
+
+/* Inline variant: anchored to the message article (.message) instead of the
+   sibling block, so the left offset must include the article's leading padding
+   column to keep the line under the avatar/thread icon. */
+.connectorInline {
+	left: calc(var(--chat-horizontal-padding, var(--message-gutter)) + 0.5 * var(--message-avatar-size) - 1px);
 }
 
 /* The auto-close footer sits below the card box, pushing the icon badge further
