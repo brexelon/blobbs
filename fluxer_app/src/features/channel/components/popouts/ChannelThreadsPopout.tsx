@@ -22,13 +22,13 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {User} from '@app/features/user/models/User';
+import {getShortRelativeTime} from '@app/features/user/utils/DateFormatting';
 import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {DotsThreeIcon, MagnifyingGlassIcon} from '@phosphor-icons/react';
-import {DateTime} from 'luxon';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useEffect, useMemo, useState} from 'react';
@@ -113,8 +113,7 @@ function lastActiveRelative(thread: WireChannel, lastMessage: Message | null): s
 	if (!referenceId) {
 		return null;
 	}
-	const dateTime = DateTime.fromMillis(extractTimestamp(referenceId));
-	return dateTime.isValid ? dateTime.toRelative() : null;
+	return getShortRelativeTime(extractTimestamp(referenceId)) || null;
 }
 
 export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Channel; onClose?: () => void}) => {

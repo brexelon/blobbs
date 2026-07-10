@@ -132,6 +132,13 @@
 	flex: 1;
 }
 
+.nameLine {
+	display: flex;
+	align-items: baseline;
+	gap: 5px;
+	min-width: 0;
+}
+
 .name {
 	font-weight: 600;
 	font-size: 14px;
@@ -139,6 +146,17 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	min-width: 0;
+}
+
+/* Message count beside the thread name: non-bold and in a neutral muted colour,
+   falling back to "See thread" when the thread has no messages. */
+.messageCount {
+	flex-shrink: 0;
+	font-weight: 400;
+	font-size: 14px;
+	white-space: nowrap;
+	color: var(--text-muted);
 }
 
 .lastMessage {
@@ -168,6 +186,17 @@
 	flex-shrink: 0;
 	color: var(--text-muted);
 	font-size: 10px;
+}
+
+/* Slightly dim relative time ("3h ago", "1d ago") at the end of the last-message
+   row; stays visible while the message text truncates. */
+.lastTime {
+	flex-shrink: 0;
+	margin-left: auto;
+	padding-left: 6px;
+	color: var(--text-tertiary-muted);
+	font-size: 11px;
+	white-space: nowrap;
 }
 
 .caret {
