@@ -9,7 +9,10 @@ import Guilds from '@app/features/guild/state/Guilds';
 import {NOTIFICATION_SETTINGS_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {DataMenuItemsRenderer, DataMenuRenderer} from '@app/features/ui/action_menu/DataMenuRenderer';
 import {useChannelMenuData} from '@app/features/ui/action_menu/items/ChannelMenuData';
-import {MuteChannelMenuItem} from '@app/features/ui/action_menu/items/ChannelMenuItems';
+import {
+	ChannelNotificationSettingsMenuItem,
+	MuteChannelMenuItem,
+} from '@app/features/ui/action_menu/items/ChannelMenuItems';
 import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import type {MenuGroupType, MenuSheetItem} from '@app/features/ui/menu_bottom_sheet/MenuBottomSheet';
 import {GUILD_TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
@@ -36,6 +39,13 @@ export const ChannelContextMenu: React.FC<ChannelContextMenuProps> = observer(({
 	);
 	const showMuteMenuItem = GUILD_TEXT_BASED_CHANNEL_TYPES.has(channel.type);
 	const notificationSettingsLabel = i18n._(NOTIFICATION_SETTINGS_DESCRIPTOR);
+	// Inside the mute group we render the interactive notification-settings submenu
+	// (radio levels + open-modal), like the thread menu, so drop the plain data item
+	// there. Other groups keep it as-is for channel types without the mute group.
+	const behaviorExcludeLabels = useMemo(
+		() => [...excludeLabels, notificationSettingsLabel],
+		[excludeLabels, notificationSettingsLabel],
+	);
 	const splitGroups = useMemo<{
 		beforeBehavior: Array<MenuGroupType>;
 		behaviorItems: Array<MenuSheetItem>;
@@ -71,9 +81,14 @@ export const ChannelContextMenu: React.FC<ChannelContextMenuProps> = observer(({
 						onClose={onClose}
 						data-flx="ui.action-menu.channel-context-menu.mute-channel-menu-item"
 					/>
+					<ChannelNotificationSettingsMenuItem
+						channel={channel}
+						onClose={onClose}
+						data-flx="ui.action-menu.channel-context-menu.notification-settings-menu-item"
+					/>
 					<DataMenuItemsRenderer
 						items={splitGroups.behaviorItems}
-						excludeLabels={excludeLabels}
+						excludeLabels={behaviorExcludeLabels}
 						data-flx="ui.action-menu.channel-context-menu.data-menu-items-renderer"
 					/>
 				</MenuGroup>
