@@ -23,6 +23,7 @@ import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/Me
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {CaretRightIcon, ClockIcon} from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {DateTime} from 'luxon';
 import {observer} from 'mobx-react-lite';
 import {useEffect, useState} from 'react';
@@ -178,7 +179,7 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 	}
 	return (
 		<div className={styles.container} data-flx="channel.thread-preview-card">
-			<div className={styles.connector} aria-hidden="true" />
+			<div className={clsx(styles.connector, closeLabel && styles.connectorWithFooter)} aria-hidden="true" />
 			<div className={styles.stack}>
 				<button
 					type="button"

@@ -8,7 +8,7 @@ import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
 import Permission from '@app/features/permissions/state/Permission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
-import {DeleteIcon, EditIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
+import {CopyIdIcon, DeleteIcon, EditIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
 import {
 	ChannelNotificationSettingsMenuItem,
 	MuteChannelMenuItem,
@@ -17,7 +17,9 @@ import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import {MenuItem} from '@app/features/ui/action_menu/MenuItem';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
+import * as TextCopyCommands from '@app/features/ui/commands/TextCopyCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
+import UserSettings from '@app/features/user/state/UserSettings';
 import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -68,6 +70,10 @@ const EDIT_THREAD_DESCRIPTOR = msg({
 const DELETE_THREAD_DESCRIPTOR = msg({
 	message: 'Delete Thread',
 	comment: 'Thread context menu item that permanently deletes a thread (moderators only).',
+});
+const COPY_THREAD_ID_DESCRIPTOR = msg({
+	message: 'Copy Thread ID',
+	comment: 'Thread context menu item that copies the thread ID (shown only in developer mode).',
 });
 const DELETE_THREAD_TITLE_DESCRIPTOR = msg({
 	message: 'Delete Thread',
@@ -125,6 +131,11 @@ export const ThreadContextMenu = observer(
 		const isArchived = threadState === ThreadStates.ARCHIVED;
 		const isClosed = threadState === ThreadStates.CLOSED;
 		const isOpen = threadState === ThreadStates.OPEN;
+		const developerMode = UserSettings.developerMode;
+		const handleCopyId = () => {
+			TextCopyCommands.copy(i18n, threadId);
+			onClose();
+		};
 
 		const notifyFailure = (error: unknown, action: string) => {
 			logger.error(`Failed to ${action} thread ${threadId}:`, error);
@@ -286,6 +297,17 @@ export const ThreadContextMenu = observer(
 							data-flx="channel.thread-context-menu.delete"
 						>
 							{i18n._(DELETE_THREAD_DESCRIPTOR)}
+						</MenuItem>
+					</MenuGroup>
+				)}
+				{developerMode && (
+					<MenuGroup data-flx="channel.thread-context-menu.developer-group">
+						<MenuItem
+							icon={<CopyIdIcon size={16} />}
+							onClick={handleCopyId}
+							data-flx="channel.thread-context-menu.copy-id"
+						>
+							{i18n._(COPY_THREAD_ID_DESCRIPTOR)}
 						</MenuItem>
 					</MenuGroup>
 				)}

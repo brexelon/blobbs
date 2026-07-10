@@ -1,7 +1,9 @@
 /* Align the thread box under the origin message's content column (past the
-   avatar gutter), matching the message grid: [padding][avatar][gutter][content]. */
+   avatar gutter), matching the message grid: [padding][avatar][gutter][content].
+   Intentionally NOT a positioning context: the connector below anchors to the
+   surrounding .messageThreadBlock (which wraps the origin message + this card) so
+   its height can track the message's height. */
 .container {
-	position: relative;
 	display: flex;
 	--thread-preview-connector-bridge: 2px;
 	margin-top: var(--thread-preview-connector-bridge);
@@ -14,24 +16,34 @@
 	padding-inline-end: var(--chat-horizontal-padding, var(--message-gutter));
 }
 
-/* Elbow connector from the gap above the card into its icon badge centre. */
+/*
+ * Elbow connector linking the origin message to this card. It is anchored to the
+ * whole message+card block (.messageThreadBlock) rather than to the card, so the
+ * vertical segment's height grows with the message: a single-line message, a
+ * wrapped/double-line message, and the taller mobile layout all stay connected
+ * instead of leaving a gap. The line starts beside the message avatar and lands
+ * on the card's icon badge; its horizontal placement matches the previous
+ * card-relative geometry exactly.
+ */
 .connector {
 	position: absolute;
 	box-sizing: border-box;
-	left: calc(
-		0.5 * var(--message-avatar-size) - 1px -
-		var(--chat-horizontal-padding, var(--message-gutter)) -
-		var(--message-avatar-size) -
-		var(--message-gutter)
-	);
-	--connector-elbow-y: calc(8px + 16px);
-	top: calc(-1 * var(--thread-preview-connector-bridge));
+	left: calc(0.5 * var(--message-avatar-size) - 1px);
+	top: calc(0.5 * var(--message-avatar-size));
+	/* Bottom lands on the icon badge's vertical centre: the badge sits 8px below
+	   the box's top with a 16px half-height (32px badge), + 1px border. */
+	bottom: 25px;
 	width: calc(0.5 * var(--message-avatar-size) + var(--message-gutter) - 6px);
-	height: calc(var(--connector-elbow-y) + var(--thread-preview-connector-bridge));
 	border-left: 2px solid var(--background-modifier-accent);
 	border-bottom: 2px solid var(--background-modifier-accent);
 	border-bottom-left-radius: 8px;
 	pointer-events: none;
+}
+
+/* The auto-close footer sits below the card box, pushing the icon badge further
+   up from the block's bottom edge; lower the elbow's landing point to match. */
+.connectorWithFooter {
+	bottom: 45px;
 }
 
 .stack {
