@@ -135,7 +135,7 @@ function formatCloseLabel(autoCloseAt: string | null, state: number | null): str
 	return relative ? `Closes ${relative} · ${absolute}` : `Closes ${absolute}`;
 }
 
-export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
+export const ThreadPreviewCard = observer(({message, inline = false}: {message: Message; inline?: boolean}) => {
 	const {i18n} = useLingui();
 	const threadId = message.threadId ?? null;
 	const guildId = Channels.getChannel(message.channelId)?.guildId ?? null;
@@ -178,8 +178,11 @@ export const ThreadPreviewCard = observer(({message}: {message: Message}) => {
 		return null;
 	}
 	return (
-		<div className={styles.container} data-flx="channel.thread-preview-card">
-			<div className={clsx(styles.connector, closeLabel && styles.connectorWithFooter)} aria-hidden="true" />
+		<div className={clsx(styles.container, inline && styles.containerInline)} data-flx="channel.thread-preview-card">
+			<div
+				className={clsx(styles.connector, inline && styles.connectorInline, closeLabel && styles.connectorWithFooter)}
+				aria-hidden="true"
+			/>
 			<div className={styles.stack}>
 				<button
 					type="button"

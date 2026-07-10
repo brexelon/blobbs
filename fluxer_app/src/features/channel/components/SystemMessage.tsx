@@ -22,6 +22,7 @@ export const SystemMessage = observer(
 		iconNode,
 		message,
 		messageContent,
+		belowContent,
 	}: {
 		icon?: Icon;
 		iconWeight?: 'bold' | 'fill';
@@ -29,6 +30,7 @@ export const SystemMessage = observer(
 		iconNode?: React.ReactNode;
 		message: Message;
 		messageContent: React.ReactNode;
+		belowContent?: React.ReactNode;
 	}) => {
 		const {i18n} = useLingui();
 		const renderedIcon =
@@ -80,9 +82,12 @@ export const SystemMessage = observer(
 						>
 							{messageContent}
 						</div>
-						{showReactions && (
+						{(belowContent || showReactions) && (
 							<div className={styles.container} data-flx="channel.system-message.container">
-								<MessageReactions message={message} data-flx="channel.system-message.message-reactions" />
+								{belowContent}
+								{showReactions && (
+									<MessageReactions message={message} data-flx="channel.system-message.message-reactions" />
+								)}
 							</div>
 						)}
 					</div>
@@ -108,9 +113,12 @@ export const SystemMessage = observer(
 						{formattedDate}
 					</TimestampWithTooltip>
 				</div>
-				{showReactions && (
+				{(belowContent || showReactions) && (
 					<div className={styles.container} data-flx="channel.system-message.container--2">
-						<MessageReactions message={message} data-flx="channel.system-message.message-reactions--2" />
+						{belowContent}
+						{showReactions && (
+							<MessageReactions message={message} data-flx="channel.system-message.message-reactions--2" />
+						)}
 					</div>
 				)}
 			</>
