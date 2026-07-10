@@ -46,8 +46,12 @@
 	   the box's top with a 16px half-height (32px badge), + 1px border. */
 	bottom: 25px;
 	width: calc(0.5 * var(--message-avatar-size) + var(--message-gutter) - 6px);
-	border-left: 2px solid var(--background-modifier-accent);
-	border-bottom: 2px solid var(--background-modifier-accent);
+	/* Match the thread system-message icon: it renders as the message's inherited
+	 * currentColor at --system-message-icon-opacity, and the connector inherits the
+	 * same colour from the message, so this keeps the two visually identical. */
+	border-left: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	opacity: var(--system-message-icon-opacity);
 	border-bottom-left-radius: 8px;
 	pointer-events: none;
 }
