@@ -251,13 +251,8 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 			</div>
 		</div>
 	);
-	if (inline) {
-		return card;
-	}
-	return (
-		<>
-			<ThreadPreviewConnector message={message} />
-			{card}
-		</>
-	);
+	// The connector is always rendered separately by the origin message (system or
+	// user) as a grid sibling so the message + card select as one message; the card
+	// itself only renders the box.
+	return card;
 });

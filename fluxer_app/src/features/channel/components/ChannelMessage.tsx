@@ -7,7 +7,6 @@ import {MessageActionBar, MessageActionBarCore} from '@app/features/channel/comp
 import {MessageActionBottomSheet} from '@app/features/channel/components/MessageActionBottomSheet';
 import {requestDeleteMessage} from '@app/features/channel/components/MessageActionUtils';
 import {MessageViewContextProvider} from '@app/features/channel/components/MessageViewContext';
-import {ThreadPreviewCard} from '@app/features/channel/components/ThreadPreviewCard';
 import type {Channel} from '@app/features/channel/models/Channel';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
 import {parse} from '@app/features/messaging/components/markdown/renderers';
@@ -868,11 +867,6 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		}),
 		[shouldApplySpacing, previewContext, messageGroupSpacing],
 	);
-	// A THREAD_CREATED system message renders its own preview card inline (inside
-	// the message, via SystemMessage's below-content slot) so the announcement and
-	// the card read and select as one message. Every other origin message shows the
-	// card as a sibling block beneath it.
-	const hasThreadPreview = message.threadId != null && message.type !== MessageTypes.THREAD_CREATED;
 	return (
 		<>
 			<div className={styles.messageThreadBlock} data-flx="channel.message.thread-block">
@@ -952,7 +946,6 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 						))}
 					</div>
 				</FocusRing>
-				{hasThreadPreview && <ThreadPreviewCard message={message} />}
 			</div>
 			{shouldShowBottomSheet && (
 				<MessageActionBottomSheet
