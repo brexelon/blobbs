@@ -86,7 +86,7 @@ const DELETE_THREAD_TITLE_DESCRIPTOR = msg({
 	comment: 'Title of the confirmation dialog shown before deleting a thread.',
 });
 const DELETE_THREAD_CONFIRM_DESCRIPTOR = msg({
-	message: 'Delete {threadName}? Can\'t be undone.',
+	message: 'Delete "{threadName}"? Can\'t be undone.',
 	comment: 'Body of the confirmation dialog shown before deleting a thread. {threadName} is inserted by code.',
 });
 const THREAD_JOINED_DESCRIPTOR = msg({
