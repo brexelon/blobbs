@@ -38,55 +38,55 @@ import {observer} from 'mobx-react-lite';
 const logger = new Logger('ThreadContextMenu');
 
 const GO_TO_THREAD_DESCRIPTOR = msg({
-	message: 'Go to Thread',
+	message: 'Go to thread',
 	comment: 'Thread context menu item that opens the thread in its full channel view.',
 });
 const JOIN_THREAD_DESCRIPTOR = msg({
-	message: 'Join Thread',
+	message: 'Join thread',
 	comment: 'Thread context menu item that adds the current user to the thread.',
 });
 const LEAVE_THREAD_DESCRIPTOR = msg({
-	message: 'Leave Thread',
+	message: 'Leave thread',
 	comment: 'Thread context menu item that removes the current user from the thread.',
 });
 const COPY_THREAD_LINK_DESCRIPTOR = msg({
-	message: 'Copy Thread Link',
+	message: 'Copy thread link',
 	comment: 'Thread context menu item that copies a deep link to the thread.',
 });
 const CLOSE_THREAD_DESCRIPTOR = msg({
-	message: 'Close Thread',
+	message: 'Close thread',
 	comment: 'Thread context menu item that closes an open thread (moderators only).',
 });
 const REOPEN_THREAD_DESCRIPTOR = msg({
-	message: 'Reopen Thread',
+	message: 'Reopen thread',
 	comment: 'Thread context menu item that reopens a closed thread (moderators only).',
 });
 const ARCHIVE_THREAD_DESCRIPTOR = msg({
-	message: 'Archive Thread',
+	message: 'Archive thread',
 	comment: 'Thread context menu item that archives a thread (moderators only).',
 });
 const UNARCHIVE_THREAD_DESCRIPTOR = msg({
-	message: 'Unarchive Thread',
+	message: 'Unarchive thread',
 	comment: 'Thread context menu item that unarchives a thread (moderators only).',
 });
 const EDIT_THREAD_DESCRIPTOR = msg({
-	message: 'Edit Thread',
+	message: 'Edit thread',
 	comment: 'Thread context menu item that opens the thread settings modal (moderators only).',
 });
 const DELETE_THREAD_DESCRIPTOR = msg({
-	message: 'Delete Thread',
+	message: 'Delete thread',
 	comment: 'Thread context menu item that permanently deletes a thread (moderators only).',
 });
 const COPY_THREAD_ID_DESCRIPTOR = msg({
-	message: 'Copy Thread ID',
+	message: 'Copy thread ID',
 	comment: 'Thread context menu item that copies the thread ID.',
 });
 const DELETE_THREAD_TITLE_DESCRIPTOR = msg({
-	message: 'Delete Thread',
+	message: 'Delete thread',
 	comment: 'Title of the confirmation dialog shown before deleting a thread.',
 });
 const DELETE_THREAD_CONFIRM_DESCRIPTOR = msg({
-	message: 'Are you sure you want to delete {threadName}? This cannot be undone.',
+	message: 'Delete {threadName}? Can\'t be undone.',
 	comment: 'Body of the confirmation dialog shown before deleting a thread. {threadName} is inserted by code.',
 });
 const THREAD_JOINED_DESCRIPTOR = msg({
