@@ -4,11 +4,14 @@ import {ConfirmModal} from '@app/features/app/components/dialogs/ConfirmModal';
 import type {ThreadStateAction} from '@app/features/channel/commands/ThreadCommands';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {ThreadSettingsModal} from '@app/features/channel/components/modals/ThreadSettingsModal';
+import {useDeleteMyMessagesInChannel} from '@app/features/channel/hooks/useDeleteMyMessagesInChannel';
 import Channels from '@app/features/channel/state/Channels';
 import Threads from '@app/features/channel/state/Threads';
+import {DELETE_MY_MESSAGES_DESCRIPTOR} from '@app/features/channel/utils/ChannelMessageDescriptors';
+import {buildChannelLink} from '@app/features/messaging/utils/MessageLinkUtils';
 import Permission from '@app/features/permissions/state/Permission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
-import {CopyIdIcon, DeleteIcon, EditIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
+import {CopyIdIcon, CopyLinkIcon, DeleteIcon, EditIcon, LeaveIcon} from '@app/features/ui/action_menu/ContextMenuIcons';
 import {
 	ChannelNotificationSettingsMenuItem,
 	MuteChannelMenuItem,
@@ -19,7 +22,6 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as TextCopyCommands from '@app/features/ui/commands/TextCopyCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
-import UserSettings from '@app/features/user/state/UserSettings';
 import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -47,6 +49,10 @@ const LEAVE_THREAD_DESCRIPTOR = msg({
 	message: 'Leave Thread',
 	comment: 'Thread context menu item that removes the current user from the thread.',
 });
+const COPY_THREAD_LINK_DESCRIPTOR = msg({
+	message: 'Copy Thread Link',
+	comment: 'Thread context menu item that copies a deep link to the thread.',
+});
 const CLOSE_THREAD_DESCRIPTOR = msg({
 	message: 'Close Thread',
 	comment: 'Thread context menu item that closes an open thread (moderators only).',
@@ -73,7 +79,7 @@ const DELETE_THREAD_DESCRIPTOR = msg({
 });
 const COPY_THREAD_ID_DESCRIPTOR = msg({
 	message: 'Copy Thread ID',
-	comment: 'Thread context menu item that copies the thread ID (shown only in developer mode).',
+	comment: 'Thread context menu item that copies the thread ID.',
 });
 const DELETE_THREAD_TITLE_DESCRIPTOR = msg({
 	message: 'Delete Thread',
@@ -124,6 +130,7 @@ export const ThreadContextMenu = observer(
 	}: ThreadContextMenuProps) => {
 		const {i18n} = useLingui();
 		const threadChannel = Channels.getChannel(threadId);
+		const deleteMyMessagesInChannel = useDeleteMyMessagesInChannel();
 		const canManage = Permission.can(Permissions.MANAGE_CHANNELS, {
 			channelId: parentChannelId,
 			guildId: guildId ?? undefined,
@@ -131,11 +138,6 @@ export const ThreadContextMenu = observer(
 		const isArchived = threadState === ThreadStates.ARCHIVED;
 		const isClosed = threadState === ThreadStates.CLOSED;
 		const isOpen = threadState === ThreadStates.OPEN;
-		const developerMode = UserSettings.developerMode;
-		const handleCopyId = () => {
-			TextCopyCommands.copy(i18n, threadId);
-			onClose();
-		};
 
 		const notifyFailure = (error: unknown, action: string) => {
 			logger.error(`Failed to ${action} thread ${threadId}:`, error);
@@ -171,6 +173,12 @@ export const ThreadContextMenu = observer(
 			}
 		};
 
+		const handleCopyLink = () => {
+			const link = buildChannelLink({guildId, channelId: threadId});
+			TextCopyCommands.copy(i18n, link);
+			onClose();
+		};
+
 		const handleStateChange = async (action: ThreadStateAction) => {
 			onClose();
 			try {
@@ -185,6 +193,16 @@ export const ThreadContextMenu = observer(
 		const handleEdit = () => {
 			onClose();
 			ModalCommands.push(modal(() => <ThreadSettingsModal threadId={threadId} />));
+		};
+
+		const handleCopyId = () => {
+			TextCopyCommands.copy(i18n, threadId);
+			onClose();
+		};
+
+		const handleDeleteMyMessages = () => {
+			onClose();
+			deleteMyMessagesInChannel(threadId);
 		};
 
 		const handleDelete = () => {
@@ -230,6 +248,15 @@ export const ThreadContextMenu = observer(
 							{i18n._(LEAVE_THREAD_DESCRIPTOR)}
 						</MenuItem>
 					)}
+				</MenuGroup>
+				<MenuGroup data-flx="channel.thread-context-menu.link-group">
+					<MenuItem
+						icon={<CopyLinkIcon size={16} />}
+						onClick={handleCopyLink}
+						data-flx="channel.thread-context-menu.copy-link"
+					>
+						{i18n._(COPY_THREAD_LINK_DESCRIPTOR)}
+					</MenuItem>
 				</MenuGroup>
 				{threadChannel != null && (
 					<MenuGroup data-flx="channel.thread-context-menu.notifications-group">
@@ -288,8 +315,17 @@ export const ThreadContextMenu = observer(
 						)}
 					</MenuGroup>
 				)}
-				{canManage && (
-					<MenuGroup data-flx="channel.thread-context-menu.danger-group">
+				<MenuGroup data-flx="channel.thread-context-menu.copy-id-group">
+					<MenuItem
+						icon={<CopyIdIcon size={16} />}
+						onClick={handleCopyId}
+						data-flx="channel.thread-context-menu.copy-id"
+					>
+						{i18n._(COPY_THREAD_ID_DESCRIPTOR)}
+					</MenuItem>
+				</MenuGroup>
+				<MenuGroup data-flx="channel.thread-context-menu.danger-group">
+					{canManage && (
 						<MenuItem
 							icon={<DeleteIcon size={16} />}
 							onClick={handleDelete}
@@ -298,19 +334,16 @@ export const ThreadContextMenu = observer(
 						>
 							{i18n._(DELETE_THREAD_DESCRIPTOR)}
 						</MenuItem>
-					</MenuGroup>
-				)}
-				{developerMode && (
-					<MenuGroup data-flx="channel.thread-context-menu.developer-group">
-						<MenuItem
-							icon={<CopyIdIcon size={16} />}
-							onClick={handleCopyId}
-							data-flx="channel.thread-context-menu.copy-id"
-						>
-							{i18n._(COPY_THREAD_ID_DESCRIPTOR)}
-						</MenuItem>
-					</MenuGroup>
-				)}
+					)}
+					<MenuItem
+						icon={<DeleteIcon size={16} />}
+						onClick={handleDeleteMyMessages}
+						danger
+						data-flx="channel.thread-context-menu.delete-my-messages"
+					>
+						{i18n._(DELETE_MY_MESSAGES_DESCRIPTOR)}
+					</MenuItem>
+				</MenuGroup>
 			</>
 		);
 	},

@@ -52,21 +52,16 @@
 	pointer-events: none;
 }
 
-/* Inline variant: anchored to the message article (.message) instead of the
-   sibling block, so the left offset must include the article's leading padding
-   column to keep the line under the avatar/thread icon. */
+/* Inline variant: the connector is rendered as an out-of-flow (absolutely
+   positioned) grid sibling of the system message's content and below-content
+   rows. It must NOT be given a grid placement (e.g. grid-area: container): a
+   placed abspos grid child is contained by that single cell, which collapses
+   the elbow's height. With no placement it is contained by the whole .message
+   article, so top/bottom span from the thread icon down to the card. The left
+   offset includes the article's leading padding column to keep the line under
+   the avatar/thread icon. */
 .connectorInline {
 	left: calc(var(--chat-horizontal-padding, var(--message-gutter)) + 0.5 * var(--message-avatar-size) - 1px);
-}
-
-/* Inline connector is rendered as a message-grid sibling (between the system
-   message text and the below-content container) rather than inside the preview
-   card. It shares the container grid row but stays out of flow via absolute
-   positioning; do not zero its box size or the elbow borders collapse away. */
-.connectorGridSlot {
-	grid-area: container;
-	align-self: start;
-	overflow: visible;
 }
 
 /* The auto-close footer sits below the card box, pushing the icon badge further

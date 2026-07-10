@@ -135,28 +135,21 @@ function formatCloseLabel(autoCloseAt: string | null, state: number | null): str
 	return relative ? `Closes ${relative} · ${absolute}` : `Closes ${absolute}`;
 }
 
-export const ThreadPreviewConnector = observer(
-	({message, inline = false}: {message: Message; inline?: boolean}) => {
-		const threadId = message.threadId ?? null;
-		const preview = useThreadPreview(message.channelId, threadId);
-		const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
-		if (!threadId) {
-			return null;
-		}
-		return (
-			<div
-				className={clsx(
-					styles.connector,
-					inline && styles.connectorInline,
-					inline && styles.connectorGridSlot,
-					closeLabel && styles.connectorWithFooter,
-				)}
-				aria-hidden="true"
-				data-flx="channel.thread-preview-card.connector"
-			/>
-		);
-	},
-);
+export const ThreadPreviewConnector = observer(({message, inline = false}: {message: Message; inline?: boolean}) => {
+	const threadId = message.threadId ?? null;
+	const preview = useThreadPreview(message.channelId, threadId);
+	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
+	if (!threadId) {
+		return null;
+	}
+	return (
+		<div
+			className={clsx(styles.connector, inline && styles.connectorInline, closeLabel && styles.connectorWithFooter)}
+			aria-hidden="true"
+			data-flx="channel.thread-preview-card.connector"
+		/>
+	);
+});
 
 export const ThreadPreviewCard = observer(({message, inline = false}: {message: Message; inline?: boolean}) => {
 	const {i18n} = useLingui();
