@@ -61,12 +61,11 @@
 
 /* Inline connector is rendered as a message-grid sibling (between the system
    message text and the below-content container) rather than inside the preview
-   card, so it shares the container row without affecting layout. */
+   card. It shares the container grid row but stays out of flow via absolute
+   positioning; do not zero its box size or the elbow borders collapse away. */
 .connectorGridSlot {
 	grid-area: container;
 	align-self: start;
-	height: 0;
-	width: 0;
 	overflow: visible;
 }
 
