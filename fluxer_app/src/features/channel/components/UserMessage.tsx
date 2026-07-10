@@ -19,6 +19,7 @@ import {MessageTimeoutIndicator} from '@app/features/channel/components/MessageT
 import {MessageUsername} from '@app/features/channel/components/MessageUsername';
 import {useMessageViewContext} from '@app/features/channel/components/MessageViewContext';
 import {ReplyPreview} from '@app/features/channel/components/ReplyPreview';
+import {ThreadPreviewCard, ThreadPreviewConnector} from '@app/features/channel/components/ThreadPreviewCard';
 import {TimestampWithTooltip} from '@app/features/channel/components/TimestampWithTooltip';
 import {createSystemMessage} from '@app/features/devtools/utils/CommandUtils';
 import Emoji from '@app/features/emoji/state/Emoji';
@@ -597,6 +598,12 @@ export const UserMessage = observer(() => {
 				<div className={styles.container} data-flx="channel.user-message.container--2">
 					<MessageAttachments data-flx="channel.user-message.message-attachments--2" />
 					{renderFailedFooter()}
+					{message.threadId != null && (
+						<>
+							<ThreadPreviewConnector message={message} inline />
+							<ThreadPreviewCard message={message} inline />
+						</>
+					)}
 				</div>
 			</SpoilerSyncProvider>
 		);
@@ -774,6 +781,12 @@ export const UserMessage = observer(() => {
 				)}
 				<MessageAttachments data-flx="channel.user-message.message-attachments--3" />
 				{renderFailedFooter()}
+				{message.threadId != null && (
+					<>
+						<ThreadPreviewConnector message={message} inline />
+						<ThreadPreviewCard message={message} inline />
+					</>
+				)}
 			</div>
 		</SpoilerSyncProvider>
 	);
