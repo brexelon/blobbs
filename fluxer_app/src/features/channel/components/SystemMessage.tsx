@@ -12,7 +12,7 @@ import type {Icon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {useMemo} from 'react';
+import {cloneElement, isValidElement, useMemo} from 'react';
 
 export const SystemMessage = observer(
 	({
@@ -22,6 +22,7 @@ export const SystemMessage = observer(
 		iconNode,
 		message,
 		messageContent,
+		betweenContentAndBelow,
 		belowContent,
 	}: {
 		icon?: Icon;
@@ -30,18 +31,29 @@ export const SystemMessage = observer(
 		iconNode?: React.ReactNode;
 		message: Message;
 		messageContent: React.ReactNode;
+		betweenContentAndBelow?: React.ReactNode;
 		belowContent?: React.ReactNode;
 	}) => {
 		const {i18n} = useLingui();
-		const renderedIcon =
-			iconNode ??
-			(Icon ? (
+		const renderedIcon = useMemo(() => {
+			if (iconNode) {
+				return isValidElement<{className?: string}>(iconNode)
+					? cloneElement(iconNode, {
+							className: clsx(styles.systemMessageIconSvg, iconNode.props.className, iconClassname),
+						})
+					: iconNode;
+			}
+			if (!Icon) {
+				return null;
+			}
+			return (
 				<Icon
 					weight={iconWeight ?? 'bold'}
 					className={clsx(styles.systemMessageIconSvg, iconClassname)}
 					data-flx="channel.system-message.system-message-icon-svg"
 				/>
-			) : null);
+			);
+		}, [Icon, iconClassname, iconNode, iconWeight]);
 		const messageDisplayCompact = UserSettings.getMessageDisplayCompact();
 		const reactions = useMessageReactionsSnapshot(message.id);
 		const formattedDate = useMemo(
@@ -82,6 +94,7 @@ export const SystemMessage = observer(
 						>
 							{messageContent}
 						</div>
+						{betweenContentAndBelow}
 						{(belowContent || showReactions) && (
 							<div className={styles.container} data-flx="channel.system-message.container">
 								{belowContent}
@@ -113,6 +126,7 @@ export const SystemMessage = observer(
 						{formattedDate}
 					</TimestampWithTooltip>
 				</div>
+				{betweenContentAndBelow}
 				{(belowContent || showReactions) && (
 					<div className={styles.container} data-flx="channel.system-message.container--2">
 						{belowContent}

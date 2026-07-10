@@ -49,7 +49,8 @@
 	/* The horizontal tick stops exactly at the row's left edge (8px from the
 	 * vertical line) so the connector never overlaps the selection box. */
 	width: 8px;
-	border-left: 2px solid var(--background-modifier-accent);
+	--thread-sidebar-connector-color: var(--text-tertiary-muted);
+	border-left: 2px solid var(--thread-sidebar-connector-color);
 	pointer-events: none;
 }
 
@@ -60,14 +61,14 @@
 	top: 50%;
 	width: 8px;
 	height: 2px;
-	background: var(--background-modifier-accent);
+	background: var(--thread-sidebar-connector-color);
 	transform: translateY(-1px);
 }
 
 .row:last-child .connector {
 	bottom: auto;
 	height: 50%;
-	border-bottom: 2px solid var(--background-modifier-accent);
+	border-bottom: 2px solid var(--thread-sidebar-connector-color);
 	border-bottom-left-radius: 6px;
 }
 
@@ -94,4 +95,10 @@
 .nameMuted {
 	color: var(--text-tertiary-muted);
 	opacity: 0.5;
+}
+
+:global(.theme-light) {
+	.connector {
+		--thread-sidebar-connector-color: var(--text-tertiary);
+	}
 }

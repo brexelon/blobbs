@@ -2,7 +2,7 @@
 
 import {SystemMessage} from '@app/features/channel/components/SystemMessage';
 import {SystemMessageUsername} from '@app/features/channel/components/SystemMessageUsername';
-import {ThreadPreviewCard} from '@app/features/channel/components/ThreadPreviewCard';
+import {ThreadPreviewCard, ThreadPreviewConnector} from '@app/features/channel/components/ThreadPreviewCard';
 import Channels from '@app/features/channel/state/Channels';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
 import {useSystemMessageData} from '@app/features/messaging/hooks/useSystemMessageData';
@@ -85,6 +85,7 @@ export const ThreadCreatedMessage = observer(({message}: ThreadCreatedMessagePro
 			iconNode={<ThreadIcon size={18} data-flx="channel.thread-created-message.thread-icon" />}
 			message={message}
 			messageContent={messageContent}
+			betweenContentAndBelow={threadId != null ? <ThreadPreviewConnector message={message} inline /> : null}
 			belowContent={threadId != null ? <ThreadPreviewCard message={message} inline /> : null}
 			data-flx="channel.thread-created-message.system-message"
 		/>
