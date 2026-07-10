@@ -51,7 +51,7 @@
 	 * same colour from the message, so this keeps the two visually identical. */
 	border-left: 2px solid currentColor;
 	border-bottom: 2px solid currentColor;
-	opacity: var(--system-message-icon-opacity);
+	opacity: 0.4;
 	border-bottom-left-radius: 8px;
 	pointer-events: none;
 }
