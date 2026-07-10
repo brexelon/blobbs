@@ -51,6 +51,9 @@
 	width: 8px;
 	--thread-sidebar-connector-color: var(--text-tertiary-muted);
 	border-left: 2px solid var(--thread-sidebar-connector-color);
+	/* A solid 2px line reads heavier than text at the same colour, so dim it
+	 * slightly to sit alongside the channel icons and names rather than above them. */
+	opacity: 0.6;
 	pointer-events: none;
 }
 
