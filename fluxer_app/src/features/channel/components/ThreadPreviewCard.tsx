@@ -17,6 +17,7 @@ import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
+import {getShortRelativeTime} from '@app/features/user/utils/DateFormatting';
 import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
@@ -36,6 +37,19 @@ const EDITED_DESCRIPTOR = msg({
 	message: '(edited)',
 	comment: 'Suffix shown after a thread preview message that was edited. Keep the parentheses.',
 });
+const SEE_THREAD_DESCRIPTOR = msg({
+	message: 'See thread',
+	comment: 'Shown next to a thread preview name when the thread has no messages yet, inviting the user to open it.',
+});
+const MESSAGE_COUNT_DESCRIPTOR = msg({
+	message: '{count, plural, one {# message} other {# messages}}',
+	comment: 'Message count shown next to a thread preview name. {count} is inserted by code.',
+});
+const MESSAGE_COUNT_MANY_DESCRIPTOR = msg({
+	message: '{count}+ messages',
+	comment:
+		'Message count shown next to a thread preview name when more messages exist than are loaded. {count} is inserted by code.',
+});
 
 // A short tail of recent messages is enough to keep the preview live: the newest
 // is shown, and the couple behind it let a deletion fall back to the prior one.
@@ -46,6 +60,13 @@ interface ThreadPreviewData {
 	autoCloseAt: string | null;
 	state: number | null;
 	lastMessage: Message | null;
+}
+
+interface ThreadPreviewResult extends ThreadPreviewData {
+	// Loaded-message count once the store has the thread's page (null until then),
+	// with hasMoreMessages set when older messages exist beyond the loaded window.
+	messageCount: number | null;
+	hasMoreMessages: boolean;
 }
 
 /**
@@ -59,7 +80,7 @@ interface ThreadPreviewData {
  * an app refresh. A one-shot fetch seeds the row until the store is ready and
  * covers threads the viewer cannot load messages for.
  */
-function useThreadPreview(parentChannelId: string, threadId: string | null): ThreadPreviewData {
+function useThreadPreview(parentChannelId: string, threadId: string | null): ThreadPreviewResult {
 	const [data, setData] = useState<ThreadPreviewData>({
 		name: null,
 		autoCloseAt: null,
@@ -119,7 +140,9 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 			cancelled = true;
 		};
 	}, [parentChannelId, threadId, liveLastMessageId]);
-	return {...data, lastMessage: storeReady ? storeLast : data.lastMessage};
+	const messageCount = storeReady ? (storeCollection?.length ?? 0) : null;
+	const hasMoreMessages = storeReady ? (storeCollection?.hasMoreBefore ?? false) : false;
+	return {...data, lastMessage: storeReady ? storeLast : data.lastMessage, messageCount, hasMoreMessages};
 }
 
 function formatCloseLabel(autoCloseAt: string | null, state: number | null): string | null {
@@ -179,6 +202,13 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 	const threadName = storeThread?.threadMetadata?.name ?? storeThread?.name ?? preview.name ?? message.threadName ?? '';
 	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
 	const lastMessage = preview.lastMessage;
+	const messageCount = preview.messageCount;
+	const countLabel =
+		messageCount == null || messageCount === 0
+			? i18n._(SEE_THREAD_DESCRIPTOR)
+			: preview.hasMoreMessages
+				? i18n._(MESSAGE_COUNT_MANY_DESCRIPTOR, {count: messageCount})
+				: i18n._(MESSAGE_COUNT_DESCRIPTOR, {count: messageCount});
 	// While the card is visible, take ephemeral access to the thread's live traffic
 	// (like the sidebar preview does) so edits and deletions — which never bump
 	// lastMessageId — stream into the store and refresh the row. This is needed even
@@ -231,7 +261,10 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 						<ThreadIcon size={14} className={styles.icon} data-flx="channel.thread-preview-card.icon" />
 					</span>
 					<div className={styles.body}>
-						<div className={styles.name}>{threadName}</div>
+						<div className={styles.nameLine}>
+							<span className={styles.name}>{threadName}</span>
+							<span className={styles.messageCount}>• {countLabel}</span>
+						</div>
 						<div className={styles.lastMessage}>
 							{lastMessage ? (
 								<>
@@ -246,6 +279,7 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 									{lastMessage.editedTimestamp && (
 										<span className={styles.lastEdited}>{i18n._(EDITED_DESCRIPTOR)}</span>
 									)}
+									<span className={styles.lastTime}>{getShortRelativeTime(lastMessage.timestamp)}</span>
 								</>
 							) : (
 								<span className={styles.lastContent}>{i18n._(NO_MESSAGES_YET_DESCRIPTOR)}</span>

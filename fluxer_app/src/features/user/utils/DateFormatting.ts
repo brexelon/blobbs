@@ -94,3 +94,43 @@ export function getFormattedDateTimeWithSeconds(timestamp: number | Date | strin
 	const hour12 = shouldUse12HourFormat(locale);
 	return getFormattedDateTimeWithSecondsBase(timestamp, locale, hour12);
 }
+
+/**
+ * Compact, localized relative time in the "3h ago" / "1d ago" style (narrow
+ * units). Picks the largest sensible unit and renders it via
+ * Intl.RelativeTimeFormat; anything under ~45s collapses to "now".
+ */
+export function getShortRelativeTime(timestamp: number | Date | string): string {
+	const then = new Date(timestamp).getTime();
+	if (Number.isNaN(then)) {
+		return '';
+	}
+	const locale = getCurrentLocale();
+	const diffMs = then - Date.now();
+	const absSec = Math.abs(diffMs) / 1000;
+	if (absSec < 45) {
+		return new Intl.RelativeTimeFormat(locale, {numeric: 'auto', style: 'narrow'}).format(0, 'second');
+	}
+	const rtf = new Intl.RelativeTimeFormat(locale, {numeric: 'always', style: 'narrow'});
+	const minutes = diffMs / 60_000;
+	if (Math.abs(minutes) < 45) {
+		return rtf.format(Math.round(minutes), 'minute');
+	}
+	const hours = diffMs / 3_600_000;
+	if (Math.abs(hours) < 22) {
+		return rtf.format(Math.round(hours), 'hour');
+	}
+	const days = diffMs / 86_400_000;
+	if (Math.abs(days) < 6) {
+		return rtf.format(Math.round(days), 'day');
+	}
+	const weeks = days / 7;
+	if (Math.abs(weeks) < 4) {
+		return rtf.format(Math.round(weeks), 'week');
+	}
+	const months = days / 30;
+	if (Math.abs(months) < 12) {
+		return rtf.format(Math.round(months), 'month');
+	}
+	return rtf.format(Math.round(days / 365), 'year');
+}
