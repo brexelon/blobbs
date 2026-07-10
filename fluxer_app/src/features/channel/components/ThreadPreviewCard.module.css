@@ -149,14 +149,14 @@
 	min-width: 0;
 }
 
-/* Discord-style message count beside the thread name: non-bold and in the thread
-   accent colour, falling back to "See thread" when the thread has no messages. */
+/* Message count beside the thread name: non-bold and in a neutral muted colour,
+   falling back to "See thread" when the thread has no messages. */
 .messageCount {
 	flex-shrink: 0;
 	font-weight: 400;
 	font-size: 14px;
 	white-space: nowrap;
-	color: var(--brand-primary, var(--accent-primary, #5865f2));
+	color: var(--text-muted);
 }
 
 .lastMessage {
