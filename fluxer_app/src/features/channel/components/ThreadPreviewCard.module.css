@@ -149,14 +149,15 @@
 	min-width: 0;
 }
 
-/* Message count beside the thread name: non-bold and in a neutral muted colour,
-   falling back to "See thread" when the thread has no messages. */
+/* Message count beside the thread name: non-bold and in a dim neutral colour so
+   it reads as secondary to the name, falling back to "See thread" when the
+   thread has no messages. */
 .messageCount {
 	flex-shrink: 0;
 	font-weight: 400;
 	font-size: 14px;
 	white-space: nowrap;
-	color: var(--text-muted);
+	color: var(--text-tertiary-muted);
 }
 
 .lastMessage {
