@@ -4,6 +4,7 @@ import Channels from '@app/features/channel/state/Channels';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import type {Message as MessageModel} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
+import {Logger} from '@app/features/platform/utils/AppLogger';
 import {resolveReadStateEntryStatus} from '@app/features/read_state/state/read_states/ReadStateEntryStatusMachine';
 import {resolveReadStateMention} from '@app/features/read_state/state/read_states/ReadStateMentionMachine';
 import {compareMessageIds, normalizeCount, snowflakeTimestamp} from '@app/features/read_state/state/read_states/shared';
@@ -12,6 +13,9 @@ import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import Users from '@app/features/user/state/Users';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
+
+// TEMP DM-mention diagnostic logger; remove with the debug logging below.
+const dmMentionDebugLogger = new Logger('ReadStateEntry');
 
 export class ReadStateEntry {
 	readonly channelId: string;
@@ -207,6 +211,7 @@ export class ReadStateEntry {
 		} = {},
 	): void {
 		const previousUnreadCount = this._unreadCount;
+		const debugPreviousMentionCount = this._mentionCount;
 		if (ackMessageId !== undefined) {
 			this.ackMessageId = ackMessageId;
 			this.readStateKnown = true;
@@ -281,6 +286,15 @@ export class ReadStateEntry {
 			this.unreadCount = loadedUnreadCount;
 		}
 		this.oldestUnreadMessageId = hasUnreadBoundary ? (this._oldestUnreadMessageId ?? oldestUnread) : null;
+		// TEMP DM-mention diagnostic: rebuild() writes mentionCount directly (bypassing
+		// ReadStates.setMentionCount), recounting mentions from loaded messages. Log when
+		// a private (DM) recompute changes the count so we can see if this path leaves a
+		// stale mention on an otherwise-read DM. Remove once the DM mention bug is fixed.
+		if (recomputeMentions && this.isPrivate && this._mentionCount !== debugPreviousMentionCount) {
+			dmMentionDebugLogger.info(
+				`[dm-mention-debug] rebuild channel=${this.channelId} ${debugPreviousMentionCount}->${this._mentionCount} ack=${this._ackMessageId ?? 'null'} last=${this._lastMessageId ?? 'null'} loadedUnread=${loadedUnreadCount} estimated=${this.estimated}`,
+			);
+		}
 	}
 
 	shouldMentionFor(message: MessageModel | WireMessage, userId: string, isPrivate: boolean): boolean {
