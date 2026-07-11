@@ -138,6 +138,22 @@ class ReadStates {
 		return serverMentionCount;
 	}
 
+	private reconcileSamePositionMentionCount(state: ReadStateEntry, serverMentionCount: number): number {
+		// A MESSAGE_ACK that does not advance the ack (the acked message equals the current
+		// ack). Here the client's own recordUnread tally is authoritative for every message
+		// received since the ack. The server's count can be ahead of us — it includes
+		// messages it knows about but has not yet delivered to this client, which arrive
+		// separately via MESSAGE_CREATE and are counted by recordUnread. Letting the server
+		// value raise the local count therefore pre-counts those messages and double-counts
+		// them on delivery, so the DM badge reads one too high per message. Never let it
+		// increase the count; only allow it to lower (e.g. a read on another device) and
+		// honor the read invariant.
+		if (!state.hasUnread()) {
+			return 0;
+		}
+		return Math.min(serverMentionCount, state.mentionCount);
+	}
+
 	private refreshUnreadEstimate(state: ReadStateEntry): void {
 		if (!state.hasUnread()) {
 			state.estimated = false;
@@ -724,7 +740,7 @@ class ReadStates {
 				state.readStateKnown = true;
 				state.serverVersion = action.version ?? state.serverVersion;
 				if (decision.shouldUpdateMentionCount && mentionCount != null) {
-					this.setMentionCount(state, this.reconcileServerMentionCount(state, mentionCount));
+					this.setMentionCount(state, this.reconcileSamePositionMentionCount(state, mentionCount));
 				}
 				if (decision.shouldRefreshUnreadEstimate) {
 					this.refreshUnreadEstimate(state);
