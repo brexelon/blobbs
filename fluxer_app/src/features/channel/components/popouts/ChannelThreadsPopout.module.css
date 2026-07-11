@@ -158,6 +158,12 @@
 	font-weight: 600;
 }
 
+/* Closed threads drop the explicit badge and are signalled by a slightly dimmer
+   (still bold) name instead. */
+.nameClosed {
+	color: var(--text-primary-muted);
+}
+
 .badge {
 	flex-shrink: 0;
 	padding: 0.0625rem 0.375rem;

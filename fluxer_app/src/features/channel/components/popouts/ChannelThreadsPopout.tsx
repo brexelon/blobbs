@@ -29,6 +29,7 @@ import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {DotsThreeIcon, MagnifyingGlassIcon} from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useEffect, useMemo, useState} from 'react';
@@ -82,10 +83,6 @@ const JOINED_THREADS_DESCRIPTOR = msg({
 const OTHER_THREADS_DESCRIPTOR = msg({
 	message: '{count} Other Threads',
 	comment: 'Section label above the list of threads the user has not joined. {count} is inserted by code.',
-});
-const CLOSED_DESCRIPTOR = msg({
-	message: 'Closed',
-	comment: 'Badge marking a thread whose lifecycle state is closed.',
 });
 const ARCHIVED_DESCRIPTOR = msg({
 	message: 'Archived',
@@ -220,12 +217,11 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		const authorColor = lastMessage
 			? GuildMembers.getMember(channel.guildId ?? '', lastMessage.author.id)?.getColorString()
 			: undefined;
-		const badge =
-			state === ThreadStates.ARCHIVED
-				? i18n._(ARCHIVED_DESCRIPTOR)
-				: state === ThreadStates.CLOSED
-					? i18n._(CLOSED_DESCRIPTOR)
-					: null;
+		// Archived threads keep an explicit badge; closed ones are conveyed by dimming
+		// the (bold) name instead of a label, since a closed thread reopens on the next
+		// message and doesn't need calling out as prominently.
+		const badge = state === ThreadStates.ARCHIVED ? i18n._(ARCHIVED_DESCRIPTOR) : null;
+		const isClosed = state === ThreadStates.CLOSED;
 		const relative = lastActiveRelative(thread, lastMessage);
 		return (
 			<div
@@ -245,7 +241,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 			>
 				<div className={styles.content} data-flx="channel.channel-threads-popout.content">
 					<div className={styles.nameLine} data-flx="channel.channel-threads-popout.name-line">
-						<span className={styles.name}>{name}</span>
+						<span className={clsx(styles.name, isClosed && styles.nameClosed)}>{name}</span>
 						{badge && <span className={styles.badge}>{badge}</span>}
 					</div>
 					<div className={styles.meta} data-flx="channel.channel-threads-popout.meta">

@@ -18,14 +18,12 @@ import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {getShortRelativeTime} from '@app/features/user/utils/DateFormatting';
-import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {CaretRightIcon, ClockIcon} from '@phosphor-icons/react';
+import {CaretRightIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
-import {DateTime} from 'luxon';
 import {observer} from 'mobx-react-lite';
 import {useEffect, useState} from 'react';
 
@@ -145,19 +143,6 @@ function useThreadPreview(parentChannelId: string, threadId: string | null): Thr
 	return {...data, lastMessage: storeReady ? storeLast : data.lastMessage, messageCount, hasMoreMessages};
 }
 
-function formatCloseLabel(autoCloseAt: string | null, state: number | null): string | null {
-	if (state === ThreadStates.ARCHIVED || !autoCloseAt) {
-		return null;
-	}
-	const closeTime = DateTime.fromISO(autoCloseAt);
-	if (!closeTime.isValid) {
-		return null;
-	}
-	const relative = closeTime.toRelative();
-	const absolute = closeTime.toLocaleString(DateTime.DATE_MED);
-	return relative ? `Closes ${relative} · ${absolute}` : `Closes ${absolute}`;
-}
-
 export const ThreadPreviewConnector = observer(
 	({
 		message,
@@ -171,19 +156,12 @@ export const ThreadPreviewConnector = observer(
 		avatarSized?: boolean;
 	}) => {
 		const threadId = message.threadId ?? null;
-		const preview = useThreadPreview(message.channelId, threadId);
-		const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
 		if (!threadId) {
 			return null;
 		}
 		return (
 			<div
-				className={clsx(
-					styles.connector,
-					inline && styles.connectorInline,
-					avatarSized && styles.connectorAvatarSized,
-					closeLabel && styles.connectorWithFooter,
-				)}
+				className={clsx(styles.connector, inline && styles.connectorInline, avatarSized && styles.connectorAvatarSized)}
 				aria-hidden="true"
 				data-flx="channel.thread-preview-card.connector"
 			/>
@@ -200,7 +178,6 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 	// Prefer the live store name so a rename (THREAD_UPDATE) reflects immediately;
 	// the fetched metadata and the origin message's snapshot are only fallbacks.
 	const threadName = storeThread?.threadMetadata?.name ?? storeThread?.name ?? preview.name ?? message.threadName ?? '';
-	const closeLabel = formatCloseLabel(preview.autoCloseAt, preview.state);
 	const lastMessage = preview.lastMessage;
 	const messageCount = preview.messageCount;
 	const countLabel =
@@ -293,12 +270,6 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 						data-flx="channel.thread-preview-card.caret"
 					/>
 				</button>
-				{closeLabel && (
-					<div className={styles.footer} data-flx="channel.thread-preview-card.footer">
-						<ClockIcon size={13} data-flx="channel.thread-preview-card.footer-icon" />
-						<span>{closeLabel}</span>
-					</div>
-				)}
 			</div>
 		</div>
 	);
