@@ -324,6 +324,8 @@ function generateGuildTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE),
 			makePermissionEntry(i18n, Permissions.CREATE_THREADS),
+			makePermissionEntry(i18n, Permissions.SEND_MESSAGES_IN_THREADS),
+			makePermissionEntry(i18n, Permissions.MANAGE_THREADS),
 		],
 	};
 }
@@ -400,6 +402,8 @@ export function generateChannelTextPermissionSpec(i18n: I18n): PermissionSpec {
 			makePermissionEntry(i18n, Permissions.ADD_REACTIONS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.BYPASS_SLOWMODE, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.CREATE_THREADS, {scope: 'channel'}),
+			makePermissionEntry(i18n, Permissions.SEND_MESSAGES_IN_THREADS, {scope: 'channel'}),
+			makePermissionEntry(i18n, Permissions.MANAGE_THREADS, {scope: 'channel'}),
 		],
 	};
 }

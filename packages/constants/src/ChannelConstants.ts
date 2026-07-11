@@ -199,7 +199,9 @@ export const Permissions = {
 	MANAGE_ROLES: 1n << 28n,
 	MANAGE_WEBHOOKS: 1n << 29n,
 	MANAGE_EXPRESSIONS: 1n << 30n,
+	MANAGE_THREADS: 1n << 34n,
 	USE_EXTERNAL_STICKERS: 1n << 37n,
+	SEND_MESSAGES_IN_THREADS: 1n << 38n,
 	MODERATE_MEMBERS: 1n << 40n,
 	CREATE_EXPRESSIONS: 1n << 43n,
 	PIN_MESSAGES: 1n << 51n,
@@ -239,7 +241,9 @@ export const PermissionsDescriptions: Record<keyof typeof Permissions, string> =
 	MANAGE_ROLES: 'Allows management and editing of roles',
 	MANAGE_WEBHOOKS: 'Allows management and editing of webhooks',
 	MANAGE_EXPRESSIONS: 'Allows management of guild expressions',
+	MANAGE_THREADS: 'Allows editing, closing, archiving, and deleting threads',
 	USE_EXTERNAL_STICKERS: 'Allows using stickers from other guilds',
+	SEND_MESSAGES_IN_THREADS: 'Allows sending messages in threads',
 	MODERATE_MEMBERS: 'Allows timing out users',
 	CREATE_EXPRESSIONS: 'Allows creating guild expressions',
 	PIN_MESSAGES: 'Allows pinning messages',
@@ -265,7 +269,8 @@ export const DEFAULT_PERMISSIONS =
 	Permissions.CHANGE_NICKNAME |
 	Permissions.USE_EXTERNAL_STICKERS |
 	Permissions.VIEW_CHANNEL_MEMBERS |
-	Permissions.CREATE_THREADS;
+	Permissions.CREATE_THREADS |
+	Permissions.SEND_MESSAGES_IN_THREADS;
 export const ElevatedPermissions =
 	Permissions.KICK_MEMBERS |
 	Permissions.BAN_MEMBERS |
@@ -274,7 +279,18 @@ export const ElevatedPermissions =
 	Permissions.MANAGE_GUILD |
 	Permissions.MANAGE_ROLES |
 	Permissions.MANAGE_MESSAGES |
+	Permissions.MANAGE_THREADS |
 	Permissions.MANAGE_WEBHOOKS |
 	Permissions.MANAGE_EXPRESSIONS |
 	Permissions.MODERATE_MEMBERS;
 export const CHANNEL_REINDEX_AFTER_TIMESTAMP = 1779557400;
+
+/**
+ * The permission that gates sending messages in a channel. Threads gate on
+ * SEND_MESSAGES_IN_THREADS so a member can be allowed to talk in regular text/
+ * voice channels while being restricted from threads (and vice versa); every
+ * other channel type uses SEND_MESSAGES.
+ */
+export function getSendMessagesPermission(channelType: number): bigint {
+	return channelType === ChannelTypes.GUILD_THREAD ? Permissions.SEND_MESSAGES_IN_THREADS : Permissions.SEND_MESSAGES;
+}

@@ -131,7 +131,7 @@ export const ThreadContextMenu = observer(
 		const {i18n} = useLingui();
 		const threadChannel = Channels.getChannel(threadId);
 		const deleteMyMessagesInChannel = useDeleteMyMessagesInChannel();
-		const canManage = Permission.can(Permissions.MANAGE_CHANNELS, {
+		const canManage = Permission.can(Permissions.MANAGE_THREADS, {
 			channelId: parentChannelId,
 			guildId: guildId ?? undefined,
 		});
