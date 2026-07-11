@@ -79,6 +79,26 @@
 	display: none;
 }
 
+/* Unread pill in the far-left channel-list column, matching a text channel's
+ * unread indicator. The thread row is indented 30px and a channel's pill rests
+ * ~4px from the list's left edge, so pull the pill back to that same column
+ * (4px − 30px = −26px) rather than letting it sit under the thread's indent. */
+.unreadIndicator {
+	position: absolute;
+	top: 50%;
+	left: -26px;
+	transform: translateY(-50%);
+	height: 0.5rem;
+	width: 0.5rem;
+	border-radius: 0 624.9375rem 624.9375rem 0;
+	background-color: var(--text-primary);
+	pointer-events: none;
+}
+
+.unreadIndicatorMuted {
+	opacity: 0.4;
+}
+
 .name {
 	flex: 1 1 auto;
 	overflow: hidden;
