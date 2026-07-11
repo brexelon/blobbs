@@ -161,6 +161,17 @@ class GuildReadState {
 	}
 
 	private recomputeChannels(guildId: string | null, channelIds: Array<ChannelId>): boolean {
+		// The private (DM) bucket is otherwise updated two different ways: the read-state
+		// reaction runs the authoritative full recomputeAll(null), while direct
+		// handleGenericUpdate calls land here and mutate the live observable state in
+		// place. Mixing an in-place mutation with the full-replace path lets a DM's
+		// mentions be counted twice in the aggregate under some orderings (the badge
+		// reads e.g. 2 for the first message), and only corrects on refresh — which runs
+		// recomputeAll. Route DMs through that same authoritative recompute here so the
+		// live aggregate always matches the refreshed value. Guild buckets are unaffected.
+		if (guildId == null) {
+			return this.recomputeAll(null);
+		}
 		const id = guildId ?? PRIVATE_CHANNEL_SENTINEL;
 		const state = this.getOrCreate(id);
 		const previousUnread = state.unread.get();
