@@ -118,18 +118,24 @@ class ReadStates {
 		}
 	}
 
-	private setMentionCount(state: ReadStateEntry, mentionCount: number, source?: string): void {
-		// TEMP DM-mention diagnostic: log every mention-count transition on a private
-		// (DM) channel together with its call-site so we can pinpoint where a stale
-		// mention count is written to an otherwise fully-read DM. Remove once the DM
-		// mention off-by-one is fixed.
-		if (state.isPrivate && state.mentionCount !== mentionCount) {
-			logger.info(
-				`[dm-mention-debug] setMentionCount channel=${state.channelId} ${state.mentionCount}->${mentionCount} source=${source ?? 'unknown'} ack=${state.ackMessageId ?? 'null'} last=${state.lastMessageId ?? 'null'} readStateKnown=${state.readStateKnown}`,
-			);
-		}
+	private setMentionCount(state: ReadStateEntry, mentionCount: number): void {
 		state.mentionCount = mentionCount;
 		this.refreshMentionChannel(state.channelId);
+	}
+
+	private reconcileServerMentionCount(state: ReadStateEntry, serverMentionCount: number): number {
+		// A server MESSAGE_ACK reports the mention count for the acked position, which can
+		// include messages the server knows about but has not yet delivered to this client.
+		// Those messages arrive separately via MESSAGE_CREATE and are counted by
+		// recordUnread. If the channel is fully read locally (ack >= last), honoring a
+		// positive server count both violates the read invariant (fully read => no
+		// mentions) and double-counts those messages once they arrive, so the aggregate DM
+		// badge reads one too high until a refresh. Clamp to 0 in that case; recordUnread
+		// will count the real mentions as the messages come in.
+		if (!state.hasUnread()) {
+			return 0;
+		}
+		return serverMentionCount;
 	}
 
 	private refreshUnreadEstimate(state: ReadStateEntry): void {
@@ -371,7 +377,7 @@ class ReadStates {
 				channelsWithReadState.add(readState.id as ChannelId);
 				const state = this.get(readState.id);
 				state.readStateKnown = true;
-				this.setMentionCount(state, readState.mention_count ?? 0, 'handleConnectionOpen.readState');
+				this.setMentionCount(state, readState.mention_count ?? 0);
 				state.ackMessageId = readState.last_message_id ?? null;
 				state.ackPinTimestamp = parseTimestamp(readState.last_pin_timestamp);
 				state.serverVersion = readState.version ?? null;
@@ -383,7 +389,7 @@ class ReadStates {
 				state.lastPinTimestamp = parseTimestamp(channel.last_pin_timestamp);
 				state._guildId = channel.guild_id ?? null;
 				if (!channelsWithReadState.has(channel.id as ChannelId)) {
-					this.setMentionCount(state, 0, 'handleConnectionOpen.channelNoReadState');
+					this.setMentionCount(state, 0);
 				}
 				this.refreshUnreadEstimate(state);
 			}
@@ -494,7 +500,7 @@ class ReadStates {
 				}
 				state.unreadCount++;
 				if (currentUser != null && state.shouldMentionFor(action.message, currentUser.id, state.isPrivate)) {
-					this.setMentionCount(state, state.mentionCount + 1, `recordUnread.msg=${action.message.id}`);
+					this.setMentionCount(state, state.mentionCount + 1);
 				}
 				this.notifyChange(action.channelId);
 				return;
@@ -534,7 +540,7 @@ class ReadStates {
 			// otherwise a stale mention count survives (e.g. a DM re-seeded on
 			// reconnect keeps its old count and the next message counts on top of it,
 			// making the aggregate DM badge read one too high until a refresh).
-			this.setMentionCount(state, 0, 'handleChannelCreate.dmAck');
+			this.setMentionCount(state, 0);
 		} else if (GUILD_TEXT_BASED_CHANNEL_TYPES.has(action.channel.type) && state.hasUnread()) {
 			this.refreshUnreadEstimate(state);
 		}
@@ -706,7 +712,7 @@ class ReadStates {
 				this.cancelPendingAck(action.channelId);
 				AutoAck.disableForChannel(action.channelId);
 				if (mentionCount != null) {
-					this.setMentionCount(state, mentionCount, `handleMessageAck.applyManualAck.msg=${action.messageId}`);
+					this.setMentionCount(state, this.reconcileServerMentionCount(state, mentionCount));
 				}
 				this.notifyChange(action.channelId);
 				return;
@@ -718,7 +724,7 @@ class ReadStates {
 				state.readStateKnown = true;
 				state.serverVersion = action.version ?? state.serverVersion;
 				if (decision.shouldUpdateMentionCount && mentionCount != null) {
-					this.setMentionCount(state, mentionCount, `handleMessageAck.refreshCurrentAck.msg=${action.messageId}`);
+					this.setMentionCount(state, this.reconcileServerMentionCount(state, mentionCount));
 				}
 				if (decision.shouldRefreshUnreadEstimate) {
 					this.refreshUnreadEstimate(state);
@@ -735,7 +741,7 @@ class ReadStates {
 					return;
 				}
 				if (decision.shouldUpdateMentionCount && mentionCount != null) {
-					this.setMentionCount(state, mentionCount, `handleMessageAck.advanceAck.msg=${action.messageId}`);
+					this.setMentionCount(state, this.reconcileServerMentionCount(state, mentionCount));
 				}
 				state.serverVersion = action.version ?? state.serverVersion;
 				this.cancelPendingAckIfCovered(action.channelId, action.messageId);
@@ -805,7 +811,7 @@ class ReadStates {
 		}
 		state.estimated = false;
 		state.unreadCount = 0;
-		this.setMentionCount(state, 0, `applyAck.msg=${decision.messageId}`);
+		this.setMentionCount(state, 0);
 		state.readStateKnown = true;
 		state.ackMessageId = decision.messageId;
 		state.oldestUnreadMessageId = null;
@@ -1014,7 +1020,7 @@ class ReadStates {
 				state.readStateKnown = true;
 				state.ackMessageId = null;
 				state.serverVersion = readState.version ?? state.serverVersion;
-				this.setMentionCount(state, readState.mention_count ?? 0, 'readStateBundle.noLastMessage');
+				this.setMentionCount(state, readState.mention_count ?? 0);
 				state.rebuild(null, {recomputeMentions: manual});
 				this.refreshUnreadEstimate(state);
 				this.notifyChange(readState.id);
