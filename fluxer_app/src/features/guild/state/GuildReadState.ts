@@ -11,7 +11,7 @@ import ReadStates from '@app/features/read_state/state/ReadStates';
 import AdvancedSettings from '@app/features/user/state/AdvancedSettings';
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import {ME} from '@fluxer/constants/src/AppConstants';
-import {GUILD_TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, GUILD_TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
 import type {ChannelId, GuildId} from '@fluxer/schema/src/branded/WireIds';
 import {makeAutoObservable, observable, reaction, runInAction} from 'mobx';
 
@@ -47,7 +47,15 @@ type ContributeChannel = {
 
 function isChannelMutedForUnread(channel: ContributeChannel): boolean {
 	if (channel.isPrivate()) return false;
-	return UserGuildSettings.isGuildOrCategoryOrChannelMuted(channel.guildId ?? null, channel.id);
+	if (UserGuildSettings.isGuildOrCategoryOrChannelMuted(channel.guildId ?? null, channel.id)) {
+		return true;
+	}
+	// A thread inherits its parent channel's mute: muting a channel silences its
+	// threads too, matching the sidebar (which hides a muted channel's threads).
+	if (channel.type === ChannelTypes.GUILD_THREAD && channel.parentId) {
+		return UserGuildSettings.isGuildOrCategoryOrChannelMuted(channel.guildId ?? null, channel.parentId);
+	}
+	return false;
 }
 
 function resolveUnreadBadgesLevel(channel: ContributeChannel): number | null {
@@ -281,7 +289,10 @@ class GuildReadState {
 			if (isGuildMuted && skipIfMuted) {
 				return false;
 			}
-			const channels = Channels.getGuildChannels(guildId);
+			// Threads are not in the flat channel list, so fold them in here as well:
+			// an unread (or mentioning) thread should roll up to the community badge
+			// exactly like the channel it lives under.
+			const channels = [...Channels.getGuildChannels(guildId), ...Channels.getGuildThreads(guildId)];
 			for (const channel of channels) {
 				const contribution = getChannelContribution(channel, channel.id);
 				if (contribution.mentionAllowed) {

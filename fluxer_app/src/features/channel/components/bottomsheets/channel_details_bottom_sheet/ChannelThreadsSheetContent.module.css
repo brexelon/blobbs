@@ -1,0 +1,101 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem 1.5rem;
+}
+
+.stateMessage {
+	padding: 2rem 1rem;
+	text-align: center;
+	color: var(--text-primary-muted);
+	font-size: 0.875rem;
+}
+
+.createButton,
+.row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	width: 100%;
+	padding: 0.875rem 1rem;
+	border: none;
+	border-radius: 0.75rem;
+	background: var(--background-secondary);
+	color: var(--text-primary);
+	cursor: pointer;
+	text-align: left;
+}
+
+.createButton:active,
+.row:active {
+	background: var(--background-modifier-hover);
+}
+
+.createIcon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 1.75rem;
+	height: 1.75rem;
+	color: var(--text-primary-muted);
+}
+
+.createLabel {
+	flex: 1 1 auto;
+	font-size: 1rem;
+	font-weight: 700;
+}
+
+.sectionLabel {
+	padding: 0.75rem 0.25rem 0.125rem;
+	color: var(--text-primary-muted);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+.rowBody {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1875rem;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.rowName {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.rowMeta {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-primary-muted);
+	font-size: 0.8125rem;
+	line-height: 1.3;
+}
+
+.rowMetaAuthor {
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.rowMetaTime {
+	color: var(--text-primary-muted);
+	white-space: nowrap;
+}
+
+.rowCaret {
+	flex-shrink: 0;
+	color: var(--text-primary-muted);
+}

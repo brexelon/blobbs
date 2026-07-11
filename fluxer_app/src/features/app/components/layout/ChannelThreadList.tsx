@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import Accessibility from '@app/features/accessibility/state/Accessibility';
 import styles from '@app/features/app/components/layout/ChannelThreadList.module.css';
+import {getChannelUnreadState} from '@app/features/app/components/layout/utils/ChannelUnreadState';
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import Threads from '@app/features/channel/state/Threads';
 import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
@@ -8,7 +10,7 @@ import ReadStates from '@app/features/read_state/state/ReadStates';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import {MentionBadge} from '@app/features/ui/components/MentionBadge';
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
-import {ThreadStates} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, ThreadStates} from '@fluxer/constants/src/ChannelConstants';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
@@ -84,16 +86,29 @@ const ThreadRow = observer(
 			},
 			[guildId, parentChannelId, threadId, name, state],
 		);
-		// Colour the thread name like a text channel: unread brightens to primary, a
-		// muted thread stays dimmed even when unread, and everything else rests at the
-		// muted colour. A thread has its own channel id, so its read state is direct.
+		// Resolve the thread's read state exactly like a text channel: unread brightens
+		// the name, a muted thread stays dimmed, and the far-left unread pill mirrors the
+		// channel list. A thread has its own channel id, so its read state is direct.
 		const isMuted = UserGuildSettings.isChannelMuted(guildId, threadId);
-		const hasUnread = ReadStates.getUnreadCount(threadId) > 0;
+		const unreadCount = ReadStates.getUnreadCount(threadId);
 		const mentionCount = ReadStates.getMentionCount(threadId);
-		const showMentionBadge = !isSelected && mentionCount > 0;
+		const unreadBadgesLevel = UserGuildSettings.resolvedUnreadBadgesLevel({
+			id: threadId,
+			guildId,
+			parentId: parentChannelId,
+			type: ChannelTypes.GUILD_THREAD,
+		});
+		const unreadState = getChannelUnreadState({
+			unreadCount,
+			mentionCount,
+			isMuted,
+			showFadedUnreadOnMutedChannels: Accessibility.showFadedUnreadOnMutedChannels,
+			unreadBadgesLevel,
+		});
+		const showMentionBadge = !isSelected && unreadState.hasMentions;
 		const nameClassName = clsx(
 			styles.name,
-			!isSelected && (isMuted ? styles.nameMuted : hasUnread && styles.nameUnread),
+			!isSelected && (isMuted ? styles.nameMuted : unreadState.hasUnreadMessages && styles.nameUnread),
 		);
 		return (
 			<button
@@ -103,6 +118,13 @@ const ThreadRow = observer(
 				onContextMenu={handleContextMenu}
 				data-flx="app.channel-thread-list.row"
 			>
+				{!isSelected && unreadState.shouldShowUnreadIndicator && (
+					<span
+						className={clsx(styles.unreadIndicator, unreadState.isUnreadIndicatorMuted && styles.unreadIndicatorMuted)}
+						aria-hidden="true"
+						data-flx="app.channel-thread-list.unread-indicator"
+					/>
+				)}
 				<span className={styles.connector} aria-hidden="true" />
 				<span className={nameClassName}>{name}</span>
 				{showMentionBadge && (

@@ -49,16 +49,27 @@ class Channels {
 
 	get channelGroups(): {
 		readonly byGuild: ReadonlyMap<string, ReadonlyArray<Channel>>;
+		readonly threadsByGuild: ReadonlyMap<string, ReadonlyArray<Channel>>;
 		readonly dms: ReadonlyArray<Channel>;
 		readonly privateChannels: ReadonlyArray<Channel>;
 	} {
 		const byGuild = new Map<string, Array<Channel>>();
+		const threadsByGuild = new Map<string, Array<Channel>>();
 		const dms: Array<Channel> = [];
 		const privateChannels: Array<Channel> = [];
 		for (const channel of this.channelsById.values()) {
 			if (channel.type === ChannelTypes.GUILD_THREAD) {
 				// Threads are rendered nested under their parent via the Threads store,
-				// never in the flat guild channel list (and never counted like channels).
+				// never in the flat guild channel list — but they are tracked here per
+				// guild so their unread/mention state can roll up to the community badge.
+				if (channel.guildId) {
+					let list = threadsByGuild.get(channel.guildId);
+					if (!list) {
+						list = [];
+						threadsByGuild.set(channel.guildId, list);
+					}
+					list.push(channel);
+				}
 				continue;
 			}
 			if (channel.guildId) {
@@ -77,7 +88,7 @@ class Channels {
 			list.sort(ChannelUtils.compareChannels);
 		}
 		dms.sort(sortDMs);
-		return {byGuild, dms, privateChannels};
+		return {byGuild, threadsByGuild, dms, privateChannels};
 	}
 
 	get dmChannels(): ReadonlyArray<Channel> {
@@ -90,6 +101,10 @@ class Channels {
 
 	getGuildChannels(guildId: string): ReadonlyArray<Channel> {
 		return this.channelGroups.byGuild.get(guildId) ?? EMPTY_CHANNELS;
+	}
+
+	getGuildThreads(guildId: string): ReadonlyArray<Channel> {
+		return this.channelGroups.threadsByGuild.get(guildId) ?? EMPTY_CHANNELS;
 	}
 
 	getPrivateChannels(): ReadonlyArray<Channel> {
