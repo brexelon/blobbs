@@ -5,9 +5,9 @@ import {SystemMessageUsername} from '@app/features/channel/components/SystemMess
 import {ThreadPreviewCard, ThreadPreviewConnector} from '@app/features/channel/components/ThreadPreviewCard';
 import Channels from '@app/features/channel/state/Channels';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
+import {openThreadFullView} from '@app/features/channel/utils/ThreadNavigationUtils';
 import {useSystemMessageData} from '@app/features/messaging/hooks/useSystemMessageData';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
-import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
 import styles from '@app/features/theme/styles/Message.module.css';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
@@ -29,9 +29,9 @@ export const ThreadCreatedMessage = observer(({message}: ThreadCreatedMessagePro
 	const threadName = threadChannel?.threadMetadata?.name ?? threadChannel?.name ?? message.threadName ?? '';
 	const openThread = useCallback(() => {
 		if (threadId && channel?.guildId) {
-			selectChannel(channel.guildId, threadId);
+			void openThreadFullView({guildId: channel.guildId, threadId, parentChannelId: message.channelId});
 		}
-	}, [threadId, channel?.guildId]);
+	}, [threadId, channel?.guildId, message.channelId]);
 	const openThreads = useCallback(() => {
 		ComponentDispatch.dispatch('CHANNEL_THREADS_OPEN');
 	}, []);

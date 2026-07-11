@@ -6,13 +6,13 @@ import styles from '@app/features/channel/components/ThreadPreviewCard.module.cs
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {openThreadContextMenu} from '@app/features/channel/utils/ThreadContextMenuUtils';
+import {openThreadFullView} from '@app/features/channel/utils/ThreadNavigationUtils';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {getMessagePreviewText} from '@app/features/messaging/utils/MessagePreviewText';
-import {selectChannel} from '@app/features/navigation/commands/NavigationCommands';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {Avatar} from '@app/features/ui/components/Avatar';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
@@ -209,7 +209,7 @@ export const ThreadPreviewCard = observer(({message, inline = false}: {message: 
 		// layout has no room for a side panel, so fall back to the full view there.
 		// Opening the thread from the channel sidebar always routes to the full view.
 		if (MobileLayout.enabled) {
-			selectChannel(guildId, threadId);
+			void openThreadFullView({guildId, threadId, parentChannelId: message.channelId});
 			return;
 		}
 		ThreadSidebar.toggle(threadId, message.channelId);

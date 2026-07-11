@@ -50,6 +50,7 @@ import {
 	USER_ID_COPIED_TO_CLIPBOARD_DESCRIPTOR,
 } from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelDetailsBottomSheetShared';
 import {ChannelInfoHeader} from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelInfoHeader';
+import {ChannelThreadsSheetContent} from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelThreadsSheetContent';
 import {DMMembersList} from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/DMMembersList';
 import {MoreOptionsSheet} from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/MoreOptionsSheet';
 import {NotificationSettingsSheet} from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/NotificationSettingsSheet';
@@ -105,6 +106,7 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as TextCopyCommands from '@app/features/ui/commands/TextCopyCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
+import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {Scroller} from '@app/features/ui/components/Scroller';
 import * as Sheet from '@app/features/ui/sheet/Sheet';
 import {getNextTabIndex, getTabNavigationDirection} from '@app/features/ui/tabs/TabKeyboardNavigation';
@@ -123,7 +125,6 @@ import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
-const CHANNEL_DETAILS_TAB_ORDER: ReadonlyArray<ChannelDetailsTab> = ['members', 'pins'];
 export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps> = observer(
 	({isOpen, onClose, channel, initialTab = 'members'}) => {
 		const {i18n} = useLingui();
@@ -173,8 +174,16 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 		const isGroupDM = channel.type === ChannelTypes.GROUP_DM;
 		const membersTabId = `channel-details-${channel.id}-members-tab`;
 		const pinsTabId = `channel-details-${channel.id}-pins-tab`;
+		const threadsTabId = `channel-details-${channel.id}-threads-tab`;
 		const membersPanelId = `channel-details-${channel.id}-members-panel`;
 		const pinsPanelId = `channel-details-${channel.id}-pins-panel`;
+		const threadsPanelId = `channel-details-${channel.id}-threads-panel`;
+		// Threads only exist under guild text channels, so the tab is scoped to them.
+		const showThreadsTab = isGuildChannel && channel.type === ChannelTypes.GUILD_TEXT;
+		const tabOrder = useMemo<ReadonlyArray<ChannelDetailsTab>>(
+			() => (showThreadsTab ? ['members', 'pins', 'threads'] : ['members', 'pins']),
+			[showThreadsTab],
+		);
 		const developerMode = UserSettings.developerMode;
 		const moreOptionsTitle = (() => {
 			if (isGroupDM) return i18n._(GROUP_SETTINGS_DESCRIPTOR);
@@ -187,20 +196,16 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 			(event: React.KeyboardEvent<HTMLButtonElement>) => {
 				const direction = getTabNavigationDirection(event.key, 'horizontal');
 				if (!direction) return;
-				const nextIndex = getNextTabIndex(
-					CHANNEL_DETAILS_TAB_ORDER.indexOf(activeTab),
-					CHANNEL_DETAILS_TAB_ORDER.length,
-					direction,
-				);
-				const nextTab = nextIndex == null ? null : (CHANNEL_DETAILS_TAB_ORDER[nextIndex] ?? null);
+				const nextIndex = getNextTabIndex(tabOrder.indexOf(activeTab), tabOrder.length, direction);
+				const nextTab = nextIndex == null ? null : (tabOrder[nextIndex] ?? null);
 				if (!nextTab) return;
 				event.preventDefault();
 				event.stopPropagation();
 				setActiveTab(nextTab);
-				const targetId = nextTab === 'members' ? membersTabId : pinsTabId;
+				const targetId = nextTab === 'members' ? membersTabId : nextTab === 'pins' ? pinsTabId : threadsTabId;
 				requestAnimationFrame(() => document.getElementById(targetId)?.focus());
 			},
-			[activeTab, membersTabId, pinsTabId],
+			[activeTab, membersTabId, pinsTabId, threadsTabId, tabOrder],
 		);
 		const handleMarkAsRead = useCallback(() => {
 			ReadStateCommands.ack(channel.id, true, true);
@@ -610,6 +615,28 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 									/>
 									<Trans>Pins</Trans>
 								</button>
+								{showThreadsTab && (
+									<button
+										id={threadsTabId}
+										type="button"
+										role="tab"
+										aria-selected={activeTab === 'threads'}
+										aria-controls={threadsPanelId}
+										tabIndex={activeTab === 'threads' ? 0 : -1}
+										onClick={() => setActiveTab('threads')}
+										onKeyDown={handleTabKeyDown}
+										className={`${styles.tabButton} ${activeTab === 'threads' ? styles.tabButtonActive : styles.tabButtonInactive}`}
+										style={activeTab === 'threads' ? {borderBottomColor: 'var(--brand-primary-light)'} : undefined}
+										data-flx="channel.channel-details-bottom-sheet.tab-button.set-active-tab--3"
+									>
+										<ThreadIcon
+											className={styles.tabIcon}
+											aria-hidden="true"
+											data-flx="channel.channel-details-bottom-sheet.tab-icon--3"
+										/>
+										<Trans>Threads</Trans>
+									</button>
+								)}
 							</div>
 							<div className={styles.contentArea} data-flx="channel.channel-details-bottom-sheet.content-area">
 								{activeTab === 'members' && (
@@ -653,6 +680,20 @@ export const ChannelDetailsBottomSheet: React.FC<ChannelDetailsBottomSheetProps>
 											channel={channel}
 											onJump={onClose}
 											data-flx="channel.channel-details-bottom-sheet.channel-pins-content"
+										/>
+									</div>
+								)}
+								{showThreadsTab && activeTab === 'threads' && (
+									<div
+										id={threadsPanelId}
+										role="tabpanel"
+										aria-labelledby={threadsTabId}
+										data-flx="channel.channel-details-bottom-sheet.threads-tab-content"
+									>
+										<ChannelThreadsSheetContent
+											channel={channel}
+											onClose={onClose}
+											data-flx="channel.channel-details-bottom-sheet.channel-threads-sheet-content"
 										/>
 									</div>
 								)}
