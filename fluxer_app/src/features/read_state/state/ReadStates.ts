@@ -444,15 +444,6 @@ class ReadStates {
 			ackMessageId: state.ackMessageId,
 			previousLastMessageId,
 		});
-		// TEMP DM-mention diagnostic: logs every incoming message on a private (DM)
-		// channel so we can see whether a single message reaches this handler twice
-		// (duplicate dispatch) or the decision/ack is unexpected. Remove once the DM
-		// mention double-count is fixed.
-		if (state.isPrivate) {
-			logger.info(
-				`[dm-mention-debug] incoming channel=${action.channelId} msg=${action.message.id} author=${action.message.author.id} decision=${decision.type} prevLast=${previousLastMessageId ?? 'null'} ack=${state.ackMessageId ?? 'null'} mentionCount(before)=${state.mentionCount}`,
-			);
-		}
 		switch (decision.type) {
 			case 'ackCurrentUserMessage':
 				this.cancelPendingAck(action.channelId);
@@ -495,12 +486,6 @@ class ReadStates {
 				state.unreadCount++;
 				if (currentUser != null && state.shouldMentionFor(action.message, currentUser.id, state.isPrivate)) {
 					this.setMentionCount(state, state.mentionCount + 1);
-					// TEMP DM-mention diagnostic (remove with the block above).
-					if (state.isPrivate) {
-						logger.info(
-							`[dm-mention-debug] recordUnread incremented channel=${action.channelId} msg=${action.message.id} -> mentionCount=${state.mentionCount}`,
-						);
-					}
 				}
 				this.notifyChange(action.channelId);
 				return;
@@ -534,6 +519,13 @@ class ReadStates {
 		) {
 			state.readStateKnown = true;
 			state.ackMessageId = action.channel.last_message_id;
+			// Acking to the last message means the conversation is read up to the
+			// latest, so there are no unread mentions. This direct ack bypasses
+			// applyAck (which clears the mention count), so clear it here too —
+			// otherwise a stale mention count survives (e.g. a DM re-seeded on
+			// reconnect keeps its old count and the next message counts on top of it,
+			// making the aggregate DM badge read one too high until a refresh).
+			this.setMentionCount(state, 0);
 		} else if (GUILD_TEXT_BASED_CHANNEL_TYPES.has(action.channel.type) && state.hasUnread()) {
 			this.refreshUnreadEstimate(state);
 		}
