@@ -699,12 +699,15 @@ export class ThreadOperationsService {
 	 *   - lock:   locked but still open — only Manage Threads may send.
 	 *   - close:  manual close — closed AND locked, reopens only via moderator.
 	 *   - auto-close (sweep, not here): closed but unlocked, reopens on next message.
+	 *
+	 * Reopening only changes the open/closed state and deliberately preserves the
+	 * lock flag: a manually closed (and therefore locked) thread stays locked when
+	 * reopened, so it must be unlocked separately.
 	 */
 	private applyStateAction(row: ChannelRow, action: ThreadUpdateRequest['action']): void {
 		switch (action) {
 			case 'open':
 				row.thread_state = ThreadStates.OPEN;
-				row.thread_locked = false;
 				return;
 			case 'close':
 				row.thread_state = ThreadStates.CLOSED;
