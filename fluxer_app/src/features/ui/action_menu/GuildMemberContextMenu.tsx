@@ -167,14 +167,14 @@ export const GuildMemberContextMenu: React.FC<GuildMemberContextMenuProps> = obs
 				)),
 			);
 		}, [guildId, user, onClose]);
-		// In a thread, a moderator with Manage Channels in the parent can remove a
+		// In a thread, a moderator with Manage Threads in the parent can remove a
 		// member. This is distinct from a server kick and is gated on the parent.
 		const threadParentChannelId = channel?.type === ChannelTypes.GUILD_THREAD ? (channel.parentId ?? channelId) : null;
 		const canRemoveFromThread =
 			channel?.type === ChannelTypes.GUILD_THREAD &&
 			!isCurrentUser &&
 			threadParentChannelId != null &&
-			Permission.can(Permissions.MANAGE_CHANNELS, {guildId, channelId: threadParentChannelId});
+			Permission.can(Permissions.MANAGE_THREADS, {guildId, channelId: threadParentChannelId});
 		const handleRemoveFromThread = useCallback(() => {
 			if (!channelId) {
 				return;
