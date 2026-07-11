@@ -444,6 +444,15 @@ class ReadStates {
 			ackMessageId: state.ackMessageId,
 			previousLastMessageId,
 		});
+		// TEMP DM-mention diagnostic: logs every incoming message on a private (DM)
+		// channel so we can see whether a single message reaches this handler twice
+		// (duplicate dispatch) or the decision/ack is unexpected. Remove once the DM
+		// mention double-count is fixed.
+		if (state.isPrivate) {
+			logger.info(
+				`[dm-mention-debug] incoming channel=${action.channelId} msg=${action.message.id} author=${action.message.author.id} decision=${decision.type} prevLast=${previousLastMessageId ?? 'null'} ack=${state.ackMessageId ?? 'null'} mentionCount(before)=${state.mentionCount}`,
+			);
+		}
 		switch (decision.type) {
 			case 'ackCurrentUserMessage':
 				this.cancelPendingAck(action.channelId);
@@ -486,6 +495,12 @@ class ReadStates {
 				state.unreadCount++;
 				if (currentUser != null && state.shouldMentionFor(action.message, currentUser.id, state.isPrivate)) {
 					this.setMentionCount(state, state.mentionCount + 1);
+					// TEMP DM-mention diagnostic (remove with the block above).
+					if (state.isPrivate) {
+						logger.info(
+							`[dm-mention-debug] recordUnread incremented channel=${action.channelId} msg=${action.message.id} -> mentionCount=${state.mentionCount}`,
+						);
+					}
 				}
 				this.notifyChange(action.channelId);
 				return;
