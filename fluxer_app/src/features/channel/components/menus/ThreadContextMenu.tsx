@@ -26,12 +26,12 @@ import {Permissions, ThreadStates} from '@fluxer/constants/src/ChannelConstants'
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {
-	ArchiveIcon,
 	ArrowSquareOutIcon,
 	LockSimpleIcon,
 	LockSimpleOpenIcon,
 	SignInIcon,
 	TrayArrowUpIcon,
+	XCircleIcon,
 } from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 
@@ -58,16 +58,17 @@ const CLOSE_THREAD_DESCRIPTOR = msg({
 	comment: 'Thread context menu item that closes an open thread (moderators only).',
 });
 const REOPEN_THREAD_DESCRIPTOR = msg({
-	message: 'Reopen thread',
+	message: 'Open thread',
 	comment: 'Thread context menu item that reopens a closed thread (moderators only).',
 });
-const ARCHIVE_THREAD_DESCRIPTOR = msg({
-	message: 'Archive thread',
-	comment: 'Thread context menu item that archives a thread (moderators only).',
+const LOCK_THREAD_DESCRIPTOR = msg({
+	message: 'Lock thread',
+	comment: 'Thread context menu item that locks a thread so only moderators can send messages (moderators only).',
 });
-const UNARCHIVE_THREAD_DESCRIPTOR = msg({
-	message: 'Unarchive thread',
-	comment: 'Thread context menu item that unarchives a thread (moderators only).',
+const UNLOCK_THREAD_DESCRIPTOR = msg({
+	message: 'Unlock thread',
+	comment:
+		'Thread context menu item that unlocks a locked thread so everyone can send messages again (moderators only).',
 });
 const EDIT_THREAD_DESCRIPTOR = msg({
 	message: 'Edit thread',
@@ -135,9 +136,9 @@ export const ThreadContextMenu = observer(
 			channelId: parentChannelId,
 			guildId: guildId ?? undefined,
 		});
-		const isArchived = threadState === ThreadStates.ARCHIVED;
 		const isClosed = threadState === ThreadStates.CLOSED;
 		const isOpen = threadState === ThreadStates.OPEN;
+		const isLocked = threadChannel?.threadMetadata?.locked ?? false;
 
 		const notifyFailure = (error: unknown, action: string) => {
 			logger.error(`Failed to ${action} thread ${threadId}:`, error);
@@ -238,12 +239,12 @@ export const ThreadContextMenu = observer(
 					>
 						{i18n._(GO_TO_THREAD_DESCRIPTOR)}
 					</MenuItem>
-					{!isJoined && !isArchived && (
+					{!isJoined && (
 						<MenuItem icon={<SignInIcon size={16} />} onClick={handleJoin} data-flx="channel.thread-context-menu.join">
 							{i18n._(JOIN_THREAD_DESCRIPTOR)}
 						</MenuItem>
 					)}
-					{isJoined && !isArchived && (
+					{isJoined && (
 						<MenuItem icon={<LeaveIcon size={16} />} onClick={handleLeave} data-flx="channel.thread-context-menu.leave">
 							{i18n._(LEAVE_THREAD_DESCRIPTOR)}
 						</MenuItem>
@@ -279,7 +280,7 @@ export const ThreadContextMenu = observer(
 						</MenuItem>
 						{isOpen && (
 							<MenuItem
-								icon={<LockSimpleIcon size={16} />}
+								icon={<XCircleIcon size={16} />}
 								onClick={() => handleStateChange('close')}
 								data-flx="channel.thread-context-menu.close"
 							>
@@ -288,29 +289,29 @@ export const ThreadContextMenu = observer(
 						)}
 						{isClosed && (
 							<MenuItem
-								icon={<LockSimpleOpenIcon size={16} />}
+								icon={<TrayArrowUpIcon size={16} />}
 								onClick={() => handleStateChange('open')}
 								data-flx="channel.thread-context-menu.reopen"
 							>
 								{i18n._(REOPEN_THREAD_DESCRIPTOR)}
 							</MenuItem>
 						)}
-						{!isArchived && (
+						{isOpen && !isLocked && (
 							<MenuItem
-								icon={<ArchiveIcon size={16} />}
-								onClick={() => handleStateChange('archive')}
-								data-flx="channel.thread-context-menu.archive"
+								icon={<LockSimpleIcon size={16} />}
+								onClick={() => handleStateChange('lock')}
+								data-flx="channel.thread-context-menu.lock"
 							>
-								{i18n._(ARCHIVE_THREAD_DESCRIPTOR)}
+								{i18n._(LOCK_THREAD_DESCRIPTOR)}
 							</MenuItem>
 						)}
-						{isArchived && (
+						{isOpen && isLocked && (
 							<MenuItem
-								icon={<TrayArrowUpIcon size={16} />}
-								onClick={() => handleStateChange('unarchive')}
-								data-flx="channel.thread-context-menu.unarchive"
+								icon={<LockSimpleOpenIcon size={16} />}
+								onClick={() => handleStateChange('unlock')}
+								data-flx="channel.thread-context-menu.unlock"
 							>
-								{i18n._(UNARCHIVE_THREAD_DESCRIPTOR)}
+								{i18n._(UNLOCK_THREAD_DESCRIPTOR)}
 							</MenuItem>
 						)}
 					</MenuGroup>

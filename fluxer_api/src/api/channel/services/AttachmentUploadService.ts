@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {getSendMessagesPermission, Permissions, TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
+import {
+	ChannelTypes,
+	getSendMessagesPermission,
+	Permissions,
+	TEXT_BASED_CHANNEL_TYPES,
+} from '@fluxer/constants/src/ChannelConstants';
 import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
 import {
 	ATTACHMENT_MAX_SIZE_BOT,
@@ -405,6 +410,11 @@ export class AttachmentUploadService {
 		}
 		if (guild) {
 			await checkPermission(getSendMessagesPermission(channel.type) | Permissions.ATTACH_FILES);
+			// A locked thread only accepts messages (and their attachments) from members
+			// who can manage it.
+			if (channel.type === ChannelTypes.GUILD_THREAD && channel.threadLocked) {
+				await checkPermission(Permissions.MANAGE_THREADS);
+			}
 			assertGuildMemberCanCommunicate(member);
 		}
 		const user = await this.userRepository.findUnique(userId);

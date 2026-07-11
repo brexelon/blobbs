@@ -301,6 +301,7 @@ export class Channel {
 		// copy kept in the store until a full resync.
 		if (this.threadMetadata?.name !== other.threadMetadata?.name) return false;
 		if (this.threadMetadata?.state !== other.threadMetadata?.state) return false;
+		if (this.threadMetadata?.locked !== other.threadMetadata?.locked) return false;
 		if (this.threadMetadata?.auto_close_duration_seconds !== other.threadMetadata?.auto_close_duration_seconds) {
 			return false;
 		}

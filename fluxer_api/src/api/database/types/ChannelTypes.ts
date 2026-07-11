@@ -48,6 +48,7 @@ export interface ChannelRow {
 	thread_creator_id?: Nullish<UserID>;
 	thread_creator_name?: Nullish<string>;
 	thread_state?: Nullish<number>;
+	thread_locked?: Nullish<boolean>;
 	thread_auto_close_duration_seconds?: Nullish<number>;
 	thread_auto_close_at?: Nullish<Date>;
 	thread_origin_message_id?: Nullish<MessageID>;
@@ -143,6 +144,7 @@ export const CHANNEL_COLUMNS = [
 	'thread_creator_id',
 	'thread_creator_name',
 	'thread_state',
+	'thread_locked',
 	'thread_auto_close_duration_seconds',
 	'thread_auto_close_at',
 	'thread_origin_message_id',

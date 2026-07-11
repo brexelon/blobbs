@@ -36,6 +36,7 @@ export class Channel {
 	readonly threadCreatorId: UserID | null;
 	readonly threadCreatorName: string | null;
 	readonly threadState: number | null;
+	readonly threadLocked: boolean;
 	readonly threadAutoCloseDurationSeconds: number | null;
 	readonly threadAutoCloseAt: Date | null;
 	readonly threadOriginMessageId: MessageID | null;
@@ -80,6 +81,7 @@ export class Channel {
 		this.threadCreatorId = row.thread_creator_id ?? null;
 		this.threadCreatorName = row.thread_creator_name ?? null;
 		this.threadState = row.thread_state ?? null;
+		this.threadLocked = row.thread_locked ?? false;
 		this.threadAutoCloseDurationSeconds = row.thread_auto_close_duration_seconds ?? null;
 		this.threadAutoCloseAt = row.thread_auto_close_at ?? null;
 		this.threadOriginMessageId = row.thread_origin_message_id ?? null;
@@ -127,6 +129,7 @@ export class Channel {
 			thread_creator_id: this.threadCreatorId,
 			thread_creator_name: this.threadCreatorName,
 			thread_state: this.threadState,
+			thread_locked: this.threadLocked,
 			thread_auto_close_duration_seconds: this.threadAutoCloseDurationSeconds,
 			thread_auto_close_at: this.threadAutoCloseAt,
 			thread_origin_message_id: this.threadOriginMessageId,
