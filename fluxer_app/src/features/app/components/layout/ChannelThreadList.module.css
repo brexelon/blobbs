@@ -86,7 +86,7 @@
 .unreadIndicator {
 	position: absolute;
 	top: 50%;
-	left: -26px;
+	left: -34px;
 	transform: translateY(-50%);
 	height: 0.5rem;
 	width: 0.5rem;
