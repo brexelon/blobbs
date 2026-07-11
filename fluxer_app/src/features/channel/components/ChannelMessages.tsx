@@ -44,7 +44,7 @@ import type {User} from '@app/features/user/models/User';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
 import Window from '@app/features/window/state/Window';
-import {Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {getSendMessagesPermission, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MAX_MESSAGES_PER_CHANNEL} from '@fluxer/constants/src/LimitConstants';
 import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
@@ -76,7 +76,7 @@ const MESSAGES_FAILED_TO_LOAD_DESCRIPTOR = msg({
 });
 
 function checkPermissions(channel: Channel) {
-	const canSendMessages = Permission.can(Permissions.SEND_MESSAGES, channel);
+	const canSendMessages = Permission.can(getSendMessagesPermission(channel.type), channel);
 	const passesVerification = channel.isPrivate() || GuildVerification.canAccessGuild(channel.guildId || '');
 	const canChat = channel.isPrivate() || (canSendMessages && passesVerification);
 	const canAttachFiles = channel.isPrivate() ? canChat : canChat && Permission.can(Permissions.ATTACH_FILES, channel);

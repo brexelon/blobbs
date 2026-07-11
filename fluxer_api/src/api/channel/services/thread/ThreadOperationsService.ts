@@ -385,7 +385,7 @@ export class ThreadOperationsService {
 
 	/**
 	 * Moderator action: remove another member from a thread. Requires Manage
-	 * Channels in the parent channel. Announces the removal with a system message
+	 * Threads in the parent channel. Announces the removal with a system message
 	 * in the thread ("X removed Y from the thread") so it reads like the group DM
 	 * recipient-removal notice.
 	 */
@@ -401,7 +401,7 @@ export class ThreadOperationsService {
 			userId: moderatorUserId,
 			channelId: thread.parentId ?? threadId,
 		});
-		await auth.checkPermission(Permissions.MANAGE_CHANNELS);
+		await auth.checkPermission(Permissions.MANAGE_THREADS);
 		if (!(await this.threadRepository.isMember(threadId, targetUserId))) {
 			return;
 		}
@@ -433,7 +433,7 @@ export class ThreadOperationsService {
 		const thread = await this.loadThread(threadId);
 		const guildId = thread.guildId!;
 		const auth = await this.authService.getChannelAuthenticated({userId, channelId: thread.parentId ?? threadId});
-		await auth.checkPermission(Permissions.MANAGE_CHANNELS);
+		await auth.checkPermission(Permissions.MANAGE_THREADS);
 		const row = thread.toRow();
 		if (data.action) {
 			const nextState = this.resolveStateTransition(thread.threadState ?? ThreadStates.OPEN, data.action);
@@ -519,7 +519,7 @@ export class ThreadOperationsService {
 		const thread = await this.loadThread(threadId);
 		const guildId = thread.guildId!;
 		const auth = await this.authService.getChannelAuthenticated({userId, channelId: thread.parentId ?? threadId});
-		await auth.checkPermission(Permissions.MANAGE_CHANNELS);
+		await auth.checkPermission(Permissions.MANAGE_THREADS);
 		await this.channelRepository.delete(threadId, guildId);
 		if (thread.parentId != null) {
 			await this.threadRepository.removeFromParentIndex(thread.parentId, threadId);

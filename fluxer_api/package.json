@@ -8,7 +8,9 @@
 		"dev": "tsx watch --clear-screen=false src/AppEntrypoint.ts",
 		"start": "tsx src/AppEntrypoint.ts",
 		"start:worker": "tsx src/WorkerEntrypoint.ts",
-		"backfill:create-threads": "tsx src/scripts/BackfillCreateThreadsPermission.ts"
+		"backfill:create-threads": "tsx src/scripts/BackfillCreateThreadsPermission.ts",
+		"backfill:send-messages-in-threads": "tsx src/scripts/BackfillSendMessagesInThreadsPermission.ts",
+		"backfill:manage-threads": "tsx src/scripts/BackfillManageThreadsPermission.ts"
 	},
 	"dependencies": {
 		"@atproto/api": "catalog:",

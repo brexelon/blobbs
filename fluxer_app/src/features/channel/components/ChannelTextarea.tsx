@@ -103,7 +103,7 @@ import MobileLayout from '@app/features/ui/state/MobileLayout';
 import * as PlaceholderUtils from '@app/features/ui/utils/PlaceholderUtils';
 import Users from '@app/features/user/state/Users';
 import {openVoiceMessageComposerModal} from '@app/features/voice/components/VoiceMessageComposerModal';
-import {Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {getSendMessagesPermission, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {
 	MAX_ATTACHMENTS_PER_MESSAGE,
 	MAX_MESSAGE_LENGTH_NON_PREMIUM,
@@ -1286,7 +1286,7 @@ export const ChannelTextarea = observer(
 		const disabled = channel.isPrivate()
 			? forceNoSendMessages
 			: forceNoSendMessages ||
-				!Permission.can(Permissions.SEND_MESSAGES, channel) ||
+				!Permission.can(getSendMessagesPermission(channel.type), channel) ||
 				GuildMembers.isUserTimedOut(channel.guildId ?? null, Users.currentUser?.id);
 		const canAttachFiles = channel.isPrivate()
 			? !forceNoAttachFiles

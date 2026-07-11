@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {Permissions, TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
+import {getSendMessagesPermission, Permissions, TEXT_BASED_CHANNEL_TYPES} from '@fluxer/constants/src/ChannelConstants';
 import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
 import {
 	ATTACHMENT_MAX_SIZE_BOT,
@@ -404,7 +404,7 @@ export class AttachmentUploadService {
 			throw new CannotSendMessageToNonTextChannelError();
 		}
 		if (guild) {
-			await checkPermission(Permissions.SEND_MESSAGES | Permissions.ATTACH_FILES);
+			await checkPermission(getSendMessagesPermission(channel.type) | Permissions.ATTACH_FILES);
 			assertGuildMemberCanCommunicate(member);
 		}
 		const user = await this.userRepository.findUnique(userId);

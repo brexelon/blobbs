@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, getSendMessagesPermission} from '@fluxer/constants/src/ChannelConstants';
 import type {ChannelPinResponse} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import type {ChannelID, MessageID, UserID} from '../../BrandedTypes';
@@ -64,7 +64,7 @@ export class MessageInteractionService {
 
 	async startTyping({userId, channelId}: {userId: UserID; channelId: ChannelID}): Promise<void> {
 		const authChannel = await this.authService.getChannelAuthenticated({userId, channelId});
-		await authChannel.checkPermission(Permissions.SEND_MESSAGES);
+		await authChannel.checkPermission(getSendMessagesPermission(authChannel.channel.type));
 		assertGuildMemberCanCommunicate(authChannel.member);
 		await this.readStateService.startTyping({authChannel, userId});
 	}

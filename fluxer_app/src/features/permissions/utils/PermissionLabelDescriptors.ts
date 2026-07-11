@@ -95,6 +95,16 @@ const CREATE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	comment:
 		'Permission description in the role/permission editor for the Create Threads permission. A thread is a sub-conversation rooted on a message in a channel.',
 });
+const SEND_MESSAGES_IN_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'Send messages in threads. Independent of sending messages in the channel itself.',
+	comment:
+		'Permission description in the role/permission editor for the Send Messages in Threads permission. A thread is a sub-conversation rooted on a message in a channel.',
+});
+const MANAGE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'Edit, close, archive, and delete threads.',
+	comment:
+		'Permission description in the role/permission editor for the Manage Threads permission. A thread is a sub-conversation rooted on a message in a channel.',
+});
 const TIME_OUT_MEMBERS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	message: 'Prevent members from sending messages, reacting, and joining voice for a duration.',
 	comment:
@@ -259,6 +269,14 @@ const CREATE_THREADS_DESCRIPTOR = msg({
 	message: 'Create threads',
 	comment: 'Permission name: allows creating threads in a channel.',
 });
+const SEND_MESSAGES_IN_THREADS_DESCRIPTOR = msg({
+	message: 'Send messages in threads',
+	comment: 'Permission name: allows sending messages in threads.',
+});
+const MANAGE_THREADS_DESCRIPTOR = msg({
+	message: 'Manage threads',
+	comment: 'Permission name: allows editing, closing, archiving, and deleting threads.',
+});
 const TIME_OUT_MEMBERS_DESCRIPTOR = msg({
 	message: 'Time out members',
 	comment: 'Permission name: allows temporarily restricting members.',
@@ -367,6 +385,8 @@ const PERMISSION_TITLE_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.ADD_REACTIONS, ADD_REACTIONS_DESCRIPTOR],
 	[Permissions.BYPASS_SLOWMODE, BYPASS_SLOWMODE_DESCRIPTOR],
 	[Permissions.CREATE_THREADS, CREATE_THREADS_DESCRIPTOR],
+	[Permissions.SEND_MESSAGES_IN_THREADS, SEND_MESSAGES_IN_THREADS_DESCRIPTOR],
+	[Permissions.MANAGE_THREADS, MANAGE_THREADS_DESCRIPTOR],
 	[Permissions.MODERATE_MEMBERS, TIME_OUT_MEMBERS_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL, VIEW_CHANNEL_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL_MEMBERS, VIEW_CHANNEL_MEMBERS_DESCRIPTOR],
@@ -398,6 +418,8 @@ const PERMISSION_DESCRIPTION_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.ADD_REACTIONS, ADD_REACTIONS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.BYPASS_SLOWMODE, BYPASS_SLOWMODE_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.CREATE_THREADS, CREATE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR],
+	[Permissions.SEND_MESSAGES_IN_THREADS, SEND_MESSAGES_IN_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR],
+	[Permissions.MANAGE_THREADS, MANAGE_THREADS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.MODERATE_MEMBERS, TIME_OUT_MEMBERS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.VIEW_CHANNEL_MEMBERS, VIEW_CHANNEL_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR],

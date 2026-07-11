@@ -2,6 +2,7 @@
 
 import {
 	ChannelTypes,
+	getSendMessagesPermission,
 	MessageFlags,
 	MessageReferenceTypes,
 	MessageTypes,
@@ -254,7 +255,7 @@ export class MessageSendService {
 			if (isOperationDisabled(guild, GuildOperations.SEND_MESSAGE)) {
 				throw new FeatureTemporarilyDisabledError();
 			}
-			await checkPermission(Permissions.SEND_MESSAGES);
+			await checkPermission(getSendMessagesPermission(channel.type));
 			assertGuildMemberCanCommunicate(member);
 			if (data.tts) {
 				const hasTtsPermission = await hasPermission(Permissions.SEND_TTS_MESSAGES);
