@@ -24,7 +24,7 @@ import {
 	type MessageID,
 	type UserID,
 } from '../../../BrandedTypes';
-import type {ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
+import type {ChannelRow, ThreadByAutoCloseRow} from '../../../database/types/ChannelTypes';
 import type {GuildAuditLogService} from '../../../guild/GuildAuditLogService';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../../infrastructure/ISnowflakeService';
@@ -71,6 +71,7 @@ export class ThreadOperationsService {
 			rate_limit_per_user: thread.rateLimitPerUser,
 			thread_auto_close_duration_seconds: thread.threadAutoCloseDurationSeconds ?? null,
 			thread_state: thread.threadState ?? null,
+			thread_locked: thread.threadLocked,
 		};
 	}
 
@@ -178,6 +179,7 @@ export class ThreadOperationsService {
 			thread_creator_id: userId,
 			thread_creator_name: params.creatorUsername,
 			thread_state: ThreadStates.OPEN,
+			thread_locked: false,
 			thread_auto_close_duration_seconds: data.auto_close_duration_seconds,
 			thread_auto_close_at: autoCloseAt,
 			thread_origin_message_id: threadOriginMessageId,
@@ -357,9 +359,6 @@ export class ThreadOperationsService {
 	}): Promise<ChannelResponse> {
 		const {userId, threadId, requestCache} = params;
 		const thread = await this.loadThread(threadId);
-		if (thread.threadState === ThreadStates.ARCHIVED) {
-			throw InputValidationError.fromCode('thread_id', ValidationErrorCodes.THREAD_ARCHIVED);
-		}
 		const guildId = thread.guildId!;
 		await this.authService.getChannelAuthenticated({userId, channelId: thread.parentId ?? threadId});
 		await this.threadRepository.addMember({
@@ -376,9 +375,6 @@ export class ThreadOperationsService {
 	async leaveThread(params: {userId: UserID; threadId: ChannelID}): Promise<void> {
 		const {userId, threadId} = params;
 		const thread = await this.loadThread(threadId);
-		if (thread.threadState === ThreadStates.ARCHIVED) {
-			throw InputValidationError.fromCode('thread_id', ValidationErrorCodes.THREAD_ARCHIVED);
-		}
 		await this.threadRepository.removeMember({threadId, userId});
 		await this.dispatchMemberEvent('THREAD_MEMBER_REMOVE', {threadId, guildId: thread.guildId!, userId});
 	}
@@ -436,9 +432,10 @@ export class ThreadOperationsService {
 		await auth.checkPermission(Permissions.MANAGE_THREADS);
 		const row = thread.toRow();
 		if (data.action) {
-			const nextState = this.resolveStateTransition(thread.threadState ?? ThreadStates.OPEN, data.action);
-			row.thread_state = nextState;
-			if (nextState === ThreadStates.OPEN) {
+			this.applyStateAction(row, data.action);
+			// A thread that ends up open and unlocked resumes auto-closing on inactivity;
+			// locked or closed threads are moderator-managed, so no timer is armed.
+			if (row.thread_state === ThreadStates.OPEN && !row.thread_locked && thread.parentId != null) {
 				const autoCloseAt = new Date(Date.now() + (thread.threadAutoCloseDurationSeconds ?? 0) * 1000);
 				row.thread_auto_close_at = autoCloseAt;
 				await this.threadRepository.insertAutoCloseEntry({
@@ -471,7 +468,7 @@ export class ThreadOperationsService {
 			const lastActivityMs = thread.threadAutoCloseAt ? thread.threadAutoCloseAt.getTime() - oldDurationMs : Date.now();
 			const autoCloseAt = new Date(lastActivityMs + data.auto_close_duration_seconds * 1000);
 			row.thread_auto_close_at = autoCloseAt;
-			if (row.thread_state !== ThreadStates.ARCHIVED && thread.parentId != null) {
+			if (row.thread_state === ThreadStates.OPEN && !row.thread_locked && thread.parentId != null) {
 				await this.threadRepository.insertAutoCloseEntry({
 					autoCloseAt,
 					threadId,
@@ -488,9 +485,6 @@ export class ThreadOperationsService {
 				threadId,
 				threadName: data.name,
 			});
-		}
-		if (data.action === 'unarchive') {
-			await this.rejoinAllMembers(threadId, guildId);
 		}
 		const response = await this.mapThread(updated, undefined, requestCache);
 		await this.gatewayService.dispatchGuild({guildId, event: 'THREAD_UPDATE', data: response});
@@ -554,8 +548,10 @@ export class ThreadOperationsService {
 
 	/**
 	 * Post-message-send hook. When a message lands in a thread the author is
-	 * auto-joined, a closed thread reopens, and the inactivity timer is reset.
-	 * A no-op for non-thread channels.
+	 * auto-joined, an auto-closed thread reopens, and the inactivity timer is
+	 * reset. A no-op for non-thread channels and for locked threads: locking is a
+	 * moderator state, so a message there must not reopen it or reset its timer
+	 * (a manually closed thread is locked and reopens only via moderator action).
 	 */
 	async handleThreadMessageActivity(params: {
 		channelId: ChannelID;
@@ -565,7 +561,7 @@ export class ThreadOperationsService {
 		const {userId} = params;
 		const channel = await this.channelRepository.findUnique(params.channelId);
 		if (!channel || channel.type !== ChannelTypes.GUILD_THREAD || channel.isSoftDeleted) return;
-		if (channel.threadState === ThreadStates.ARCHIVED) return;
+		if (channel.threadLocked) return;
 		const guildId = channel.guildId;
 		if (guildId == null) return;
 		const now = new Date();
@@ -667,6 +663,8 @@ export class ThreadOperationsService {
 			thread.type !== ChannelTypes.GUILD_THREAD ||
 			thread.isSoftDeleted ||
 			thread.threadState !== ThreadStates.OPEN ||
+			// A locked thread is moderator-managed and must not auto-close on inactivity.
+			thread.threadLocked ||
 			(thread.threadAutoCloseAt != null && thread.threadAutoCloseAt.getTime() > now.getTime())
 		) {
 			await deleteEntry();
@@ -694,26 +692,30 @@ export class ThreadOperationsService {
 		return getAutoCloseBucket(date);
 	}
 
-	private async rejoinAllMembers(threadId: ChannelID, guildId: GuildID): Promise<void> {
-		const members = await this.threadRepository.listMembers(threadId);
-		for (const member of members) {
-			await this.dispatchMemberEvent('THREAD_MEMBER_ADD', {threadId, guildId, userId: member.user_id});
-		}
-	}
-
-	private resolveStateTransition(current: number, action: ThreadUpdateRequest['action']): number {
+	/**
+	 * Apply a lifecycle action to the thread row in place. State (open/closed) and
+	 * the lock flag are orthogonal so the four surfaces are representable:
+	 *   - open:   active, unlocked (auto-closes on inactivity).
+	 *   - lock:   locked but still open — only Manage Threads may send.
+	 *   - close:  manual close — closed AND locked, reopens only via moderator.
+	 *   - auto-close (sweep, not here): closed but unlocked, reopens on next message.
+	 */
+	private applyStateAction(row: ChannelRow, action: ThreadUpdateRequest['action']): void {
 		switch (action) {
 			case 'open':
-				if (current === ThreadStates.ARCHIVED) {
-					throw InputValidationError.fromCode('action', ValidationErrorCodes.THREAD_INVALID_STATE_TRANSITION);
-				}
-				return ThreadStates.OPEN;
+				row.thread_state = ThreadStates.OPEN;
+				row.thread_locked = false;
+				return;
 			case 'close':
-				return ThreadStates.CLOSED;
-			case 'archive':
-				return ThreadStates.ARCHIVED;
-			case 'unarchive':
-				return ThreadStates.OPEN;
+				row.thread_state = ThreadStates.CLOSED;
+				row.thread_locked = true;
+				return;
+			case 'lock':
+				row.thread_locked = true;
+				return;
+			case 'unlock':
+				row.thread_locked = false;
+				return;
 			default:
 				throw InputValidationError.fromCode('action', ValidationErrorCodes.THREAD_INVALID_STATE_TRANSITION);
 		}

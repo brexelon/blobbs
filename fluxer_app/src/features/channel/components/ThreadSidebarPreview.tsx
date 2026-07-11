@@ -7,6 +7,7 @@ import {ChannelTextarea} from '@app/features/channel/components/ChannelTextarea'
 import {ChannelNotificationSettingsDropdown} from '@app/features/channel/components/channel_header_components/ChannelNotificationSettingsDropdown';
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
 import styles from '@app/features/channel/components/ThreadSidebarPreview.module.css';
+import {ThreadStateBanner} from '@app/features/channel/components/ThreadStateBanner';
 import {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
@@ -204,6 +205,7 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 			<div className={styles.body} data-flx="channel.thread-sidebar-preview.body">
 				<ChannelChatLayout
 					channel={thread}
+					banner={<ThreadStateBanner channel={thread} />}
 					messages={
 						<Messages
 							key={thread.id}

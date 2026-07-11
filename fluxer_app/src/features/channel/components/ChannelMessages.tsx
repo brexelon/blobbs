@@ -10,6 +10,7 @@ import {NewMessagesBar} from '@app/features/channel/components/NewMessagesBar';
 import ScrollFillerSkeleton from '@app/features/channel/components/ScrollFillerSkeleton';
 import {UploadManager} from '@app/features/channel/components/UploadManager';
 import type {Channel} from '@app/features/channel/models/Channel';
+import {isThreadSendLocked} from '@app/features/channel/utils/ThreadStateUtils';
 import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import GuildVerification from '@app/features/guild/state/GuildVerification';
 import {TRY_AGAIN_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
@@ -76,7 +77,8 @@ const MESSAGES_FAILED_TO_LOAD_DESCRIPTOR = msg({
 });
 
 function checkPermissions(channel: Channel) {
-	const canSendMessages = Permission.can(getSendMessagesPermission(channel.type), channel);
+	const canSendMessages =
+		Permission.can(getSendMessagesPermission(channel.type), channel) && !isThreadSendLocked(channel);
 	const passesVerification = channel.isPrivate() || GuildVerification.canAccessGuild(channel.guildId || '');
 	const canChat = channel.isPrivate() || (canSendMessages && passesVerification);
 	const canAttachFiles = channel.isPrivate() ? canChat : canChat && Permission.can(Permissions.ATTACH_FILES, channel);

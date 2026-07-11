@@ -12,6 +12,9 @@ import {z} from 'zod';
 export const ThreadMetadataResponse = z.object({
 	name: z.string().describe('The display name of the thread'),
 	state: Int32Type.describe('The thread lifecycle state (0=open, 1=closed, 2=archived)'),
+	locked: z
+		.boolean()
+		.describe('Whether the thread is locked: only members with Manage Threads may send messages until unlocked'),
 	creator_id: SnowflakeStringType.nullish().describe('The ID of the user who created the thread'),
 	creator_name: z.string().nullish().describe('The username of the creator at the time the thread was created'),
 	auto_close_duration_seconds: Int32Type.describe(

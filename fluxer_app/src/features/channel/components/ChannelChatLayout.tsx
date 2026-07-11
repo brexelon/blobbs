@@ -26,6 +26,7 @@ interface ChannelChatLayoutProps {
 	channel: Channel;
 	messages: React.ReactNode;
 	textarea: React.ReactNode;
+	banner?: React.ReactNode;
 	hideBottomBar?: boolean;
 }
 
@@ -48,56 +49,59 @@ export function getChannelChatStatusVisibility({
 	};
 }
 
-export const ChannelChatLayout = observer(({channel, messages, textarea, hideBottomBar}: ChannelChatLayoutProps) => {
-	const {i18n} = useLingui();
-	const {slowmodeRemaining, isSlowmodeEnabled, isSlowmodeImmune} = useSlowmode(channel);
-	void Messages.version;
-	const messagesReady = Messages.getMessages(channel.id).ready;
-	const shouldFetchSlowmode = Boolean(channel.guildId) && (channel.rateLimitPerUser ?? 0) > 0;
-	useEffect(() => {
-		if (!shouldFetchSlowmode) return;
-		void fetchSlowmodeState(channel.id);
-	}, [channel.id, shouldFetchSlowmode]);
-	const {showTypingUsers, showSlowmodeIndicator} = getChannelChatStatusVisibility({
-		hideBottomBar,
-		isSlowmodeEnabled,
-		messagesReady,
-	});
-	return (
-		<div className={styles.container} data-flx="channel.channel-chat-layout.container">
-			<section
-				className={styles.messagesArea}
-				aria-label={i18n._(MESSAGES_DESCRIPTOR)}
-				data-flx="channel.channel-chat-layout.messages-area"
-			>
-				{messages}
-			</section>
-			<div className={styles.typingArea} data-flx="channel.channel-chat-layout.typing-area">
-				{showTypingUsers && (
-					<div className={styles.typingContent} data-flx="channel.channel-chat-layout.typing-content">
-						<div className={styles.typingLeft} data-flx="channel.channel-chat-layout.typing-left">
-							<TypingUsers channel={channel} data-flx="channel.channel-chat-layout.typing-users" />
+export const ChannelChatLayout = observer(
+	({channel, messages, textarea, banner, hideBottomBar}: ChannelChatLayoutProps) => {
+		const {i18n} = useLingui();
+		const {slowmodeRemaining, isSlowmodeEnabled, isSlowmodeImmune} = useSlowmode(channel);
+		void Messages.version;
+		const messagesReady = Messages.getMessages(channel.id).ready;
+		const shouldFetchSlowmode = Boolean(channel.guildId) && (channel.rateLimitPerUser ?? 0) > 0;
+		useEffect(() => {
+			if (!shouldFetchSlowmode) return;
+			void fetchSlowmodeState(channel.id);
+		}, [channel.id, shouldFetchSlowmode]);
+		const {showTypingUsers, showSlowmodeIndicator} = getChannelChatStatusVisibility({
+			hideBottomBar,
+			isSlowmodeEnabled,
+			messagesReady,
+		});
+		return (
+			<div className={styles.container} data-flx="channel.channel-chat-layout.container">
+				{banner}
+				<section
+					className={styles.messagesArea}
+					aria-label={i18n._(MESSAGES_DESCRIPTOR)}
+					data-flx="channel.channel-chat-layout.messages-area"
+				>
+					{messages}
+				</section>
+				<div className={styles.typingArea} data-flx="channel.channel-chat-layout.typing-area">
+					{showTypingUsers && (
+						<div className={styles.typingContent} data-flx="channel.channel-chat-layout.typing-content">
+							<div className={styles.typingLeft} data-flx="channel.channel-chat-layout.typing-left">
+								<TypingUsers channel={channel} data-flx="channel.channel-chat-layout.typing-users" />
+							</div>
 						</div>
-					</div>
-				)}
-				{showSlowmodeIndicator && (
-					<div className={styles.slowmodePin} data-flx="channel.channel-chat-layout.slowmode-target">
-						<SlowmodeIndicator
-							slowmodeRemaining={slowmodeRemaining}
-							slowmodeDuration={channel.rateLimitPerUser * 1000}
-							isImmune={isSlowmodeImmune}
-							data-flx="channel.channel-chat-layout.slowmode-indicator"
-						/>
-					</div>
-				)}
+					)}
+					{showSlowmodeIndicator && (
+						<div className={styles.slowmodePin} data-flx="channel.channel-chat-layout.slowmode-target">
+							<SlowmodeIndicator
+								slowmodeRemaining={slowmodeRemaining}
+								slowmodeDuration={channel.rateLimitPerUser * 1000}
+								isImmune={isSlowmodeImmune}
+								data-flx="channel.channel-chat-layout.slowmode-indicator"
+							/>
+						</div>
+					)}
+				</div>
+				<section
+					className={styles.textareaArea}
+					aria-label={i18n._(MESSAGE_COMPOSER_DESCRIPTOR)}
+					data-flx="channel.channel-chat-layout.textarea-area"
+				>
+					{textarea}
+				</section>
 			</div>
-			<section
-				className={styles.textareaArea}
-				aria-label={i18n._(MESSAGE_COMPOSER_DESCRIPTOR)}
-				data-flx="channel.channel-chat-layout.textarea-area"
-			>
-				{textarea}
-			</section>
-		</div>
-	);
-});
+		);
+	},
+);

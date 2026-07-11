@@ -84,10 +84,6 @@ const OTHER_THREADS_DESCRIPTOR = msg({
 	message: '{count} Other Threads',
 	comment: 'Section label above the list of threads the user has not joined. {count} is inserted by code.',
 });
-const ARCHIVED_DESCRIPTOR = msg({
-	message: 'Archived',
-	comment: 'Badge marking a thread whose lifecycle state is archived.',
-});
 const MORE_ACTIONS_DESCRIPTOR = msg({
 	message: 'More options',
 	comment: 'Accessible label for the button that opens the thread management menu.',
@@ -217,11 +213,10 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		const authorColor = lastMessage
 			? GuildMembers.getMember(channel.guildId ?? '', lastMessage.author.id)?.getColorString()
 			: undefined;
-		// Archived threads keep an explicit badge; closed ones are conveyed by dimming
-		// the (bold) name instead of a label, since a closed thread reopens on the next
-		// message and doesn't need calling out as prominently.
-		const badge = state === ThreadStates.ARCHIVED ? i18n._(ARCHIVED_DESCRIPTOR) : null;
-		const isClosed = state === ThreadStates.CLOSED;
+		// Closed or locked threads are conveyed by dimming the (bold) name rather than
+		// a badge: a closed thread reopens on the next message and a locked one is a
+		// moderator state, so neither needs calling out as prominently.
+		const isDimmed = state === ThreadStates.CLOSED || (thread.thread_metadata?.locked ?? false);
 		const relative = lastActiveRelative(thread, lastMessage);
 		return (
 			<div
@@ -241,8 +236,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 			>
 				<div className={styles.content} data-flx="channel.channel-threads-popout.content">
 					<div className={styles.nameLine} data-flx="channel.channel-threads-popout.name-line">
-						<span className={clsx(styles.name, isClosed && styles.nameClosed)}>{name}</span>
-						{badge && <span className={styles.badge}>{badge}</span>}
+						<span className={clsx(styles.name, isDimmed && styles.nameClosed)}>{name}</span>
 					</div>
 					<div className={styles.meta} data-flx="channel.channel-threads-popout.meta">
 						{lastMessage ? (

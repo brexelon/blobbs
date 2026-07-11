@@ -27,7 +27,7 @@ export const ThreadCreateRequest = z.object({
 export type ThreadCreateRequest = z.infer<typeof ThreadCreateRequest>;
 
 export const ThreadStateAction = z
-	.enum(['open', 'close', 'archive', 'unarchive'])
+	.enum(['open', 'close', 'lock', 'unlock'])
 	.describe('Thread lifecycle transition to apply');
 
 export type ThreadStateAction = z.infer<typeof ThreadStateAction>;

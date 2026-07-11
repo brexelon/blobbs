@@ -38,6 +38,7 @@ import {TextareaPlusMenu} from '@app/features/channel/components/textarea/Textar
 import type {Channel} from '@app/features/channel/models/Channel';
 import ChannelSticker from '@app/features/channel/state/ChannelSticker';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
+import {isThreadSendLocked} from '@app/features/channel/utils/ThreadStateUtils';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
 import * as CommandUtils from '@app/features/devtools/utils/CommandUtils';
 import {ExpressionPickerSheet} from '@app/features/expressions/components/modals/ExpressionPickerSheet';
@@ -1287,6 +1288,7 @@ export const ChannelTextarea = observer(
 			? forceNoSendMessages
 			: forceNoSendMessages ||
 				!Permission.can(getSendMessagesPermission(channel.type), channel) ||
+				isThreadSendLocked(channel) ||
 				GuildMembers.isUserTimedOut(channel.guildId ?? null, Users.currentUser?.id);
 		const canAttachFiles = channel.isPrivate()
 			? !forceNoAttachFiles

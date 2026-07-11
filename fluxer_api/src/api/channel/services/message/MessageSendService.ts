@@ -256,6 +256,10 @@ export class MessageSendService {
 				throw new FeatureTemporarilyDisabledError();
 			}
 			await checkPermission(getSendMessagesPermission(channel.type));
+			// A locked thread only accepts messages from members who can manage it.
+			if (channel.type === ChannelTypes.GUILD_THREAD && channel.threadLocked) {
+				await checkPermission(Permissions.MANAGE_THREADS);
+			}
 			assertGuildMemberCanCommunicate(member);
 			if (data.tts) {
 				const hasTtsPermission = await hasPermission(Permissions.SEND_TTS_MESSAGES);

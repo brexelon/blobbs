@@ -22,6 +22,7 @@ import {useVoiceCallChromePinState} from '@app/features/channel/components/chann
 import {MatureContentChannelGate} from '@app/features/channel/components/MatureContentChannelGate';
 import {useMessagesBottomBarVisibility} from '@app/features/channel/components/MessagesBottomBarVisibility';
 import {ThreadSidebarPreview} from '@app/features/channel/components/ThreadSidebarPreview';
+import {ThreadStateBanner} from '@app/features/channel/components/ThreadStateBanner';
 import {VerificationBarrier} from '@app/features/channel/components/VerificationBarrier';
 import {useChannelMemberListVisibility} from '@app/features/channel/hooks/useChannelMemberListVisibility';
 import {useChannelSearchVisibility} from '@app/features/channel/hooks/useChannelSearchVisibility';
@@ -580,6 +581,7 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 			chatArea={
 				<ChannelChatLayout
 					channel={channel}
+					banner={isThreadChannel ? <ThreadStateBanner channel={channel} /> : undefined}
 					messages={
 						<Messages
 							key={channel.id}

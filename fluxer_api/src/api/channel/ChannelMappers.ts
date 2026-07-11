@@ -138,6 +138,7 @@ function serializeGuildThreadChannel(
 		thread_metadata: {
 			name: channel.threadName ?? channel.name ?? '',
 			state: channel.threadState ?? 0,
+			locked: channel.threadLocked,
 			creator_id: channel.threadCreatorId ? channel.threadCreatorId.toString() : null,
 			creator_name: channel.threadCreatorName ?? null,
 			auto_close_duration_seconds: channel.threadAutoCloseDurationSeconds ?? 0,

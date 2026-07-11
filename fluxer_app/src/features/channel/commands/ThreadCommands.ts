@@ -13,7 +13,7 @@ export interface ThreadMember {
 	joined_at: string;
 }
 
-export type ThreadStateAction = 'open' | 'close' | 'archive' | 'unarchive';
+export type ThreadStateAction = 'open' | 'close' | 'lock' | 'unlock';
 
 export interface ThreadCreateParams {
 	name: string;
