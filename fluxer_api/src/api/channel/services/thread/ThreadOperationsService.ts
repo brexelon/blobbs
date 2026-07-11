@@ -695,14 +695,12 @@ export class ThreadOperationsService {
 	/**
 	 * Apply a lifecycle action to the thread row in place. State (open/closed) and
 	 * the lock flag are orthogonal so the four surfaces are representable:
-	 *   - open:   active, unlocked (auto-closes on inactivity).
-	 *   - lock:   locked but still open — only Manage Threads may send.
-	 *   - close:  manual close — closed AND locked, reopens only via moderator.
-	 *   - auto-close (sweep, not here): closed but unlocked, reopens on next message.
-	 *
-	 * Reopening only changes the open/closed state and deliberately preserves the
-	 * lock flag: a manually closed (and therefore locked) thread stays locked when
-	 * reopened, so it must be unlocked separately.
+	 * State (open/closed) and the lock flag are independent, so each action touches
+	 * only its own dimension:
+	 *   - open/close: change the open/closed state, preserving the lock flag. A
+	 *     closed thread that is not locked still reopens on the next message (like
+	 *     an inactivity auto-close); locking is what keeps it moderator-only.
+	 *   - lock/unlock: change the lock flag, preserving the open/closed state.
 	 */
 	private applyStateAction(row: ChannelRow, action: ThreadUpdateRequest['action']): void {
 		switch (action) {
@@ -711,7 +709,6 @@ export class ThreadOperationsService {
 				return;
 			case 'close':
 				row.thread_state = ThreadStates.CLOSED;
-				row.thread_locked = true;
 				return;
 			case 'lock':
 				row.thread_locked = true;

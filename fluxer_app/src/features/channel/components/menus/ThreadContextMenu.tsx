@@ -296,7 +296,7 @@ export const ThreadContextMenu = observer(
 								{i18n._(REOPEN_THREAD_DESCRIPTOR)}
 							</MenuItem>
 						)}
-						{isOpen && !isLocked && (
+						{!isLocked && (
 							<MenuItem
 								icon={<LockSimpleIcon size={16} />}
 								onClick={() => handleStateChange('lock')}
@@ -305,7 +305,7 @@ export const ThreadContextMenu = observer(
 								{i18n._(LOCK_THREAD_DESCRIPTOR)}
 							</MenuItem>
 						)}
-						{isOpen && isLocked && (
+						{isLocked && (
 							<MenuItem
 								icon={<LockSimpleOpenIcon size={16} />}
 								onClick={() => handleStateChange('unlock')}
