@@ -76,12 +76,6 @@
 	top: calc(var(--message-avatar-size) + 12px);
 }
 
-/* The auto-close footer sits below the card box, pushing the icon badge further
-   up from the block's bottom edge; lower the elbow's landing point to match. */
-.connectorWithFooter {
-	bottom: 45px;
-}
-
 .stack {
 	display: flex;
 	flex-direction: column;
@@ -203,13 +197,4 @@
 .caret {
 	color: var(--text-muted);
 	flex-shrink: 0;
-}
-
-.footer {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	padding-left: 4px;
-	font-size: 12px;
-	color: var(--text-muted);
 }
