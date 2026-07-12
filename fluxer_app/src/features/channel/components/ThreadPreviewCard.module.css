@@ -5,6 +5,12 @@
    its height can track the message's height. */
 .container {
 	display: flex;
+	/* As a grid item in the message's below-content area, min-width defaults to
+	   auto, which lets the box grow to its content's intrinsic width and spill past
+	   a narrow (mobile) content column. Allow it to shrink so the inner text
+	   truncates within the chat window instead. */
+	min-width: 0;
+	max-width: 100%;
 	--thread-preview-connector-bridge: 2px;
 	margin-top: var(--thread-preview-connector-bridge);
 	margin-bottom: 6px;
