@@ -57,6 +57,18 @@
 	overflow: hidden;
 }
 
+/* Clickable thread creator name in the "Started by …" line. Rests at its role
+   colour (applied inline) and underlines on hover like a message username. */
+.startedByName {
+	font-weight: 600;
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+.startedByName:hover {
+	text-decoration: underline;
+}
+
 .iconSize {
 	height: 3rem;
 	width: 3rem;

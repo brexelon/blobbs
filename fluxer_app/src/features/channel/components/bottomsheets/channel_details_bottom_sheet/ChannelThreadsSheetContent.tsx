@@ -6,6 +6,7 @@ import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadC
 import type {Channel} from '@app/features/channel/models/Channel';
 import Threads from '@app/features/channel/state/Threads';
 import {openThreadFullView} from '@app/features/channel/utils/ThreadNavigationUtils';
+import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
 import Messages from '@app/features/messaging/state/MessagingMessages';
@@ -135,6 +136,9 @@ export const ChannelThreadsSheetContent = observer(({channel, onClose}: {channel
 		const storeCollection = Messages.getCachedMessages(thread.id);
 		const lastMessage = storeCollection?.ready ? (storeCollection.last() ?? null) : null;
 		const relative = lastActiveRelative(thread, lastMessage);
+		const authorColor = lastMessage
+			? GuildMembers.getMember(channel.guildId ?? '', lastMessage.author.id)?.getColorString()
+			: undefined;
 		return (
 			<button
 				key={thread.id}
@@ -148,7 +152,9 @@ export const ChannelThreadsSheetContent = observer(({channel, onClose}: {channel
 					<span className={styles.rowMeta}>
 						{lastMessage ? (
 							<>
-								<span className={styles.rowMetaAuthor}>{lastMessage.author.displayName}</span>{' '}
+								<span className={styles.rowMetaAuthor} style={{color: authorColor}}>
+									{lastMessage.author.displayName}
+								</span>{' '}
 								{getMessagePreviewText(lastMessage, i18n)}
 							</>
 						) : (
