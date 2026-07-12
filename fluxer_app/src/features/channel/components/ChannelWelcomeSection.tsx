@@ -4,6 +4,7 @@ import styles from '@app/features/channel/components/ChannelWelcomeSection.modul
 import {DMWelcomeSection} from '@app/features/channel/components/direct_message/DMWelcomeSection';
 import {GroupDMWelcomeSection} from '@app/features/channel/components/direct_message/GroupDMWelcomeSection';
 import {PersonalNotesWelcomeSection} from '@app/features/channel/components/direct_message/PersonalNotesWelcomeSection';
+import {ThreadWelcomeSection} from '@app/features/channel/components/ThreadWelcomeSection';
 import type {Channel} from '@app/features/channel/models/Channel';
 import * as ChannelUtils from '@app/features/channel/utils/ChannelUtils';
 import Users from '@app/features/user/state/Users';
@@ -39,6 +40,9 @@ export const ChannelWelcomeSection = observer(({channel}: ChannelWelcomeSectionP
 		return (
 			<GroupDMWelcomeSection channel={channel} data-flx="channel.channel-welcome-section.group-dm-welcome-section" />
 		);
+	}
+	if (channel.type === ChannelTypes.GUILD_THREAD) {
+		return <ThreadWelcomeSection channel={channel} data-flx="channel.channel-welcome-section.thread-welcome-section" />;
 	}
 	const channelDisplayName = `#${channel.name ?? ''}`;
 	return (
