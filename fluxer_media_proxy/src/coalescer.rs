@@ -25,6 +25,39 @@ pub struct ByteCoalescer {
     in_flight: Mutex<HashMap<String, Arc<Slot>>>,
 }
 
+/// Guards the leader's `in_flight` registration so the slot is always cleaned
+/// up, even if the leader future is cancelled (dropped) or panics before it
+/// publishes a result.
+///
+/// Without this guard a cancelled leader would leave its slot in `in_flight`
+/// with `state == None` permanently: every subsequent caller for the same key
+/// would find the stale slot, join as a waiter, and only ever reach its
+/// deadline. The key would stay poisoned until the process restarted, which is
+/// exactly the "works after a redeploy, then breaks again" failure mode.
+struct LeaderGuard<'a> {
+    in_flight: &'a Mutex<HashMap<String, Arc<Slot>>>,
+    slot: &'a Arc<Slot>,
+    key: &'a str,
+}
+
+impl Drop for LeaderGuard<'_> {
+    fn drop(&mut self) {
+        // If the leader never published a result (cancellation or panic), fail
+        // any current waiters instead of letting them hang. A successful leader
+        // has already set the state, so leave it untouched.
+        {
+            let mut state = self.slot.state.lock();
+            if state.is_none() {
+                *state = Some(Err(CoalescerError::WorkFailed));
+            }
+        }
+        // Drop the registration so the next caller starts a fresh attempt
+        // rather than joining a dead slot.
+        self.in_flight.lock().remove(self.key);
+        self.slot.notify.notify_waiters();
+    }
+}
+
 impl ByteCoalescer {
     pub fn new() -> Self {
         Self::default()
@@ -71,10 +104,16 @@ impl ByteCoalescer {
             crate::metrics::GLOBAL
                 .coalescer_leader
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            // The guard removes the slot from `in_flight` and wakes waiters on
+            // every exit path, including if `work().await` is cancelled or
+            // panics. On success we publish the result before it drops.
+            let _guard = LeaderGuard {
+                in_flight: &self.in_flight,
+                slot: &slot,
+                key: &key,
+            };
             let result = work().await.map(Bytes::from).map_err(coalesced_work_error);
             *slot.state.lock() = Some(result.clone());
-            slot.notify.notify_waiters();
-            self.in_flight.lock().remove(&key);
             result
         } else {
             crate::metrics::GLOBAL
@@ -167,6 +206,67 @@ mod tests {
             .unwrap_err();
         assert_eq!(CoalescerError::RequestTimeout, err);
         task.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn cancelled_leader_does_not_poison_key() {
+        let coalescer = Arc::new(ByteCoalescer::new());
+        // Register a leader whose work never completes, then cancel it by
+        // dropping the future (e.g. the client/CDN disconnected mid-transform).
+        {
+            let leader = coalescer.run_once("k", || async {
+                std::future::pending::<()>().await;
+                Ok(b"never".to_vec())
+            });
+            tokio::pin!(leader);
+            let polled = tokio::time::timeout(Duration::from_millis(20), &mut leader).await;
+            assert!(polled.is_err(), "leader should still be pending when cancelled");
+        }
+        // A fresh request must be able to become a new leader and succeed
+        // rather than joining the dead slot and hanging forever.
+        let result = tokio::time::timeout(
+            Duration::from_millis(200),
+            coalescer.run_once("k", || async { Ok(b"ok".to_vec()) }),
+        )
+        .await
+        .expect("second attempt must not hang on a poisoned key")
+        .unwrap();
+        assert_eq!(b"ok", result.as_ref());
+    }
+
+    #[tokio::test]
+    async fn waiter_behind_cancelled_leader_is_released() {
+        let coalescer = Arc::new(ByteCoalescer::new());
+        // Leader that stays pending until dropped.
+        let leader_coalescer = coalescer.clone();
+        let leader = tokio::spawn(async move {
+            leader_coalescer
+                .run_once("k", || async {
+                    std::future::pending::<()>().await;
+                    Ok(b"never".to_vec())
+                })
+                .await
+        });
+        // Give the leader a moment to register itself.
+        sleep(Duration::from_millis(10)).await;
+        // A waiter joins behind the leader.
+        let waiter = tokio::spawn({
+            let coalescer = coalescer.clone();
+            async move {
+                coalescer
+                    .run_once("k", || async { Ok(b"should-not-run".to_vec()) })
+                    .await
+            }
+        });
+        sleep(Duration::from_millis(10)).await;
+        // Cancel the leader; the waiter must be released with an error rather
+        // than hang.
+        leader.abort();
+        let waiter_result = tokio::time::timeout(Duration::from_millis(200), waiter)
+            .await
+            .expect("waiter must be released when the leader is cancelled")
+            .unwrap();
+        assert_eq!(Err(CoalescerError::WorkFailed), waiter_result);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
