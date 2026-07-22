@@ -4,7 +4,7 @@ import {ReportAlreadyResolvedError} from '@fluxer/errors/src/domains/moderation/
 import {UnknownReportError} from '@fluxer/errors/src/domains/moderation/UnknownReportError';
 import type {ChannelID, MessageID, ReportID, UserID} from '../BrandedTypes';
 import {createChannelID, createGuildID, createMessageID, createReportID, createUserID} from '../BrandedTypes';
-import {fetchMany, fetchOne, upsertOne} from '../database/CassandraQueryExecution';
+import {deleteOneOrMany, fetchMany, fetchOne, upsertOne} from '../database/CassandraQueryExecution';
 import {Db} from '../database/CassandraTypes';
 import type {
 	DSAReportEmailVerificationRow,
@@ -77,11 +77,13 @@ export class ReportRepository implements IReportRepository {
 	}
 
 	async deleteMessageReportByReporter(reporterId: UserID, channelId: ChannelID, messageId: MessageID): Promise<void> {
-		await MessageReportSubmissionsByReporter.deleteByPk({
-			reporter_id: reporterId,
-			channel_id: channelId,
-			message_id: messageId,
-		});
+		await deleteOneOrMany(
+			MessageReportSubmissionsByReporter.deleteByPk({
+				reporter_id: reporterId,
+				channel_id: channelId,
+				message_id: messageId,
+			}),
+		);
 	}
 
 	async getReport(reportId: ReportID): Promise<IARSubmission | null> {
@@ -131,7 +133,7 @@ export class ReportRepository implements IReportRepository {
 		if (!report) {
 			throw new UnknownReportError();
 		}
-		await IARSubmissions.deleteByPk({report_id: reportId});
+		await deleteOneOrMany(IARSubmissions.deleteByPk({report_id: reportId}));
 		return report;
 	}
 
@@ -198,7 +200,7 @@ export class ReportRepository implements IReportRepository {
 	}
 
 	async deleteDsaEmailVerification(emailLower: string): Promise<void> {
-		await DSAReportEmailVerifications.deleteByPk({email_lower: emailLower});
+		await deleteOneOrMany(DSAReportEmailVerifications.deleteByPk({email_lower: emailLower}));
 	}
 
 	async createDsaTicket(row: DSAReportTicketRow): Promise<void> {
@@ -211,7 +213,7 @@ export class ReportRepository implements IReportRepository {
 	}
 
 	async deleteDsaTicket(ticket: string): Promise<void> {
-		await DSAReportTickets.deleteByPk({ticket});
+		await deleteOneOrMany(DSAReportTickets.deleteByPk({ticket}));
 	}
 
 	private mapMessageContext(rawContext: Array<IARMessageContextRow>): Array<IARMessageContext> {
