@@ -17,6 +17,7 @@ import {isCategory, isTextChannel} from '@app/features/app/components/layout/uti
 import {getChannelUnreadState} from '@app/features/app/components/layout/utils/ChannelUnreadState';
 import {VoiceChannelUserCount} from '@app/features/app/components/layout/VoiceChannelUserCount';
 import {useChannelHoverPreload} from '@app/features/app/hooks/useChannelHoverPreload';
+import {useChannelThreadsHoverPreview} from '@app/features/app/hooks/useChannelThreadsHoverPreview';
 import {useContextMenuHoverState} from '@app/features/app/hooks/useContextMenuHoverState';
 import {useMergeRefs} from '@app/features/app/hooks/useMergeRefs';
 import {useTextOverflow} from '@app/features/app/hooks/useTextOverflow';
@@ -220,6 +221,12 @@ export const ChannelItem = observer(
 			guild,
 			defaultHiddenForChannel: channelIsVoice,
 			enabled: !channelIsCategory,
+		});
+		const threadsHoverPreview = useChannelThreadsHoverPreview({
+			guild,
+			channel,
+			anchorRef: elementRef,
+			enabled: channelType === ChannelTypes.GUILD_TEXT && !MobileLayout.enabled,
 		});
 		const draggingChannel = activeDragItem?.type === DND_TYPES.CHANNEL ? activeDragItem : null;
 		const isVoiceDragActive = draggingChannel?.channelType === ChannelTypes.GUILD_VOICE;
@@ -496,11 +503,13 @@ export const ChannelItem = observer(
 		const handleMouseEnter = useCallback(() => {
 			setIsPointerHovered(true);
 			scheduleChannelPreload();
-		}, [scheduleChannelPreload]);
+			threadsHoverPreview.onTriggerEnter();
+		}, [scheduleChannelPreload, threadsHoverPreview]);
 		const handleMouseLeave = useCallback(() => {
 			setIsPointerHovered(false);
 			cancelChannelPreload();
-		}, [cancelChannelPreload]);
+			threadsHoverPreview.onTriggerLeave();
+		}, [cancelChannelPreload, threadsHoverPreview]);
 		const hoverAffordancesActive =
 			allowHoverAffordances &&
 			(contextMenuOpen || showKeyboardAffordances || shouldShowSelectedState || isPointerHovered);
