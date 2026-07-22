@@ -186,7 +186,10 @@ export const ManageRolesMenuItem: React.FC<ManageRolesMenuItemProps> = observer(
 }) {
 	const {i18n} = useLingui();
 	const guild = Guilds.getGuild(guildId);
-	const currentMember = GuildMembers.getMember(guildId, member.user.id);
+	// Fall back to the member handed to this item (e.g. from a fetched profile) when
+	// the store has not synced them, so role checkmarks and the read-only role list
+	// stay accurate for members who are not in the sidebar member list.
+	const currentMember = GuildMembers.getMember(guildId, member.user.id) ?? member;
 	const {canManageRole} = useRoleHierarchy(guild);
 	const canManageRoles = Permission.can(Permissions.MANAGE_ROLES, {guildId});
 	const allRoles = useMemo(() => {

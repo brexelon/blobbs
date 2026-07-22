@@ -327,10 +327,7 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 									<LimitedProfileNotice data-flx="user.user-profile-popout.limited-profile-notice" />
 								</div>
 							)}
-							<div
-								className={styles.profileIntroSections}
-								data-flx="user.user-profile-popout.profile-intro-sections"
-							>
+							<div className={styles.profileIntroSections} data-flx="user.user-profile-popout.profile-intro-sections">
 								<ProfileCardUserInfo
 									displayName={displayName}
 									displayNameClassName={styles.profileDisplayName}
@@ -409,6 +406,7 @@ export const UserProfilePopout: React.FC<UserProfilePopoutProps> = observer(
 									user={user}
 									memberRoles={[...memberRoles]}
 									canManageRoles={canManageRoles}
+									member={guildMember}
 									data-flx="user.user-profile-popout.user-profile-roles"
 								/>
 							)}

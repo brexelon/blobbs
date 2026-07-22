@@ -53,6 +53,7 @@ export const ProfileContent: React.FC<ProfileContentProps> = observer(
 						user={user}
 						memberRoles={[...membership.roles]}
 						canManageRoles={canManageRoles}
+						member={membership.kind === 'guildMember' ? membership.member : null}
 						data-flx="user.user-profile-modal.profile-content.user-profile-roles"
 					/>
 					<UserProfileConnections

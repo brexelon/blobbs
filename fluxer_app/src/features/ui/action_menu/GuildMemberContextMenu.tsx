@@ -55,6 +55,7 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
 import type {User} from '@app/features/user/models/User';
+import UserProfile from '@app/features/user/state/UserProfile';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
@@ -98,7 +99,16 @@ export const GuildMemberContextMenu: React.FC<GuildMemberContextMenuProps> = obs
 		const relationship = Relationships.getRelationship(user.id);
 		const relationshipType = relationship?.type;
 		const guild = Guilds.getGuild(guildId);
-		const member = providedMember ?? GuildMembers.getMember(guildId, user.id);
+		// The member store only holds synced members (roughly, those in the sidebar
+		// member list), so right-clicking a user who is not listed there — e.g. a
+		// message author in a large community — would otherwise drop every
+		// member-scoped action, including Roles. Fall back to the member embedded in
+		// a fetched profile (the popout preloads it on hover) so those actions appear.
+		const member =
+			providedMember ??
+			GuildMembers.getMember(guildId, user.id) ??
+			UserProfile.getProfile(user.id, guildId)?.guildMember ??
+			null;
 		const currentUserId = Authentication.currentUserId;
 		const isBot = user.bot;
 		const canKickMembers = Permission.can(Permissions.KICK_MEMBERS, {guildId});

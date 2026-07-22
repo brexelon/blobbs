@@ -7,6 +7,7 @@ import type {GuildRole} from '@app/features/guild/models/GuildRole';
 import GuildSettingsModalState from '@app/features/guild/state/GuildSettingsModal';
 import Guilds from '@app/features/guild/state/Guilds';
 import * as GuildMemberCommands from '@app/features/member/commands/GuildMemberCommands';
+import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import {useRoleHierarchy} from '@app/features/permissions/hooks/useRoleHierarchy';
 import * as PermissionUtils from '@app/features/permissions/utils/PermissionUtils';
@@ -154,16 +155,21 @@ interface ManageRolesMenuContentProps {
 	guildId: string;
 	userId: string;
 	onClose: () => void;
+	member?: GuildMember | null;
 }
 
 const ManageRolesMenuContent: React.FC<ManageRolesMenuContentProps> = observer(function ManageRolesMenuContent({
 	guildId,
 	userId,
 	onClose,
+	member,
 }) {
 	const {i18n} = useLingui();
 	const guild = Guilds.getGuild(guildId);
-	const currentMember = GuildMembers.getMember(guildId, userId);
+	// Prefer the live store member so role toggles reflect immediately, but fall
+	// back to a member supplied by the caller (e.g. from a fetched profile) so the
+	// checkbox state is still accurate for members not synced into the store.
+	const currentMember = GuildMembers.getMember(guildId, userId) ?? member ?? null;
 	const {canManageRole} = useRoleHierarchy(guild);
 	const rolesSettingsPath = useMemo(() => formatGuildSettingsPath(i18n, 'roles'), [i18n.locale]);
 	const handleOpenGuildSettings = useCallback(() => {
@@ -258,6 +264,7 @@ interface ManageRolesBottomSheetProps {
 	onClose: () => void;
 	guildId: string;
 	userId: string;
+	member?: GuildMember | null;
 }
 
 export const ManageRolesBottomSheet: React.FC<ManageRolesBottomSheetProps> = observer(function ManageRolesBottomSheet({
@@ -265,10 +272,11 @@ export const ManageRolesBottomSheet: React.FC<ManageRolesBottomSheetProps> = obs
 	onClose,
 	guildId,
 	userId,
+	member,
 }) {
 	const {i18n} = useLingui();
 	const guild = Guilds.getGuild(guildId);
-	const currentMember = GuildMembers.getMember(guildId, userId);
+	const currentMember = GuildMembers.getMember(guildId, userId) ?? member ?? null;
 	const {canManageRole} = useRoleHierarchy(guild);
 	const rolesSettingsPath = useMemo(() => formatGuildSettingsPath(i18n, 'roles'), [i18n.locale]);
 	const manageRolesLabel = PermissionUtils.formatPermissionLabel(i18n, Permissions.MANAGE_ROLES);
@@ -411,10 +419,15 @@ function openNoRolesModal(guildId: string) {
 export const AddRoleButton: React.FC<{
 	guildId: string;
 	userId: string;
-}> = observer(function AddRoleButton({guildId, userId}) {
+	member?: GuildMember | null;
+}> = observer(function AddRoleButton({guildId, userId, member: providedMember}) {
 	const {i18n} = useLingui();
 	const guild = Guilds.getGuild(guildId);
-	const member = GuildMembers.getMember(guildId, userId);
+	// The store only holds members that have been synced (e.g. hoisted members in
+	// the sidebar), so it is frequently empty for role-less members. Fall back to a
+	// member the caller already knows about (from a fetched profile) so the button
+	// and its role menu appear and show accurate state for every guild member.
+	const member = GuildMembers.getMember(guildId, userId) ?? providedMember ?? null;
 	const isMobile = MobileLayout.enabled;
 	const [showBottomSheet, setShowBottomSheet] = useState(false);
 	const hasRoles = useMemo(() => {
@@ -434,15 +447,16 @@ export const AddRoleButton: React.FC<{
 					<ManageRolesMenuContent
 						guildId={guildId}
 						userId={userId}
+						member={member}
 						onClose={onClose}
 						data-flx="guild.role-management.handle-click.manage-roles-menu-content"
 					/>
 				));
 			}
 		},
-		[guildId, userId, isMobile, hasRoles],
+		[guildId, userId, isMobile, hasRoles, member],
 	);
-	if (!guild || !member) return null;
+	if (!guild) return null;
 	return (
 		<>
 			<Tooltip text={i18n._(ADD_ROLE_DESCRIPTOR)} data-flx="guild.role-management.add-role-button.tooltip">
@@ -468,6 +482,7 @@ export const AddRoleButton: React.FC<{
 					onClose={() => setShowBottomSheet(false)}
 					guildId={guildId}
 					userId={userId}
+					member={member}
 					data-flx="guild.role-management.add-role-button.manage-roles-bottom-sheet"
 				/>
 			)}

@@ -243,7 +243,16 @@ interface EmojiInfoState {
 }
 
 const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps> = observer(
-	function UserProfileMobileSheetContent({user, profile, userNote, guildId, autoFocusNote, initialTab, isLoading, onClose}) {
+	function UserProfileMobileSheetContent({
+		user,
+		profile,
+		userNote,
+		guildId,
+		autoFocusNote,
+		initialTab,
+		isLoading,
+		onClose,
+	}) {
 		const {i18n} = useLingui();
 		const [noteSheetOpen, setNoteSheetOpen] = useState(false);
 		const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -644,8 +653,7 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 															className={styles.fullTag}
 															data-flx="user.user-profile-mobile-sheet.user-profile-mobile-sheet-content.full-tag"
 														>
-															{!isDisplayNameUsername &&
-																NicknameUtils.formatTagForStreamerMode(user.username)}
+															{!isDisplayNameUsername && NicknameUtils.formatTagForStreamerMode(user.username)}
 															{effectiveProfile?.pronouns && (
 																<>
 																	{!isDisplayNameUsername && (
@@ -840,6 +848,7 @@ const UserProfileMobileSheetContent: React.FC<UserProfileMobileSheetContentProps
 															user={user}
 															memberRoles={[...memberRoles]}
 															canManageRoles={canManageRoles}
+															member={profileMembership.kind === 'guildMember' ? profileMembership.member : null}
 															data-flx="user.user-profile-mobile-sheet.user-profile-mobile-sheet-content.user-profile-roles"
 														/>
 													</div>
