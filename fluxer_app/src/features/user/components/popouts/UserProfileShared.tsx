@@ -11,6 +11,7 @@ import {
 	ROLES_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {getCachedDateTimeFormat} from '@app/features/i18n/utils/IntlCache';
+import type {GuildMember} from '@app/features/member/models/GuildMember';
 import {SafeMarkdown} from '@app/features/messaging/components/markdown';
 import {MarkdownContext} from '@app/features/messaging/components/markdown/renderers/RendererTypes';
 import {openExternalUrlWithWarning} from '@app/features/messaging/utils/ExternalLinkUtils';
@@ -425,7 +426,8 @@ export const UserProfileRoles: React.FC<{
 	user: User;
 	memberRoles: Array<GuildRole>;
 	canManageRoles: boolean;
-}> = observer(({profile, user, memberRoles, canManageRoles}) => {
+	member?: GuildMember | null;
+}> = observer(({profile, user, memberRoles, canManageRoles, member}) => {
 	const {i18n} = useLingui();
 	return profile?.guild && profile?.guildMember && (memberRoles.length > 0 || canManageRoles) ? (
 		<div className={styles.rolesContainer} data-flx="user.user-profile-shared.user-profile-roles.roles-container">
@@ -437,6 +439,7 @@ export const UserProfileRoles: React.FC<{
 					<AddRoleButton
 						guildId={profile.guild.id}
 						userId={user.id}
+						member={member ?? profile.guildMember}
 						data-flx="user.user-profile-shared.user-profile-roles.add-role-button"
 					/>
 				)}
