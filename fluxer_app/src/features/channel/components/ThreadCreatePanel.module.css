@@ -134,7 +134,7 @@
 
 .starterBox {
 	display: flex;
-	align-items: flex-end;
+	align-items: center;
 	gap: 0.5rem;
 	border-radius: var(--radius-md, 0.5rem);
 	background: var(--channel-textarea-background, var(--background-tertiary));
@@ -180,10 +180,4 @@
 
 .starterTextarea::placeholder {
 	color: var(--text-muted);
-}
-
-/* Centre the placeholder within the input box; typed text reverts to the normal
-   left alignment once the field is no longer empty. */
-.starterTextarea:placeholder-shown {
-	text-align: center;
 }
