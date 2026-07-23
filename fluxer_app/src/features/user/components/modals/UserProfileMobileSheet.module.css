@@ -140,6 +140,11 @@
 }
 
 .usernameSeparator {
+	/* The tag row is a plain inline span (no flex gap), so space the dot manually
+	   and shrink it to match the desktop profile's smaller divider. */
+	margin: 0 0.375rem;
+	font-size: 0.75em;
+	vertical-align: middle;
 	color: var(--text-tertiary);
 }
 
