@@ -1,0 +1,134 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+.panel {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	width: clamp(20rem, 26vw, 30rem);
+	min-width: 0;
+	background: var(--background-secondary-lighter);
+	border-left: 0.0625rem solid var(--user-area-divider-color);
+	overflow: hidden;
+}
+
+/* Mobile presentation: a fixed full-screen view above the channel content but
+   below modals, popouts, and toasts (which use higher stacking tokens). */
+.panelFullScreen {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+	min-height: 0;
+	background: var(--background-primary);
+	overflow: hidden;
+}
+
+.header {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-2);
+	height: 3rem;
+	flex: 0 0 auto;
+	padding: 0 var(--spacing-2) 0 var(--spacing-3);
+	border-bottom: 0.0625rem solid var(--user-area-divider-color);
+}
+
+.iconBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	color: var(--text-muted);
+}
+
+.icon {
+	flex: 0 0 auto;
+}
+
+.title {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	color: var(--header-primary);
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.25;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.closeButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	height: 2rem;
+	width: 2rem;
+	border: none;
+	border-radius: var(--radius-sm, 0.375rem);
+	background: transparent;
+	color: var(--interactive-normal);
+	cursor: pointer;
+}
+
+.closeButton:hover {
+	background: var(--background-modifier-hover);
+	color: var(--interactive-hover);
+}
+
+.body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: var(--spacing-4, 1rem);
+}
+
+.composer {
+	flex: 0 0 auto;
+	padding: 0 var(--spacing-4, 1rem) var(--spacing-4, 1rem);
+}
+
+.errorLabel {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-1);
+	margin-bottom: var(--spacing-2, 0.5rem);
+	color: var(--text-danger, #f23f43);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.starterBox {
+	display: flex;
+	align-items: flex-end;
+	border-radius: var(--radius-md, 0.5rem);
+	background: var(--channel-textarea-background, var(--background-tertiary));
+	padding: 0.625rem 0.75rem;
+}
+
+.starterBoxError {
+	composes: starterBox;
+	box-shadow: inset 0 0 0 0.0625rem var(--text-danger, #f23f43);
+}
+
+.starterTextarea {
+	flex: 1 1 auto;
+	min-width: 0;
+	max-height: 12rem;
+	border: none;
+	outline: none;
+	resize: none;
+	background: transparent;
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: 1rem;
+	line-height: 1.375;
+}
+
+.starterTextarea::placeholder {
+	color: var(--text-muted);
+}

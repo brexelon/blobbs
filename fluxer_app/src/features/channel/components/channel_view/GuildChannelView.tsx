@@ -21,6 +21,7 @@ import {useChannelSearchState} from '@app/features/channel/components/channel_vi
 import {useVoiceCallChromePinState} from '@app/features/channel/components/channel_view/useVoiceCallChromePinState';
 import {MatureContentChannelGate} from '@app/features/channel/components/MatureContentChannelGate';
 import {useMessagesBottomBarVisibility} from '@app/features/channel/components/MessagesBottomBarVisibility';
+import {ThreadCreatePanel} from '@app/features/channel/components/ThreadCreatePanel';
 import {ThreadSidebarPreview} from '@app/features/channel/components/ThreadSidebarPreview';
 import {ThreadStateBanner} from '@app/features/channel/components/ThreadStateBanner';
 import {VerificationBarrier} from '@app/features/channel/components/VerificationBarrier';
@@ -564,8 +565,10 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 		);
 	}
 	const isThreadSidebarOpen = threadSidebarThreadId != null && !isMobileLayout;
-	const shouldRenderMemberList = isMemberListVisible && !isMobileLayout && !isSearchActive && !isThreadSidebarOpen;
-	return (
+	const isThreadCreateOpen = ThreadSidebar.isCreatingForParent(channelId) && !isMobileLayout;
+	const shouldRenderMemberList =
+		isMemberListVisible && !isMobileLayout && !isSearchActive && !isThreadSidebarOpen && !isThreadCreateOpen;
+	const scaffold = (
 		<ChannelViewScaffold
 			header={
 				<ChannelHeader
@@ -596,7 +599,14 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 				/>
 			}
 			sidePanel={
-				isThreadSidebarOpen ? (
+				isThreadCreateOpen ? (
+					<ThreadCreatePanel
+						parentChannelId={channelId}
+						guildId={guildId ?? channel.guildId ?? ''}
+						originMessageId={ThreadSidebar.createOriginMessageId}
+						data-flx="channel.channel-view.guild-channel-view.thread-create-panel"
+					/>
+				) : isThreadSidebarOpen ? (
 					<ThreadSidebarPreview
 						threadId={threadSidebarThreadId}
 						parentChannelId={channelId}
@@ -625,4 +635,19 @@ export const GuildChannelView = observer(({channelId, guildId}: GuildChannelView
 			data-flx="channel.channel-view.guild-channel-view.channel-view-scaffold"
 		/>
 	);
+	if (isMobileLayout && ThreadSidebar.isCreatingForParent(channelId)) {
+		return (
+			<>
+				{scaffold}
+				<ThreadCreatePanel
+					fullScreen
+					parentChannelId={channelId}
+					guildId={guildId ?? channel.guildId ?? ''}
+					originMessageId={ThreadSidebar.createOriginMessageId}
+					data-flx="channel.channel-view.guild-channel-view.thread-create-panel-mobile"
+				/>
+			</>
+		);
+	}
+	return scaffold;
 });

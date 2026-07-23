@@ -5,9 +5,9 @@ import Authentication from '@app/features/auth/state/Authentication';
 import * as ChannelPinCommands from '@app/features/channel/commands/ChannelPinsCommands';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {useMaybeMessageViewContext} from '@app/features/channel/components/MessageViewContext';
-import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {isSystemDmChannel} from '@app/features/channel/utils/ChannelUtils';
 import type {UnicodeEmoji} from '@app/features/emoji/types/EmojiTypes';
 import Guilds from '@app/features/guild/state/Guilds';
@@ -426,9 +426,11 @@ export function createMessageActionHandlers(
 				selectChannel(guildId, message.threadId);
 				return;
 			}
-			ModalCommands.push(
-				modal(() => <ThreadCreateModal channelId={message.channelId} guildId={guildId} message={message} />),
-			);
+			ThreadSidebar.openCreate({
+				parentChannelId: message.channelId,
+				guildId,
+				originMessageId: message.id,
+			});
 		};
 		if (onClose) {
 			ModalCommands.runAfterBottomSheetClose(onClose, () => void openThreadAction());

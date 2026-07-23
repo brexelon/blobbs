@@ -16,9 +16,9 @@ import {
 	isSpecialMention,
 	isSticker,
 } from '@app/features/channel/components/Autocomplete';
-import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import type {Command} from '@app/features/devtools/hooks/useCommands';
 import {useCommands} from '@app/features/devtools/hooks/useCommands';
 import Emoji from '@app/features/emoji/state/Emoji';
@@ -70,15 +70,13 @@ import Permission from '@app/features/permissions/state/Permission';
 import * as PermissionUtils from '@app/features/permissions/utils/PermissionUtils';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {ComponentDispatch} from '@app/features/platform/utils/ComponentBus';
-import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
-import {modal} from '@app/features/ui/commands/ModalCommands';
 import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import type {UserId} from '@fluxer/schema/src/branded/WireIds';
 import {useLingui} from '@lingui/react/macro';
 import {matchSorter} from 'match-sorter';
-import {createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 
 const logger = new Logger('useTextareaAutocomplete');
 
@@ -938,7 +936,7 @@ export function useTextareaAutocomplete({
 					const clearedValue = `${beforeMatch}${guildBeforeMatch}${afterMatch}`.trimStart();
 					applyAutocompleteValue(clearedValue, [], 0);
 					setSelectedIndex(0);
-					ModalCommands.push(modal(() => createElement(ThreadCreateModal, {channelId, guildId})));
+					ThreadSidebar.openCreate({parentChannelId: channelId, guildId});
 					return;
 				} else {
 					const insertionText = getCommandInsertionText(option.command);
