@@ -2,10 +2,10 @@
 
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import {ThreadContextMenu} from '@app/features/channel/components/menus/ThreadContextMenu';
-import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import styles from '@app/features/channel/components/popouts/ChannelThreadsPopout.module.css';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import Threads from '@app/features/channel/state/Threads';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
@@ -18,8 +18,6 @@ import {Logger} from '@app/features/platform/utils/AppLogger';
 import {AvatarStack} from '@app/features/ui/avatars/AvatarStack';
 import {Button} from '@app/features/ui/button/Button';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
-import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
-import {modal} from '@app/features/ui/commands/ModalCommands';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import {User} from '@app/features/user/models/User';
 import {getShortRelativeTime} from '@app/features/user/utils/DateFormatting';
@@ -173,7 +171,7 @@ export const ChannelThreadsPopout = observer(({channel, onClose}: {channel: Chan
 		}
 		const guildId = channel.guildId;
 		onClose?.();
-		ModalCommands.push(modal(() => <ThreadCreateModal channelId={channel.id} guildId={guildId} />));
+		ThreadSidebar.openCreate({parentChannelId: channel.id, guildId});
 	};
 
 	const openThreadMenu = (event: React.MouseEvent, thread: WireChannel) => {

@@ -2,8 +2,8 @@
 
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelThreadsSheetContent.module.css';
-import {ThreadCreateModal} from '@app/features/channel/components/modals/ThreadCreateModal';
 import type {Channel} from '@app/features/channel/models/Channel';
+import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import Threads from '@app/features/channel/state/Threads';
 import {openThreadFullView} from '@app/features/channel/utils/ThreadNavigationUtils';
 import GuildMembers from '@app/features/member/state/GuildMembers';
@@ -13,8 +13,6 @@ import Messages from '@app/features/messaging/state/MessagingMessages';
 import {getMessagePreviewText} from '@app/features/messaging/utils/MessagePreviewText';
 import Permission from '@app/features/permissions/state/Permission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
-import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
-import {modal} from '@app/features/ui/commands/ModalCommands';
 import {getShortRelativeTime} from '@app/features/user/utils/DateFormatting';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import type {Channel as WireChannel} from '@fluxer/schema/src/domains/channel/ChannelSchemas';
@@ -112,10 +110,8 @@ export const ChannelThreadsSheetContent = observer(({channel, onClose}: {channel
 		if (!guildId) {
 			return;
 		}
-		ModalCommands.pushAfterBottomSheetClose(
-			onClose,
-			modal(() => <ThreadCreateModal channelId={channel.id} guildId={guildId} />),
-		);
+		onClose();
+		ThreadSidebar.openCreate({parentChannelId: channel.id, guildId});
 	};
 
 	const handleOpen = (thread: WireChannel) => {
