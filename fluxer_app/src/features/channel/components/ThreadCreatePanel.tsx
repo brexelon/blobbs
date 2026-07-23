@@ -3,16 +3,19 @@
 import styles from '@app/features/channel/components/ThreadCreatePanel.module.css';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {submitThreadCreate} from '@app/features/channel/utils/ThreadCreateFlow';
+import {EmojiPickerPopout} from '@app/features/emoji/components/popouts/EmojiPickerPopout';
+import type {FlatEmoji} from '@app/features/emoji/types/EmojiTypes';
 import {CLOSE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {Input} from '@app/features/ui/components/form/FormInput';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
+import {Popout} from '@app/features/ui/popover/PopoverPopout';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import {MAX_MESSAGE_LENGTH_PREMIUM} from '@fluxer/constants/src/LimitConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {XIcon} from '@phosphor-icons/react';
+import {SmileyIcon, XIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useRef, useState} from 'react';
@@ -39,6 +42,20 @@ const STARTER_REQUIRED_DESCRIPTOR = msg({
 	message: 'Starter Message is required',
 	comment: 'Validation error shown when the thread-creation starter message is empty.',
 });
+const EMOJI_DESCRIPTOR = msg({
+	message: 'Emoji',
+	comment: 'Accessible label for the emoji picker button in the thread-creation composer.',
+});
+
+function emojiInsertText(emoji: FlatEmoji): string {
+	if (emoji.surrogates) {
+		return emoji.surrogates;
+	}
+	if (emoji.id) {
+		return `<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`;
+	}
+	return '';
+}
 
 interface ThreadCreatePanelProps {
 	parentChannelId: string;
@@ -86,6 +103,33 @@ export const ThreadCreatePanel = observer(
 			[submit],
 		);
 
+		const insertEmoji = useCallback(
+			(emoji: FlatEmoji) => {
+				const text = emojiInsertText(emoji);
+				if (!text) {
+					return;
+				}
+				const element = contentRef.current;
+				const start = element?.selectionStart ?? content.length;
+				const end = element?.selectionEnd ?? content.length;
+				const next = content.slice(0, start) + text + content.slice(end);
+				setContent(next);
+				if (starterError && next.trim()) {
+					setStarterError(false);
+				}
+				requestAnimationFrame(() => {
+					const target = contentRef.current;
+					if (!target) {
+						return;
+					}
+					target.focus();
+					const caret = start + text.length;
+					target.setSelectionRange(caret, caret);
+				});
+			},
+			[content, starterError],
+		);
+
 		return (
 			<aside
 				className={fullScreen ? styles.panelFullScreen : styles.panel}
@@ -110,7 +154,12 @@ export const ThreadCreatePanel = observer(
 						</FocusRing>
 					</Tooltip>
 				</header>
-				<div className={styles.body} data-flx="channel.thread-create-panel.body">
+				<div className={styles.illustration} aria-hidden="true" data-flx="channel.thread-create-panel.illustration">
+					<div className={styles.iconCircle}>
+						<ThreadIcon size={40} className={styles.bigIcon} />
+					</div>
+				</div>
+				<div className={styles.footer} data-flx="channel.thread-create-panel.footer">
 					<Input
 						label={i18n._(THREAD_NAME_DESCRIPTOR)}
 						value={name}
@@ -121,35 +170,50 @@ export const ThreadCreatePanel = observer(
 						placeholder={i18n._(THREAD_NAME_PLACEHOLDER_DESCRIPTOR)}
 						data-flx="channel.thread-create-panel.name"
 					/>
-				</div>
-				<div className={styles.composer} data-flx="channel.thread-create-panel.composer">
-					{starterError && (
-						<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
-							{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
+					<div className={styles.composer} data-flx="channel.thread-create-panel.composer">
+						{starterError && (
+							<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
+								{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
+							</div>
+						)}
+						<div
+							className={starterError ? styles.starterBoxError : styles.starterBox}
+							data-flx="channel.thread-create-panel.starter-box"
+						>
+							<textarea
+								ref={contentRef}
+								className={styles.starterTextarea}
+								value={content}
+								onChange={(event) => {
+									setContent(event.target.value);
+									if (starterError && event.target.value.trim()) {
+										setStarterError(false);
+									}
+								}}
+								onKeyDown={handleContentKeyDown}
+								placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+								maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
+								rows={1}
+								disabled={submitting}
+								aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+								data-flx="channel.thread-create-panel.starter-textarea"
+							/>
+							<Popout
+								position="top-end"
+								render={({onClose}) => (
+									<EmojiPickerPopout channelId={parentChannelId} handleSelect={insertEmoji} onClose={onClose} />
+								)}
+							>
+								<button
+									type="button"
+									className={styles.emojiButton}
+									aria-label={i18n._(EMOJI_DESCRIPTOR)}
+									data-flx="channel.thread-create-panel.emoji-button"
+								>
+									<SmileyIcon size={22} />
+								</button>
+							</Popout>
 						</div>
-					)}
-					<div
-						className={starterError ? styles.starterBoxError : styles.starterBox}
-						data-flx="channel.thread-create-panel.starter-box"
-					>
-						<textarea
-							ref={contentRef}
-							className={styles.starterTextarea}
-							value={content}
-							onChange={(event) => {
-								setContent(event.target.value);
-								if (starterError && event.target.value.trim()) {
-									setStarterError(false);
-								}
-							}}
-							onKeyDown={handleContentKeyDown}
-							placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-							maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
-							rows={1}
-							disabled={submitting}
-							aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-							data-flx="channel.thread-create-panel.starter-textarea"
-						/>
 					</div>
 				</div>
 			</aside>
