@@ -82,13 +82,15 @@
 	color: var(--interactive-hover);
 }
 
-/* Centered thread illustration filling the empty space above the inputs. */
+/* Thread illustration filling the empty space above the inputs. It is anchored
+   bottom-left so the icon sits just above the inputs, matching where the thread
+   welcome header appears in the regular thread sidebar. */
 .illustration {
 	flex: 1 1 auto;
 	min-height: 0;
 	display: flex;
-	align-items: center;
-	justify-content: center;
+	align-items: flex-end;
+	justify-content: flex-start;
 	padding: var(--spacing-4, 1rem);
 }
 
@@ -112,7 +114,7 @@
 	flex: 0 0 auto;
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-3, 0.75rem);
+	gap: var(--spacing-5, 1.25rem);
 	padding: var(--spacing-4, 1rem);
 }
 
@@ -178,4 +180,10 @@
 
 .starterTextarea::placeholder {
 	color: var(--text-muted);
+}
+
+/* Centre the placeholder within the input box; typed text reverts to the normal
+   left alignment once the field is no longer empty. */
+.starterTextarea:placeholder-shown {
+	text-align: center;
 }

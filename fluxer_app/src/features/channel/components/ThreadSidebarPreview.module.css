@@ -5,7 +5,9 @@
 	flex-direction: column;
 	height: 100%;
 	min-height: 0;
-	width: clamp(20rem, 26vw, 30rem);
+	/* Matches the thread create panel width so the sidebar keeps a consistent size
+	   when transitioning from creating a thread to viewing it. */
+	width: clamp(26rem, 30vw, 36rem);
 	min-width: 0;
 	background: var(--background-secondary-lighter);
 	border-left: 0.0625rem solid var(--user-area-divider-color);
