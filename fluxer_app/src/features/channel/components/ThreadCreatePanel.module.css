@@ -135,14 +135,21 @@
 	font-weight: 600;
 }
 
-/* Transparent input row with a trailing emoji button, mirroring the regular
-   composer's transparent text area rather than a filled/rounded box. */
+/* Desktop: transparent input row with a trailing emoji button, mirroring the
+   regular composer's transparent text area rather than a filled/rounded box. */
 .starterRow {
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
 	min-height: 2.75rem;
 	background: transparent;
+}
+
+/* Mobile: a rounded, filled message box like the regular text-channel composer. */
+.panelFullScreen .starterRow {
+	border-radius: var(--radius-xl, 1rem);
+	background: var(--background-textarea, var(--background-secondary-lighter));
+	padding: 0.25rem 0.75rem;
 }
 
 .emojiButton {
@@ -178,5 +185,6 @@
 }
 
 .starterTextarea::placeholder {
-	color: var(--text-muted);
+	/* Match the regular "Message #channel" composer placeholder colour. */
+	color: var(--text-primary-muted);
 }
