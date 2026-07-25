@@ -3,7 +3,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
-    api::types::GuildDetailInfo,
+    api::types::{GuildChannelSummary, GuildDetailInfo, GuildThreadSummary},
     config::AdminConfig,
     templates::components::{
         badge::{BadgeVariant, badge},
@@ -27,13 +27,142 @@ fn current_snowflake() -> String {
     snowflake.to_string()
 }
 
+const CHANNEL_TYPE_CATEGORY: i32 = 4;
+const CHANNEL_TYPE_LINK: i32 = 13;
+
 fn channel_type_label(channel_type: i32) -> &'static str {
     match channel_type {
         0 => "Text",
         2 => "Voice",
-        4 => "Category",
-        13 => "Link",
+        CHANNEL_TYPE_CATEGORY => "Category",
+        5 => "Thread",
+        CHANNEL_TYPE_LINK => "Link",
         _ => "Unknown",
+    }
+}
+
+/// One entry in the rendered channel list. Categories become plain section labels
+/// rather than rows; every other channel is a row that may carry threads.
+enum ChannelSection<'a> {
+    Category {
+        channel: &'a GuildChannelSummary,
+    },
+    Channel {
+        channel: &'a GuildChannelSummary,
+        threads: Vec<&'a GuildThreadSummary>,
+    },
+}
+
+fn browse_url(config: &AdminConfig, channel_id: &str, snowflake: &str) -> String {
+    format!(
+        "{}/messages?channel_id={}&message_id={}&context_limit=50",
+        config.base_path, channel_id, snowflake
+    )
+}
+
+/// Half-height, indented row for a thread beneath its channel: name and id on the
+/// left, the type label on the right, mirroring the channel rows above it.
+fn thread_row(config: &AdminConfig, thread: &GuildThreadSummary, snowflake: &str) -> Markup {
+    html! {
+        a href=(browse_url(config, &thread.id, snowflake))
+            class="ml-6 flex items-center gap-3 rounded border border-neutral-200 \
+                   bg-white px-3 py-1 transition-colors hover:bg-neutral-100" {
+            span class="min-w-0 flex-1 truncate text-neutral-700 text-xs" {
+                (thread.name.as_deref().unwrap_or("")) " - " (thread.id)
+            }
+            span class="flex-shrink-0 text-neutral-500 text-xs" { "Thread" }
+        }
+    }
+}
+
+fn channel_entry(
+    config: &AdminConfig,
+    guild: &GuildDetailInfo,
+    channels_by_id: &std::collections::HashMap<&str, &GuildChannelSummary>,
+    channel: &GuildChannelSummary,
+    threads: &[&GuildThreadSummary],
+    snowflake: &str,
+) -> Markup {
+    let parent_nsfw_override = channel
+        .parent_id
+        .as_deref()
+        .and_then(|pid| channels_by_id.get(pid))
+        .and_then(|p| p.nsfw_override);
+    let nsfw_badge = channel_nsfw_state_badge(
+        channel.nsfw.unwrap_or(false),
+        channel.nsfw_override,
+        parent_nsfw_override,
+        guild.nsfw,
+        channel.content_warning_level,
+        channel.content_warning_text.as_deref(),
+        false,
+    );
+    let row_class = "flex items-center gap-3 rounded border border-neutral-200 \
+                     bg-neutral-50 p-3 transition-colors hover:bg-neutral-100";
+    let trailing = html! {
+        div class="flex flex-col items-end gap-1" {
+            span class="text-sm text-neutral-500 text-right" {
+                (channel_type_label(channel.channel_type))
+            }
+            (nsfw_badge)
+        }
+    };
+
+    // A link channel has no messages to browse, so its row stays inert and shows the
+    // destination instead.
+    if channel.channel_type == CHANNEL_TYPE_LINK {
+        return html! {
+            div class=(row_class) {
+                div class="flex min-w-0 flex-1 flex-col gap-0" {
+                    span class="text-sm font-semibold" { (channel.name.as_deref().unwrap_or("")) }
+                    span class="text-sm text-neutral-500" { (channel.id) }
+                    @if let Some(ref url) = channel.url {
+                        a href=(url) target="_blank" rel="noopener noreferrer"
+                            class="truncate text-blue-600 text-xs hover:underline" {
+                            (url)
+                        }
+                    }
+                }
+                (trailing)
+            }
+        };
+    }
+
+    if threads.is_empty() {
+        return html! {
+            a href=(browse_url(config, &channel.id, snowflake)) class=(row_class) {
+                div class="flex flex-1 flex-col gap-0" {
+                    span class="text-sm font-semibold" { (channel.name.as_deref().unwrap_or("")) }
+                    span class="text-sm text-neutral-500" { (channel.id) }
+                }
+                (trailing)
+            }
+        };
+    }
+
+    // With threads the row doubles as an expand toggle, so the summary carries the
+    // caret and the channel name becomes the link — clicking the name still browses
+    // the channel, clicking anywhere else opens the thread list.
+    html! {
+        details class="group" {
+            summary class={(row_class) " cursor-pointer list-none"} {
+                span class="flex-shrink-0 text-neutral-400 text-xs transition-transform \
+                            group-open:rotate-90" { "\u{25B6}" }
+                div class="flex flex-1 flex-col gap-0" {
+                    a href=(browse_url(config, &channel.id, snowflake))
+                        class="text-sm font-semibold hover:text-blue-600 hover:underline" {
+                        (channel.name.as_deref().unwrap_or(""))
+                    }
+                    span class="text-sm text-neutral-500" { (channel.id) }
+                }
+                (trailing)
+            }
+            div class="mt-1 flex flex-col gap-1" {
+                @for thread in threads {
+                    (thread_row(config, thread, snowflake))
+                }
+            }
+        }
     }
 }
 
@@ -45,6 +174,39 @@ pub fn overview_tab(config: &AdminConfig, guild: &GuildDetailInfo, csrf_token: &
 
     let channels_by_id: std::collections::HashMap<&str, &crate::api::types::GuildChannelSummary> =
         guild.channels.iter().map(|c| (c.id.as_str(), c)).collect();
+
+    // A thread's parent is the channel it was started in, so threads group under
+    // channels rather than under categories. Within a channel they are listed in
+    // creation order, which for snowflakes is ascending numeric id.
+    let mut threads_by_parent: std::collections::HashMap<&str, Vec<&GuildThreadSummary>> =
+        std::collections::HashMap::new();
+    for thread in &guild.threads {
+        if let Some(parent_id) = thread.parent_id.as_deref() {
+            threads_by_parent.entry(parent_id).or_default().push(thread);
+        }
+    }
+    for threads in threads_by_parent.values_mut() {
+        threads.sort_by_key(|thread| thread.id.parse::<u64>().unwrap_or(0));
+    }
+
+    // Instance order is the position order already used for the flat list; categories
+    // simply become section labels rather than rows of their own.
+    let channel_sections: Vec<ChannelSection<'_>> = sorted_channels
+        .iter()
+        .map(|channel| {
+            if channel.channel_type == CHANNEL_TYPE_CATEGORY {
+                ChannelSection::Category { channel }
+            } else {
+                ChannelSection::Channel {
+                    channel,
+                    threads: threads_by_parent
+                        .get(channel.id.as_str())
+                        .cloned()
+                        .unwrap_or_default(),
+                }
+            }
+        })
+        .collect();
 
     let mut sorted_roles = guild.roles.clone();
     sorted_roles.sort_by_key(|role| std::cmp::Reverse(role.position));
@@ -183,78 +345,24 @@ pub fn overview_tab(config: &AdminConfig, guild: &GuildDetailInfo, csrf_token: &
                     p class="text-sm text-neutral-500" { "No channels" }
                 } @else {
                     div class="flex flex-col gap-2" {
-                        @for channel in &sorted_channels {
-                            @let is_link = channel.channel_type == 13;
-                            @let parent = channel.parent_id.as_deref()
-                                .and_then(|pid| channels_by_id.get(pid));
-                            @let parent_nsfw_override = parent
-                                .and_then(|p| p.nsfw_override);
-                            @if is_link {
-                                div class="flex items-center gap-3 rounded border \
-                                           border-neutral-200 bg-neutral-50 p-3 \
-                                           transition-colors hover:bg-neutral-100" {
-                                    div class="flex min-w-0 flex-1 flex-col gap-0" {
-                                        span class="text-sm font-semibold" {
-                                            (channel.name.as_deref().unwrap_or(""))
-                                        }
-                                        span class="text-sm text-neutral-500" {
-                                            (channel.id)
-                                        }
-                                        @if let Some(ref url) = channel.url {
-                                            a href=(url) target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="truncate text-blue-600 text-xs \
-                                                       hover:underline" {
-                                                (url)
-                                            }
-                                        }
-                                    }
-                                    div class="flex flex-col items-end gap-1" {
-                                        span class="text-sm text-neutral-500 text-right" {
-                                            (channel_type_label(channel.channel_type))
-                                        }
-                                        (channel_nsfw_state_badge(
-                                            channel.nsfw.unwrap_or(false),
-                                            channel.nsfw_override,
-                                            parent_nsfw_override,
-                                            guild.nsfw,
-                                            channel.content_warning_level,
-                                            channel.content_warning_text.as_deref(),
-                                            false,
-                                        ))
+                        @for section in &channel_sections {
+                            @match section {
+                                ChannelSection::Category { channel } => {
+                                    p class="mt-2 first:mt-0 font-semibold text-neutral-500 text-xs \
+                                             uppercase tracking-wide" {
+                                        (channel.name.as_deref().unwrap_or("").to_uppercase())
+                                        " (" (channel.id) ")"
                                     }
                                 }
-                            } @else {
-                                a href={
-                                    (base) "/messages?channel_id=" (channel.id)
-                                    "&message_id=" (snowflake)
-                                    "&context_limit=50"
-                                }
-                                class="flex items-center gap-3 rounded border \
-                                       border-neutral-200 bg-neutral-50 p-3 \
-                                       transition-colors hover:bg-neutral-100" {
-                                    div class="flex flex-1 flex-col gap-0" {
-                                        span class="text-sm font-semibold" {
-                                            (channel.name.as_deref().unwrap_or(""))
-                                        }
-                                        span class="text-sm text-neutral-500" {
-                                            (channel.id)
-                                        }
-                                    }
-                                    div class="flex flex-col items-end gap-1" {
-                                        span class="text-sm text-neutral-500 text-right" {
-                                            (channel_type_label(channel.channel_type))
-                                        }
-                                        (channel_nsfw_state_badge(
-                                            channel.nsfw.unwrap_or(false),
-                                            channel.nsfw_override,
-                                            parent_nsfw_override,
-                                            guild.nsfw,
-                                            channel.content_warning_level,
-                                            channel.content_warning_text.as_deref(),
-                                            false,
-                                        ))
-                                    }
+                                ChannelSection::Channel { channel, threads } => {
+                                    (channel_entry(
+                                        config,
+                                        guild,
+                                        &channels_by_id,
+                                        channel,
+                                        threads,
+                                        &snowflake,
+                                    ))
                                 }
                             }
                         }

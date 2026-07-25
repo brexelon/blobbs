@@ -175,6 +175,10 @@ export class ChannelRepository extends IChannelRepository {
 		return this.repository.channelData.listGuildChannels(guildId);
 	}
 
+	async listGuildThreads(guildId: GuildID): Promise<Array<Channel>> {
+		return this.repository.channelData.listGuildThreads(guildId);
+	}
+
 	async listChannels(channelIds: Array<ChannelID>): Promise<Array<Channel>> {
 		return this.repository.channelData.listChannels(channelIds);
 	}

@@ -174,6 +174,8 @@ pub struct GuildDetailInfo {
     #[serde(default)]
     pub channels: Vec<GuildChannelSummary>,
     #[serde(default)]
+    pub threads: Vec<GuildThreadSummary>,
+    #[serde(default)]
     pub roles: Vec<GuildRoleSummary>,
     pub description: Option<String>,
 }
@@ -214,6 +216,19 @@ pub struct GuildChannelSummary {
     pub content_warning_level: Option<i32>,
     pub content_warning_text: Option<String>,
     pub url: Option<String>,
+}
+
+/// A thread hanging beneath a channel. `parent_id` points at that channel rather
+/// than at a category, which is what lets the overview nest threads under it.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GuildThreadSummary {
+    pub id: String,
+    pub name: Option<String>,
+    pub parent_id: Option<String>,
+    pub creator_id: Option<String>,
+    pub creator_name: Option<String>,
+    pub state: Option<i32>,
+    pub locked: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

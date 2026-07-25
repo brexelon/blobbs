@@ -35,8 +35,9 @@ export class AdminGuildLookupService {
 		if (!guild) {
 			return {guild: null};
 		}
-		const [channels, roles, ownerUser] = await Promise.all([
+		const [channels, threads, roles, ownerUser] = await Promise.all([
 			channelRepository.listGuildChannels(guildId),
+			channelRepository.listGuildThreads(guildId),
 			guildRepository.listRoles(guildId),
 			userRepository.findUnique(guild.ownerId),
 		]);
@@ -74,6 +75,15 @@ export class AdminGuildLookupService {
 					parent_id: c.parentId?.toString() ?? null,
 					nsfw: c.isNsfw,
 					url: c.url,
+				})),
+				threads: threads.map((t) => ({
+					id: t.id.toString(),
+					name: t.threadName ?? t.name,
+					parent_id: t.parentId?.toString() ?? null,
+					creator_id: t.threadCreatorId?.toString() ?? null,
+					creator_name: t.threadCreatorName,
+					state: t.threadState,
+					locked: t.threadLocked,
 				})),
 				roles: roles.map((r) => ({
 					id: r.id.toString(),
