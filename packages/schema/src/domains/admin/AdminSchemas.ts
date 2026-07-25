@@ -28,6 +28,7 @@ import {
 	GuildVerificationLevelSchema,
 	NSFWLevelSchema,
 } from '@fluxer/schema/src/primitives/GuildValidators';
+import {MessageTypeSchema} from '@fluxer/schema/src/primitives/MessageValidators';
 import {PermissionStringType} from '@fluxer/schema/src/primitives/PermissionValidators';
 import {
 	createBitflagInt32Type,
@@ -1284,6 +1285,15 @@ const AdminMessageAttachmentSchema = z.object({
 	ncmec_report_id: createStringType(1, 256).nullable(),
 	ncmec_failure_reason: createStringType(1, 4000).nullable(),
 });
+/**
+ * Just enough of a mentioned user to name them in system message text; the admin
+ * surfaces render these as plain names rather than as mention pills.
+ */
+const AdminMessageMentionSchema = z.object({
+	id: SnowflakeStringType,
+	username: createStringType(1, 100),
+	global_name: z.string().nullable(),
+});
 export const AdminMessageSchema = z.object({
 	id: SnowflakeStringType,
 	channel_id: SnowflakeStringType,
@@ -1306,6 +1316,13 @@ export const AdminMessageSchema = z.object({
 	timestamp: z.string(),
 	attachments: z.array(AdminMessageAttachmentSchema).max(10),
 	user_prior_ncmec_report_ids: z.array(createStringType(1, 256)).max(100).optional(),
+	type: MessageTypeSchema.optional().describe('The message type. Non-zero types are system messages with no content.'),
+	thread_name: z.string().nullish().describe('Name of the thread this message announces, for thread system messages'),
+	mentions: z
+		.array(AdminMessageMentionSchema)
+		.max(100)
+		.optional()
+		.describe('Users referenced by the message, which system message text is phrased around'),
 });
 export const LookupMessageResponse = z.object({
 	messages: z.array(AdminMessageSchema).max(100),
