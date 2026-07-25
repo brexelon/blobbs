@@ -167,22 +167,46 @@
 	padding: 0 0.75rem;
 }
 
+/* Emoji button matching the regular composer's emoji button (desktop
+   TextareaButton): 2.25rem hit area, 1.625rem icon, muted colour that brightens
+   on hover. */
 .emojiButton {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	height: 2rem;
-	width: 2rem;
+	height: var(--user-area-content-height);
+	width: var(--user-area-content-height);
+	min-width: var(--user-area-content-height);
 	border: none;
 	border-radius: var(--radius-sm, 0.375rem);
 	background: transparent;
-	color: var(--interactive-normal);
+	color: var(--text-primary-muted);
 	cursor: pointer;
+	transition: color var(--transition-normal);
 }
 
 .emojiButton:hover {
-	color: var(--interactive-hover);
+	color: var(--text-primary);
+}
+
+.emojiIcon {
+	width: 1.625rem;
+	height: 1.625rem;
+	flex-shrink: 0;
+}
+
+/* Mobile: match the smaller mobile composer emoji button (2rem hit area,
+   1.375rem icon). */
+.panelFullScreen .emojiButton {
+	height: 2rem;
+	width: 2rem;
+	min-width: 2rem;
+}
+
+.panelFullScreen .emojiIcon {
+	width: 1.375rem;
+	height: 1.375rem;
 }
 
 .starterTextarea {
