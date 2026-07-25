@@ -8,6 +8,7 @@ import {ChannelWelcomeSection} from '@app/features/channel/components/ChannelWel
 import {CollapsedMessageVisibilityProvider} from '@app/features/channel/components/CollapsedMessageVisibilityContext';
 import {NewMessagesBar} from '@app/features/channel/components/NewMessagesBar';
 import ScrollFillerSkeleton from '@app/features/channel/components/ScrollFillerSkeleton';
+import {ThreadStarterMessage} from '@app/features/channel/components/ThreadStarterMessage';
 import {UploadManager} from '@app/features/channel/components/UploadManager';
 import type {Channel} from '@app/features/channel/models/Channel';
 import {isThreadSendLocked} from '@app/features/channel/utils/ThreadStateUtils';
@@ -622,6 +623,9 @@ export const Messages = observer(function Messages({
 		<>
 			{!readyMessages.hasMoreBefore && (
 				<ChannelWelcomeSection channel={channel} data-flx="channel.messages.channel-welcome-section" />
+			)}
+			{!readyMessages.hasMoreBefore && (
+				<ThreadStarterMessage channel={channel} data-flx="channel.messages.thread-starter-message" />
 			)}
 			{readyMessages.hasMoreBefore && (
 				<>
