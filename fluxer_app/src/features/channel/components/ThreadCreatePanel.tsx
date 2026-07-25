@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import styles from '@app/features/channel/components/ThreadCreatePanel.module.css';
+import {ThreadStarterPreview} from '@app/features/channel/components/ThreadStarterMessage';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {submitThreadCreate} from '@app/features/channel/utils/ThreadCreateFlow';
 import {EmojiPickerPopout} from '@app/features/emoji/components/popouts/EmojiPickerPopout';
@@ -178,6 +179,13 @@ export const ThreadCreatePanel = observer(
 						data-flx="channel.thread-create-panel.name"
 					/>
 				</div>
+				{originMessageId && (
+					<ThreadStarterPreview
+						parentChannelId={parentChannelId}
+						originMessageId={originMessageId}
+						data-flx="channel.thread-create-panel.starter-preview"
+					/>
+				)}
 				<div className={styles.composerBar} data-flx="channel.thread-create-panel.composer">
 					{starterError && (
 						<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">

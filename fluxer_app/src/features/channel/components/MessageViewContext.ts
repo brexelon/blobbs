@@ -37,6 +37,12 @@ export interface MessageViewContextValue {
 	handleDelete: (bypassConfirm?: boolean) => void;
 	onPopoutToggle?: (isOpen: boolean) => void;
 	readonlyPreview?: boolean;
+	/**
+	 * Suppresses the thread box and its connector under the message. Used when the
+	 * message is already being shown inside the thread it started, where a box
+	 * linking back to that same thread would be circular.
+	 */
+	hideThreadPreview?: boolean;
 	onHeadingActivate?: () => void;
 }
 
