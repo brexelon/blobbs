@@ -121,8 +121,19 @@
    with a divider line above it, spanning the panel's full width. */
 .composerBar {
 	flex: 0 0 auto;
-	padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: var(--spacing-2, 0.5rem) var(--spacing-4, 1rem);
 	box-shadow: inset 0 0.0625rem 0 var(--user-area-divider-color);
+}
+
+/* Desktop: the transparent bar is the composer box, so match the regular
+   message composer's container height. */
+.panel .composerBar {
+	min-height: var(--input-container-min-height);
+	padding-top: 0;
+	padding-bottom: 0;
 }
 
 .errorLabel {
@@ -145,8 +156,10 @@
 	background: transparent;
 }
 
-/* Mobile: a rounded, filled message box like the regular text-channel composer. */
+/* Mobile: a rounded, filled message box like the regular text-channel composer,
+   matching the height of the regular mobile composer's input pill. */
 .panelFullScreen .starterRow {
+	min-height: 2.25rem;
 	border-radius: var(--radius-xl, 1rem);
 	background: var(--background-textarea, var(--background-secondary-lighter));
 	padding: 0.25rem 0.75rem;
