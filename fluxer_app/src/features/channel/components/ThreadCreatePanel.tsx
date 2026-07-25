@@ -211,7 +211,7 @@ export const ThreadCreatePanel = observer(
 								aria-label={i18n._(EMOJI_DESCRIPTOR)}
 								data-flx="channel.thread-create-panel.emoji-button"
 							>
-								<SmileyIcon size={22} />
+								<SmileyIcon className={styles.emojiIcon} />
 							</button>
 						) : (
 							<Popout
@@ -226,7 +226,7 @@ export const ThreadCreatePanel = observer(
 									aria-label={i18n._(EMOJI_DESCRIPTOR)}
 									data-flx="channel.thread-create-panel.emoji-button"
 								>
-									<SmileyIcon size={22} />
+									<SmileyIcon className={styles.emojiIcon} />
 								</button>
 							</Popout>
 						)}
