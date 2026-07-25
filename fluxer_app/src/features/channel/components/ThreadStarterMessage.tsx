@@ -126,10 +126,15 @@ export const ThreadStarterMessage = observer(({channel}: {channel: Channel}) => 
 	if (state === 'loading') {
 		return null;
 	}
-	if (state === 'unavailable' || !message) {
-		return <StarterUnavailableMessage originMessageId={originMessageId} />;
-	}
-	return <StarterRow message={message} parentChannelId={parentChannelId} fallbackChannel={channel} />;
+	return (
+		<div className={styles.starterInList} data-flx="channel.thread-starter-message.starter">
+			{state === 'unavailable' || !message ? (
+				<StarterUnavailableMessage originMessageId={originMessageId} />
+			) : (
+				<StarterRow message={message} parentChannelId={parentChannelId} fallbackChannel={channel} />
+			)}
+		</div>
+	);
 });
 
 /**
