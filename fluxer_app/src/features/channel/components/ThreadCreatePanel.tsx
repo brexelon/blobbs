@@ -5,6 +5,7 @@ import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {submitThreadCreate} from '@app/features/channel/utils/ThreadCreateFlow';
 import {EmojiPickerPopout} from '@app/features/emoji/components/popouts/EmojiPickerPopout';
 import type {FlatEmoji} from '@app/features/emoji/types/EmojiTypes';
+import {ExpressionPickerSheet} from '@app/features/expressions/components/modals/ExpressionPickerSheet';
 import {CLOSE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {Input} from '@app/features/ui/components/form/FormInput';
@@ -73,6 +74,7 @@ export const ThreadCreatePanel = observer(
 		const [content, setContent] = useState('');
 		const [starterError, setStarterError] = useState(false);
 		const [submitting, setSubmitting] = useState(false);
+		const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
 		const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
 		const submit = useCallback(async () => {
@@ -159,7 +161,7 @@ export const ThreadCreatePanel = observer(
 						<ThreadIcon size={40} className={styles.bigIcon} />
 					</div>
 				</div>
-				<div className={styles.footer} data-flx="channel.thread-create-panel.footer">
+				<div className={styles.nameSection} data-flx="channel.thread-create-panel.name-section">
 					<Input
 						label={i18n._(THREAD_NAME_DESCRIPTOR)}
 						value={name}
@@ -170,34 +172,43 @@ export const ThreadCreatePanel = observer(
 						placeholder={i18n._(THREAD_NAME_PLACEHOLDER_DESCRIPTOR)}
 						data-flx="channel.thread-create-panel.name"
 					/>
-					<div className={styles.composer} data-flx="channel.thread-create-panel.composer">
-						{starterError && (
-							<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
-								{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
-							</div>
-						)}
-						<div
-							className={starterError ? styles.starterBoxError : styles.starterBox}
-							data-flx="channel.thread-create-panel.starter-box"
-						>
-							<textarea
-								ref={contentRef}
-								className={styles.starterTextarea}
-								value={content}
-								onChange={(event) => {
-									setContent(event.target.value);
-									if (starterError && event.target.value.trim()) {
-										setStarterError(false);
-									}
-								}}
-								onKeyDown={handleContentKeyDown}
-								placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-								maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
-								rows={1}
-								disabled={submitting}
-								aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-								data-flx="channel.thread-create-panel.starter-textarea"
-							/>
+				</div>
+				<div className={styles.composerBar} data-flx="channel.thread-create-panel.composer">
+					{starterError && (
+						<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
+							{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
+						</div>
+					)}
+					<div className={styles.starterRow} data-flx="channel.thread-create-panel.starter-box">
+						<textarea
+							ref={contentRef}
+							className={styles.starterTextarea}
+							value={content}
+							onChange={(event) => {
+								setContent(event.target.value);
+								if (starterError && event.target.value.trim()) {
+									setStarterError(false);
+								}
+							}}
+							onKeyDown={handleContentKeyDown}
+							placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+							maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
+							rows={1}
+							disabled={submitting}
+							aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+							data-flx="channel.thread-create-panel.starter-textarea"
+						/>
+						{fullScreen ? (
+							<button
+								type="button"
+								className={styles.emojiButton}
+								onClick={() => setEmojiSheetOpen(true)}
+								aria-label={i18n._(EMOJI_DESCRIPTOR)}
+								data-flx="channel.thread-create-panel.emoji-button"
+							>
+								<SmileyIcon size={22} />
+							</button>
+						) : (
 							<Popout
 								position="top-end"
 								render={({onClose}) => (
@@ -213,9 +224,16 @@ export const ThreadCreatePanel = observer(
 									<SmileyIcon size={22} />
 								</button>
 							</Popout>
-						</div>
+						)}
 					</div>
 				</div>
+				{fullScreen && (
+					<ExpressionPickerSheet
+						isOpen={emojiSheetOpen}
+						onClose={() => setEmojiSheetOpen(false)}
+						onEmojiSelect={insertEmoji}
+					/>
+				)}
 			</aside>
 		);
 	},
