@@ -1,26 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 
-/* Shown in place of the starter when the origin message can no longer be loaded. */
-.fallback {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	margin: 0.5rem 1rem;
+/* Text of the system message that stands in for an origin message that can no
+   longer be loaded. Muted, since it reports an absence rather than content. */
+.unavailableText {
 	color: var(--text-muted);
-	font-style: italic;
-}
-
-.fallbackIcon {
-	flex: 0 0 auto;
-	width: 1rem;
-	height: 1rem;
-	color: var(--text-muted);
-}
-
-.fallbackText {
-	min-width: 0;
-	font-size: 0.875rem;
-	line-height: 1.25;
 }
 
 /* Creation-panel preview: sits between the thread name field and the composer, so
