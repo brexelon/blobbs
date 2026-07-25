@@ -24,7 +24,9 @@ export const UserTag = React.forwardRef<HTMLSpanElement, UserTagProps>(
 					className={clsx(styles.text, size === 'lg' ? styles.textLg : styles.textSm)}
 					data-flx="channel.user-tag.text"
 				>
-					{system ? <Trans>System</Trans> : <Trans>Bot</Trans>}
+					{/* The only system account is the instance's announcements voice, so its tag
+					    reads as a mark of authenticity rather than as an implementation detail. */}
+					{system ? <Trans>Official</Trans> : <Trans>Bot</Trans>}
 				</span>
 			</span>
 		);

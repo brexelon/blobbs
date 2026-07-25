@@ -3,9 +3,9 @@
 import Config from '@app/features/app/config/Config';
 import {formatAssetUploadExtensions, formatKnownAnimatedAssetExtensions} from '@fluxer/constants/src/AssetFormatPolicy';
 import {THE_OTHER_PLATFORM} from '@fluxer/constants/src/ExternalPlatformConstants';
-import {PREMIUM_PRODUCT_FULL_NAME, PREMIUM_PRODUCT_NAME, PRODUCT_NAME} from './ProductConstants';
+import {MEGAPHONE_NAME, PREMIUM_PRODUCT_FULL_NAME, PREMIUM_PRODUCT_NAME, PRODUCT_NAME} from './ProductConstants';
 
-export {PREMIUM_PRODUCT_FULL_NAME, PREMIUM_PRODUCT_NAME, PRODUCT_NAME};
+export {MEGAPHONE_NAME, PREMIUM_PRODUCT_FULL_NAME, PREMIUM_PRODUCT_NAME, PRODUCT_NAME};
 export const DESKTOP_PRODUCT_NAME = `${PRODUCT_NAME} Desktop`;
 export const PRODUCT_API_NAME = `${PRODUCT_NAME} API`;
 export const PRODUCT_HQ_COMMUNITY_NAME = `${PRODUCT_NAME} HQ`;

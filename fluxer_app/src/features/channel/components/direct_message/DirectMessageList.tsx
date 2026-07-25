@@ -14,8 +14,10 @@ import {
 import styles from '@app/features/channel/components/direct_message/DirectMessageList.module.css';
 import {getDmRouteChannelId} from '@app/features/channel/components/direct_message/DMListHelpers';
 import {DMListItem} from '@app/features/channel/components/direct_message/DMListItem';
+import {MegaphoneDmItem} from '@app/features/channel/components/direct_message/MegaphoneDmItem';
 import {CreateDMModal} from '@app/features/channel/components/modals/CreateDMModal';
 import Channels from '@app/features/channel/state/Channels';
+import {isSystemDmChannel} from '@app/features/channel/utils/ChannelUtils';
 import {getCreateDMRestrictionMessage, getCreateDmRestriction} from '@app/features/channel/utils/CreateDMModalUtils';
 import {PERSONAL_NOTES_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {isKeyboardActivationKey} from '@app/features/input/utils/KeyboardUtils';
@@ -248,6 +250,11 @@ export const DMList = observer(() => {
 		}
 		return null;
 	})();
+	// The announcements conversation is reached through its own pinned row, so it is
+	// highlighted from the route rather than from the direct message list.
+	const megaphoneChannelId =
+		Channels.getPrivateChannels().find((candidate) => isSystemDmChannel(candidate))?.id ?? null;
+	const isMegaphoneSelected = megaphoneChannelId != null && routeDmChannelId === megaphoneChannelId;
 	const shouldHighlightPersonalNotes =
 		currentUserId != null &&
 		(routeDmChannelId === currentUserId || (isMobileDmIndexRoute && lastSelectedDmChannelId === currentUserId));
@@ -422,6 +429,10 @@ export const DMList = observer(() => {
 								</button>
 							</FocusRing>
 						)}
+						<MegaphoneDmItem
+							isSelected={isMegaphoneSelected}
+							data-flx="channel.direct-message.dm-list.megaphone-dm-item--mobile"
+						/>
 						{filteredDmChannels.map((channel) => {
 							const isSelected = highlightedChannelId === channel.id;
 							return (
@@ -526,6 +537,10 @@ export const DMList = observer(() => {
 							<MentionBadge mentionCount={pendingCount} data-flx="channel.direct-message.dm-list.mention-badge" />
 						</div>
 					</ClickableItem>
+					<MegaphoneDmItem
+						isSelected={isMegaphoneSelected}
+						data-flx="channel.direct-message.dm-list.megaphone-dm-item"
+					/>
 					{currentUserId && (
 						<ClickableItem
 							isSelected={shouldHighlightPersonalNotes}

@@ -3,6 +3,7 @@
 import styles from '@app/features/channel/components/ChannelWelcomeSection.module.css';
 import {DMWelcomeSection} from '@app/features/channel/components/direct_message/DMWelcomeSection';
 import {GroupDMWelcomeSection} from '@app/features/channel/components/direct_message/GroupDMWelcomeSection';
+import {MegaphoneWelcomeSection} from '@app/features/channel/components/direct_message/MegaphoneWelcomeSection';
 import {PersonalNotesWelcomeSection} from '@app/features/channel/components/direct_message/PersonalNotesWelcomeSection';
 import {ThreadWelcomeSection} from '@app/features/channel/components/ThreadWelcomeSection';
 import type {Channel} from '@app/features/channel/models/Channel';
@@ -19,6 +20,11 @@ interface ChannelWelcomeSectionProps {
 
 export const ChannelWelcomeSection = observer(({channel}: ChannelWelcomeSectionProps) => {
 	const recipient = Users.getUser(channel.recipientIds[0]);
+	// The announcements conversation is not a conversation with a person, so it gets
+	// its own intro rather than the usual "you are talking to X" header.
+	if (ChannelUtils.isSystemDmChannel(channel)) {
+		return <MegaphoneWelcomeSection data-flx="channel.channel-welcome-section.megaphone-welcome-section" />;
+	}
 	if (channel.type === ChannelTypes.DM && recipient) {
 		return (
 			<DMWelcomeSection
