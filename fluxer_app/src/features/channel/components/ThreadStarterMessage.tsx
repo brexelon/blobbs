@@ -11,6 +11,7 @@ import messageStyles from '@app/features/theme/styles/Message.module.css';
 import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
 import UserSettings from '@app/features/user/state/UserSettings';
 import * as DateUtils from '@app/features/user/utils/DateFormatting';
+import {MessageTypes} from '@fluxer/constants/src/ChannelConstants';
 import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -124,6 +125,13 @@ export const ThreadStarterMessage = observer(({channel}: {channel: Channel}) => 
 		return null;
 	}
 	if (state === 'loading') {
+		return null;
+	}
+	// A thread created without an origin message stores the auto-posted "started a
+	// thread" announcement as its origin, so that announcement would otherwise render
+	// as the starter: a thread box pointing at the thread being viewed, restating the
+	// welcome header directly above it. Such threads have no starter to show.
+	if (message?.type === MessageTypes.THREAD_CREATED) {
 		return null;
 	}
 	return (
