@@ -286,6 +286,7 @@ interface MessageProps {
 	compact?: boolean;
 	idPrefix?: string;
 	readonlyPreview?: boolean;
+	hideThreadPreview?: boolean;
 	onHeadingActivate?: () => void;
 }
 
@@ -305,6 +306,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 		compact,
 		idPrefix = 'message',
 		readonlyPreview,
+		hideThreadPreview,
 		onHeadingActivate,
 	} = props;
 	const {i18n} = useLingui();
@@ -745,6 +747,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 				: undefined,
 			onPopoutToggle: handleMessagePopoutToggle,
 			readonlyPreview,
+			hideThreadPreview,
 			onHeadingActivate,
 		}),
 		[
@@ -759,6 +762,7 @@ export const Message: React.FC<MessageProps> = observer((props) => {
 			previewMode,
 			handleMessagePopoutToggle,
 			readonlyPreview,
+			hideThreadPreview,
 			onHeadingActivate,
 		],
 	);

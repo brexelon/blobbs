@@ -41,6 +41,7 @@ export interface MessageGroupProps {
 	messageActionsClassName?: string;
 	renderMessageActions?: (message: Message) => React.ReactNode;
 	readonlyPreview?: boolean;
+	hideThreadPreview?: boolean;
 	previewContext?: keyof typeof MessagePreviewContext;
 	behaviorOverrides?: MessageBehaviorOverrides;
 	renderMessageWrapper?: (props: MessageGroupRenderWrapperProps) => React.ReactNode;
@@ -62,6 +63,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = observer((props) => {
 		messageActionsClassName,
 		renderMessageActions,
 		readonlyPreview,
+		hideThreadPreview,
 		previewContext,
 		behaviorOverrides: providedBehaviorOverrides,
 		renderMessageWrapper,
@@ -97,6 +99,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = observer((props) => {
 							idPrefix={idPrefix}
 							behaviorOverrides={behaviorOverrides}
 							readonlyPreview={readonlyPreview}
+							hideThreadPreview={hideThreadPreview}
 							previewContext={previewContext}
 							onHeadingActivate={getMessageHeadingActivate?.(message)}
 							data-flx="channel.message-group.rendered-messages.message-component"
@@ -152,6 +155,7 @@ export const MessageGroup: React.FC<MessageGroupProps> = observer((props) => {
 			renderMessageActions,
 			behaviorOverrides,
 			readonlyPreview,
+			hideThreadPreview,
 			previewContext,
 			renderMessageWrapper,
 			getMessageHeadingActivate,
