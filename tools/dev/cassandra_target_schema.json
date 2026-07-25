@@ -3553,6 +3553,10 @@
 					"type": "int"
 				},
 				{
+					"name": "thread_locked",
+					"type": "boolean"
+				},
+				{
 					"name": "thread_auto_close_duration_seconds",
 					"type": "int"
 				},
@@ -3563,6 +3567,10 @@
 				{
 					"name": "thread_origin_message_id",
 					"type": "bigint"
+				},
+				{
+					"name": "thread_origin_is_announcement",
+					"type": "boolean"
 				}
 			],
 			"primary_key": "((channel_id, soft_deleted))",
