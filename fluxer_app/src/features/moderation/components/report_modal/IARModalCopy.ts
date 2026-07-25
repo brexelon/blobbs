@@ -579,6 +579,15 @@ export function getIARChildSafetyRoutingNote(
 	}
 }
 
+/**
+ * Reporting to a community's own moderators has no destination yet: every reports
+ * endpoint routes to the platform safety team, and communities have no moderator
+ * inbox. Offering it sent the reporter to the same self-help cards as "I don't like
+ * this content", so the report read as having silently gone nowhere. The path stays
+ * hidden until something receives it; flip this once that exists.
+ */
+const COMMUNITY_MOD_REPORTS_ENABLED = false;
+
 export function getIARPrimaryOptions(
 	i18n: I18n,
 	context: IARContext,
@@ -590,7 +599,7 @@ export function getIARPrimaryOptions(
 			name: i18n._(REPORT_A_PLATFORM_RULE_VIOLATION_DESCRIPTOR),
 		},
 	];
-	if (resolvedContext.hasCommunityContext) {
+	if (COMMUNITY_MOD_REPORTS_ENABLED && resolvedContext.hasCommunityContext) {
 		options.push({
 			value: 'community',
 			name: i18n._(REPORT_TO_COMMUNITY_MODS_PATH_DESCRIPTOR),
