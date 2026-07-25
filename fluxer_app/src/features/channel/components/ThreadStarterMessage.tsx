@@ -2,17 +2,23 @@
 
 import {MessageGroup} from '@app/features/channel/components/MessageGroup';
 import styles from '@app/features/channel/components/ThreadStarterMessage.module.css';
+import {TimestampWithTooltip} from '@app/features/channel/components/TimestampWithTooltip';
 import {useThreadOriginMessage} from '@app/features/channel/hooks/useThreadOriginMessage';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
+import messageStyles from '@app/features/theme/styles/Message.module.css';
+import {ThreadIcon} from '@app/features/ui/components/icons/ThreadIcon';
+import UserSettings from '@app/features/user/state/UserSettings';
+import * as DateUtils from '@app/features/user/utils/DateFormatting';
+import {extractTimestamp} from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {ChatCircleDotsIcon} from '@phosphor-icons/react';
+import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 
 const STARTER_UNAVAILABLE_DESCRIPTOR = msg({
-	message: "Sorry, we couldn't load the first message in this thread.",
+	message: "Sorry, we couldn't load the first message in this thread",
 	comment: 'Fallback shown at the top of a thread when its originating message can no longer be loaded.',
 });
 
@@ -46,12 +52,71 @@ interface StarterRowProps {
 }
 
 /**
+ * Stands in for the starter when the origin message can no longer be loaded. It is
+ * shaped like a thread system message — thread icon in the avatar gutter, text, and
+ * a timestamp — but has no backing message to render from, so the row is assembled
+ * from the shared message grid styles rather than through SystemMessage. The
+ * timestamp comes from the origin message's own snowflake, which still encodes when
+ * it was posted even though the message itself is gone.
+ */
+const StarterUnavailableMessage = observer(({originMessageId}: {originMessageId: string}) => {
+	const {i18n} = useLingui();
+	const messageDisplayCompact = UserSettings.getMessageDisplayCompact();
+	const timestampMs = extractTimestamp(originMessageId);
+	const timestamp = Number.isNaN(timestampMs) ? null : new Date(timestampMs);
+	const formattedDate = timestamp
+		? messageDisplayCompact
+			? DateUtils.getFormattedTime(timestamp)
+			: DateUtils.getRelativeDateString(timestamp, i18n)
+		: null;
+	const icon = <ThreadIcon size={18} className={messageStyles.systemMessageIconSvg} />;
+	const text = <span className={styles.unavailableText}>{i18n._(STARTER_UNAVAILABLE_DESCRIPTOR)}</span>;
+	if (messageDisplayCompact) {
+		return (
+			<div className={messageStyles.messageCompact} data-flx="channel.thread-starter-message.unavailable">
+				<div
+					className={messageStyles.systemMessageCompactContent}
+					data-flx="channel.thread-starter-message.unavailable-compact-content"
+				>
+					{timestamp && formattedDate && (
+						<TimestampWithTooltip date={timestamp} className={messageStyles.messageTimestampCompact}>
+							{formattedDate}
+						</TimestampWithTooltip>
+					)}
+					<div className={messageStyles.systemMessageIconCompact}>{icon}</div>
+					<div className={messageStyles.systemMessageContentWrapper}>
+						<div className={messageStyles.systemMessageContent}>{text}</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+	return (
+		<div className={messageStyles.message} data-flx="channel.thread-starter-message.unavailable">
+			<div className={messageStyles.messageGutterLeft} />
+			<div className={messageStyles.systemMessageIconWrapper}>{icon}</div>
+			<div className={messageStyles.messageGutterRight} />
+			<div className={messageStyles.systemMessageContent}>
+				{text}{' '}
+				{timestamp && formattedDate && (
+					<TimestampWithTooltip
+						date={timestamp}
+						className={clsx(messageStyles.messageTimestamp, messageStyles.systemMessageTimestamp)}
+					>
+						{formattedDate}
+					</TimestampWithTooltip>
+				)}
+			</div>
+		</div>
+	);
+});
+
+/**
  * Renders the originating message at the top of a message-rooted thread as its
  * starter. Threads created directly (no origin message) render nothing. When the
- * origin can no longer be loaded a plain fallback line is shown in its place.
+ * origin can no longer be loaded a system message stands in for it.
  */
 export const ThreadStarterMessage = observer(({channel}: {channel: Channel}) => {
-	const {i18n} = useLingui();
 	const originMessageId = channel.threadMetadata?.origin_message_id ?? null;
 	const parentChannelId = channel.parentId;
 	const {state, message} = useThreadOriginMessage(parentChannelId, originMessageId);
@@ -62,16 +127,7 @@ export const ThreadStarterMessage = observer(({channel}: {channel: Channel}) => 
 		return null;
 	}
 	if (state === 'unavailable' || !message) {
-		return (
-			<div className={styles.fallback} data-flx="channel.thread-starter-message.fallback">
-				<ChatCircleDotsIcon
-					weight="regular"
-					className={styles.fallbackIcon}
-					data-flx="channel.thread-starter-message.fallback-icon"
-				/>
-				<span className={styles.fallbackText}>{i18n._(STARTER_UNAVAILABLE_DESCRIPTOR)}</span>
-			</div>
-		);
+		return <StarterUnavailableMessage originMessageId={originMessageId} />;
 	}
 	return <StarterRow message={message} parentChannelId={parentChannelId} fallbackChannel={channel} />;
 });
