@@ -1317,6 +1317,9 @@ export const AdminMessageSchema = z.object({
 	attachments: z.array(AdminMessageAttachmentSchema).max(10),
 	user_prior_ncmec_report_ids: z.array(createStringType(1, 256)).max(100).optional(),
 	type: MessageTypeSchema.optional().describe('The message type. Non-zero types are system messages with no content.'),
+	thread_id: SnowflakeStringType.nullish().describe(
+		'ID of the thread this message announces, for thread system messages',
+	),
 	thread_name: z.string().nullish().describe('Name of the thread this message announces, for thread system messages'),
 	mentions: z
 		.array(AdminMessageMentionSchema)

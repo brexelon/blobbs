@@ -42,6 +42,7 @@ pub struct Message {
     /// Message type. Anything other than DEFAULT/REPLY is a system message whose
     /// text is derived rather than stored in `content`.
     pub message_type: i32,
+    pub thread_id: Option<String>,
     pub thread_name: Option<String>,
     pub mentions: Vec<MessageMention>,
 }
@@ -218,44 +219,77 @@ fn author_display(msg: &Message) -> &str {
         .unwrap_or(&msg.author_username)
 }
 
-/// Plain-text rendering of a system message, mirroring what the app shows in the
-/// channel. Falls back to naming the type so an unrecognised one still reads as
-/// something rather than as an empty row.
-fn system_message_text(msg: &Message) -> String {
-    let author = author_display(msg);
-    let mentioned = msg.mentions.first();
-    match msg.message_type {
-        MESSAGE_TYPE_USER_JOIN => format!("{author} joined the community."),
-        MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE => {
-            format!("{author} pinned a message to this channel.")
+/// Link to an admin surface for a resource named inside a system message. Only the
+/// resource itself is linked; the surrounding wording stays plain text.
+const SYSTEM_LINK_CLASS: &str = "font-medium text-blue-600 not-italic hover:underline";
+
+fn system_user_link(base_path: &str, id: &str, name: &str) -> Markup {
+    html! {
+        a href={(base_path) "/users/" (id)} class=(SYSTEM_LINK_CLASS) title=(id) { (name) }
+    }
+}
+
+fn system_channel_link(base_path: &str, id: &str, name: &str) -> Markup {
+    html! {
+        a href={(base_path) "/messages?channel_id=" (id)} class=(SYSTEM_LINK_CLASS) title=(id) {
+            (name)
         }
-        MESSAGE_TYPE_RECIPIENT_ADD => match mentioned {
-            Some(user) => format!("{author} added {} to the group.", user.display_name()),
-            None => format!("{author} added someone to the group."),
+    }
+}
+
+/// Rendering of a system message, mirroring what the app shows in the channel. Each
+/// user, channel, and thread it names links to that resource's admin page; the rest
+/// is plain text. Falls back to naming the type so an unrecognised one still reads
+/// as something rather than as an empty row.
+fn system_message_body(base_path: &str, msg: &Message) -> Markup {
+    let author = system_user_link(base_path, &msg.author_id, author_display(msg));
+    let mentioned = msg.mentions.first();
+    let mentioned_link =
+        mentioned.map(|user| system_user_link(base_path, &user.id, user.display_name()));
+    match msg.message_type {
+        MESSAGE_TYPE_USER_JOIN => html! { (author) " joined the community." },
+        MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE => html! {
+            (author) " pinned a message to "
+            (system_channel_link(base_path, &msg.channel_id, "this channel"))
+            "."
         },
-        MESSAGE_TYPE_RECIPIENT_REMOVE => match mentioned {
-            Some(user) if user.id == msg.author_id => format!("{author} left the group."),
-            Some(user) => format!("{author} removed {} from the group.", user.display_name()),
-            None => format!("{author} removed someone from the group."),
+        MESSAGE_TYPE_RECIPIENT_ADD => match mentioned_link {
+            Some(user) => html! { (author) " added " (user) " to the group." },
+            None => html! { (author) " added someone to the group." },
+        },
+        MESSAGE_TYPE_RECIPIENT_REMOVE => match (mentioned, mentioned_link) {
+            (Some(user), _) if user.id == msg.author_id => html! { (author) " left the group." },
+            (_, Some(user)) => html! { (author) " removed " (user) " from the group." },
+            _ => html! { (author) " removed someone from the group." },
         },
         MESSAGE_TYPE_CHANNEL_NAME_CHANGE => {
             if msg.content.is_empty() {
-                format!("{author} changed the channel name.")
+                html! { (author) " changed the channel name." }
             } else {
-                format!("{author} changed the channel name to {}.", msg.content)
+                html! {
+                    (author) " changed the channel name to "
+                    (system_channel_link(base_path, &msg.channel_id, &msg.content))
+                    "."
+                }
             }
         }
-        MESSAGE_TYPE_CHANNEL_ICON_CHANGE => format!("{author} changed the channel icon."),
-        MESSAGE_TYPE_CALL => format!("{author} started a call."),
-        MESSAGE_TYPE_THREAD_CREATED => match msg.thread_name.as_deref() {
-            Some(name) if !name.is_empty() => format!("{author} started a thread: {name}."),
-            _ => format!("{author} started a thread."),
+        MESSAGE_TYPE_CHANNEL_ICON_CHANGE => html! { (author) " changed the channel icon." },
+        MESSAGE_TYPE_CALL => html! { (author) " started a call." },
+        MESSAGE_TYPE_THREAD_CREATED => {
+            let name = msg.thread_name.as_deref().filter(|name| !name.is_empty());
+            match (msg.thread_id.as_deref(), name) {
+                (Some(id), Some(name)) => html! {
+                    (author) " started a thread: " (system_channel_link(base_path, id, name)) "."
+                },
+                (None, Some(name)) => html! { (author) " started a thread: " (name) "." },
+                _ => html! { (author) " started a thread." },
+            }
+        }
+        MESSAGE_TYPE_THREAD_MEMBER_REMOVE => match mentioned_link {
+            Some(user) => html! { (author) " removed " (user) " from the thread." },
+            None => html! { (author) " removed someone from the thread." },
         },
-        MESSAGE_TYPE_THREAD_MEMBER_REMOVE => match mentioned {
-            Some(user) => format!("{author} removed {} from the thread.", user.display_name()),
-            None => format!("{author} removed someone from the thread."),
-        },
-        other => format!("System message (type {other})"),
+        other => html! { "System message (type " (other) ")" },
     }
 }
 
@@ -284,10 +318,8 @@ fn system_message_row(
                 style="grid-row:1;grid-column:2;" { "\u{2726}" }
             div class="min-w-0" style="grid-column:4;" {
                 div class="flex flex-wrap items-baseline gap-2" {
-                    a href={(base_path) "/users/" (msg.author_id)}
-                        class="text-neutral-600 text-sm italic hover:underline"
-                        title=(msg.author_id) {
-                        (system_message_text(msg))
+                    span class="text-neutral-600 text-sm italic" {
+                        (system_message_body(base_path, msg))
                     }
                     span class="text-neutral-400 text-xs" { (msg.timestamp) }
                     span class="text-neutral-300 text-xs" { (msg.id) }
@@ -609,6 +641,7 @@ pub fn message_from_value(value: &Value) -> Message {
         guild_nsfw: value.get("guild_nsfw").and_then(Value::as_bool),
         attachments,
         message_type: value.get("type").and_then(Value::as_i64).unwrap_or(0) as i32,
+        thread_id: value.get("thread_id").and_then(value_id),
         thread_name: value
             .get("thread_name")
             .and_then(Value::as_str)

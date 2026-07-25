@@ -350,6 +350,7 @@ export class AdminMessageService {
 			// System messages carry no content: their text is derived from the type plus
 			// the users and thread they reference, so those travel with the message.
 			type: message.type,
+			thread_id: message.thread_id ?? null,
 			thread_name: message.thread_name ?? null,
 			mentions:
 				message.mentions?.map((mention) => ({
