@@ -52,6 +52,12 @@ export interface ChannelRow {
 	thread_auto_close_duration_seconds?: Nullish<number>;
 	thread_auto_close_at?: Nullish<Date>;
 	thread_origin_message_id?: Nullish<MessageID>;
+	/**
+	 * True when thread_origin_message_id points at the system message announcing the
+	 * thread rather than a message the thread was created from. Null on threads
+	 * created before this was recorded.
+	 */
+	thread_origin_is_announcement?: Nullish<boolean>;
 	soft_deleted: boolean;
 	indexed_at: Nullish<Date>;
 	version: number;
@@ -148,6 +154,7 @@ export const CHANNEL_COLUMNS = [
 	'thread_auto_close_duration_seconds',
 	'thread_auto_close_at',
 	'thread_origin_message_id',
+	'thread_origin_is_announcement',
 	'soft_deleted',
 	'indexed_at',
 	'version',

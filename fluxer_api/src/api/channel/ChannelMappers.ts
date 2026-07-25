@@ -144,6 +144,7 @@ function serializeGuildThreadChannel(
 			auto_close_duration_seconds: channel.threadAutoCloseDurationSeconds ?? 0,
 			auto_close_at: channel.threadAutoCloseAt ? channel.threadAutoCloseAt.toISOString() : null,
 			origin_message_id: channel.threadOriginMessageId ? channel.threadOriginMessageId.toString() : null,
+			origin_is_announcement: channel.threadOriginIsAnnouncement,
 		},
 		...(isThreadMember === undefined ? {} : {joined: isThreadMember}),
 	};

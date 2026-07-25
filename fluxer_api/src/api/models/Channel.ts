@@ -40,6 +40,12 @@ export class Channel {
 	readonly threadAutoCloseDurationSeconds: number | null;
 	readonly threadAutoCloseAt: Date | null;
 	readonly threadOriginMessageId: MessageID | null;
+	/**
+	 * True when threadOriginMessageId points at the system message announcing the
+	 * thread rather than a message the thread was created from. Null on threads
+	 * created before this was recorded.
+	 */
+	readonly threadOriginIsAnnouncement: boolean | null;
 	readonly isSoftDeleted: boolean;
 	readonly indexedAt: Date | null;
 	readonly version: number;
@@ -85,6 +91,7 @@ export class Channel {
 		this.threadAutoCloseDurationSeconds = row.thread_auto_close_duration_seconds ?? null;
 		this.threadAutoCloseAt = row.thread_auto_close_at ?? null;
 		this.threadOriginMessageId = row.thread_origin_message_id ?? null;
+		this.threadOriginIsAnnouncement = row.thread_origin_is_announcement ?? null;
 		this.isSoftDeleted = row.soft_deleted;
 		this.indexedAt = row.indexed_at ?? null;
 		this.version = row.version;
@@ -133,6 +140,7 @@ export class Channel {
 			thread_auto_close_duration_seconds: this.threadAutoCloseDurationSeconds,
 			thread_auto_close_at: this.threadAutoCloseAt,
 			thread_origin_message_id: this.threadOriginMessageId,
+			thread_origin_is_announcement: this.threadOriginIsAnnouncement,
 			soft_deleted: this.isSoftDeleted,
 			indexed_at: this.indexedAt,
 			version: this.version,

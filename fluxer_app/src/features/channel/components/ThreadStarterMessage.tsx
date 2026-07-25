@@ -119,19 +119,24 @@ const StarterUnavailableMessage = observer(({originMessageId}: {originMessageId:
  */
 export const ThreadStarterMessage = observer(({channel}: {channel: Channel}) => {
 	const originMessageId = channel.threadMetadata?.origin_message_id ?? null;
+	const originIsAnnouncement = channel.threadMetadata?.origin_is_announcement ?? null;
 	const parentChannelId = channel.parentId;
-	const {state, message} = useThreadOriginMessage(parentChannelId, originMessageId);
-	if (!originMessageId || !parentChannelId) {
+	// A thread created without an origin message stores the auto-posted "started a
+	// thread" announcement as its origin, so that announcement would otherwise render
+	// as the starter: a thread box pointing at the thread being viewed, restating the
+	// welcome header directly above it. Such threads have no starter, so the origin is
+	// not resolved at all — there is nothing to render and nothing worth fetching.
+	const {state, message} = useThreadOriginMessage(parentChannelId, originIsAnnouncement ? null : originMessageId);
+	if (!originMessageId || !parentChannelId || originIsAnnouncement) {
 		return null;
 	}
 	if (state === 'loading') {
 		return null;
 	}
-	// A thread created without an origin message stores the auto-posted "started a
-	// thread" announcement as its origin, so that announcement would otherwise render
-	// as the starter: a thread box pointing at the thread being viewed, restating the
-	// welcome header directly above it. Such threads have no starter to show.
-	if (message?.type === MessageTypes.THREAD_CREATED) {
+	// Threads created before origin_is_announcement was recorded fall back to reading
+	// the message's type. That only works while the message still loads, so a legacy
+	// thread whose announcement was deleted still shows the unavailable stand-in.
+	if (originIsAnnouncement == null && message?.type === MessageTypes.THREAD_CREATED) {
 		return null;
 	}
 	return (
