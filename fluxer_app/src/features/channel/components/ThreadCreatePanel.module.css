@@ -156,12 +156,12 @@
 	background: transparent;
 }
 
-/* Mobile: a rounded, filled message box like the regular text-channel composer,
-   matching the height of the regular mobile composer's input pill. */
+/* Mobile: a rounded, filled message box matching the regular mobile composer's
+   input pill — same surface colour, corner radius, and height. */
 .panelFullScreen .starterRow {
 	min-height: 2.25rem;
-	border-radius: var(--radius-xl, 1rem);
-	background: var(--background-textarea, var(--background-secondary-lighter));
+	border-radius: 1.125rem;
+	background: var(--background-tertiary);
 	padding: 0.25rem 0.75rem;
 }
 
