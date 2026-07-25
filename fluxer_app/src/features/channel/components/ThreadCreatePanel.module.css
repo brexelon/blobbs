@@ -133,8 +133,8 @@
 }
 
 /* Mirror the regular "Message #channel" composer: a rounded box using the
-   composer's surface colour, a leading plus button and a trailing emoji button
-   around a vertically-centered message input. */
+   composer's surface colour, with a trailing emoji button around a
+   vertically-centered message input. */
 .starterBox {
 	display: flex;
 	align-items: center;
@@ -145,7 +145,6 @@
 	padding: 0.25rem 0.75rem;
 }
 
-.plusButton,
 .emojiButton {
 	display: inline-flex;
 	align-items: center;
@@ -160,7 +159,6 @@
 	cursor: pointer;
 }
 
-.plusButton:hover,
 .emojiButton:hover {
 	color: var(--interactive-hover);
 }

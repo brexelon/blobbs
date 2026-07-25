@@ -15,7 +15,7 @@ import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import {MAX_MESSAGE_LENGTH_PREMIUM} from '@fluxer/constants/src/LimitConstants';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {PlusCircleIcon, SmileyIcon, XIcon} from '@phosphor-icons/react';
+import {SmileyIcon, XIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useRef, useState} from 'react';
@@ -45,10 +45,6 @@ const STARTER_REQUIRED_DESCRIPTOR = msg({
 const EMOJI_DESCRIPTOR = msg({
 	message: 'Emoji',
 	comment: 'Accessible label for the emoji picker button in the thread-creation composer.',
-});
-const ADD_DESCRIPTOR = msg({
-	message: 'Add',
-	comment: 'Accessible label for the leading plus button in the thread-creation composer.',
 });
 
 function emojiInsertText(emoji: FlatEmoji): string {
@@ -184,15 +180,6 @@ export const ThreadCreatePanel = observer(
 							className={starterError ? styles.starterBoxError : styles.starterBox}
 							data-flx="channel.thread-create-panel.starter-box"
 						>
-							<button
-								type="button"
-								className={styles.plusButton}
-								onClick={() => contentRef.current?.focus()}
-								aria-label={i18n._(ADD_DESCRIPTOR)}
-								data-flx="channel.thread-create-panel.plus-button"
-							>
-								<PlusCircleIcon size={24} />
-							</button>
 							<textarea
 								ref={contentRef}
 								className={styles.starterTextarea}
