@@ -195,6 +195,27 @@ export class ChannelDataRepository extends IChannelDataRepository {
 			.map((channel) => new Channel(channel));
 	}
 
+	/**
+	 * Every thread in a guild, the counterpart to listGuildChannels. Threads are
+	 * normally reached through threads_by_parent one channel at a time; this exists for
+	 * callers that need the whole guild at once, such as admin tooling rendering the
+	 * full channel tree.
+	 */
+	async listGuildThreads(guildId: GuildID): Promise<Array<Channel>> {
+		const guildChannels = await fetchMany<{
+			channel_id: bigint;
+		}>(FETCH_GUILD_CHANNELS_BY_GUILD_ID.bind({guild_id: guildId}));
+		if (guildChannels.length === 0) return [];
+		const channelIds = guildChannels.map((c) => c.channel_id);
+		const channels = await fetchManyInChunks<ChannelRow>(FETCH_CHANNELS_BY_IDS, channelIds, (chunk) => ({
+			channel_ids: chunk,
+			soft_deleted: false,
+		}));
+		return channels
+			.filter((channel) => channel.type === ChannelTypes.GUILD_THREAD)
+			.map((channel) => new Channel(channel));
+	}
+
 	async listChannels(channelIds: Array<ChannelID>): Promise<Array<Channel>> {
 		if (channelIds.length === 0) return [];
 		const channels = await fetchManyInChunks<ChannelRow>(FETCH_CHANNELS_BY_IDS, channelIds, (chunk) => ({

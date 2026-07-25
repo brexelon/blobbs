@@ -2,6 +2,7 @@
 
 import type {
 	BrowseChannelRequest,
+	BrowseChannelTarget,
 	SearchChannelMessagesRequest,
 } from '@fluxer/schema/src/domains/admin/AdminMessageBrowseSchemas';
 import type {
@@ -208,6 +209,32 @@ export class AdminMessageService {
 			messages: adminMessages,
 			message_responses: messageResponses,
 			has_more: messages.length >= limit,
+			target: await this.getBrowseTarget(channelId),
+		};
+	}
+
+	/**
+	 * Identity of the browsed channel, so an admin surface can tell a thread from a
+	 * channel and link back to its parent, creator, and guild. The parent name is
+	 * resolved here because a thread's parent is a channel the caller would otherwise
+	 * have to fetch separately just to label a link.
+	 */
+	private async getBrowseTarget(channelId: ChannelID): Promise<BrowseChannelTarget | null> {
+		const {channelRepository} = this.deps;
+		const channel = await channelRepository.findUnique(channelId);
+		if (!channel) {
+			return null;
+		}
+		const parent = channel.parentId ? await channelRepository.findUnique(channel.parentId) : null;
+		return {
+			id: channel.id.toString(),
+			type: channel.type,
+			name: channel.threadName ?? channel.name ?? null,
+			guild_id: channel.guildId?.toString() ?? null,
+			parent_id: channel.parentId?.toString() ?? null,
+			parent_name: parent?.name ?? null,
+			thread_creator_id: channel.threadCreatorId?.toString() ?? null,
+			thread_creator_name: channel.threadCreatorName ?? null,
 		};
 	}
 

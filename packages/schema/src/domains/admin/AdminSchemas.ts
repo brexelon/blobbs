@@ -1182,6 +1182,15 @@ const AdminGuildChannelSummarySchema = z.object({
 	content_warning_text: createStringType(0, CONTENT_WARNING_TEXT_MAX_LENGTH).nullable().optional(),
 	url: createStringType(1, 2048).nullable(),
 });
+const AdminGuildThreadSummarySchema = z.object({
+	id: SnowflakeStringType,
+	name: createStringType(1, 100).nullable(),
+	parent_id: SnowflakeStringType.nullable().describe('The channel the thread hangs beneath'),
+	creator_id: SnowflakeStringType.nullable(),
+	creator_name: createStringType(1, 100).nullable(),
+	state: Int32Type.nullable().describe('Thread lifecycle state (0=open, 1=closed, 2=archived)'),
+	locked: z.boolean().nullable(),
+});
 const AdminGuildRoleSummarySchema = z.object({
 	id: SnowflakeStringType,
 	name: createStringType(1, 100),
@@ -1225,6 +1234,7 @@ const AdminLookupGuildSchema = z.object({
 	disabled_operations: Int32Type,
 	member_count: Int32Type,
 	channels: z.array(AdminGuildChannelSummarySchema).max(500),
+	threads: z.array(AdminGuildThreadSummarySchema).max(1000),
 	roles: z.array(AdminGuildRoleSummarySchema).max(250),
 });
 export const LookupGuildResponse = z.object({
