@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+/* Centred like the DM intro rather than left-aligned like a channel's, since this
+   conversation opens on an introduction rather than on a wall of history. */
+.welcomeSection {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	margin: 1rem 2rem 2rem;
+	margin-top: auto;
+	min-width: 0;
+	padding-top: 7.5rem;
+	text-align: center;
+	color: var(--text-primary);
+}
+
+.icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 5rem;
+	width: 5rem;
+	flex-shrink: 0;
+	border-radius: var(--radius-full);
+	background-color: var(--background-tertiary);
+	color: var(--text-primary);
+}
+
+.iconGlyph {
+	width: 2.5rem;
+	height: 2.5rem;
+}
+
+.heading {
+	margin-top: 0.75rem;
+	font-size: 1.875rem;
+	font-weight: 600;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+.description {
+	color: var(--text-secondary);
+	font-size: 1rem;
+	line-height: 1.375;
+}
