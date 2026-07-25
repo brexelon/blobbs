@@ -13693,7 +13693,32 @@
 						},
 						"maxItems": 10
 					},
-					"user_prior_ncmec_report_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 100}
+					"user_prior_ncmec_report_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 100},
+					"type": {
+						"type": "integer",
+						"format": "int32",
+						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 18, 19, 20],
+						"description": "The message type. Non-zero types are system messages with no content."
+					},
+					"thread_name": {
+						"description": "Name of the thread this message announces, for thread system messages",
+						"nullable": true,
+						"type": "string"
+					},
+					"mentions": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"username": {"type": "string"},
+								"global_name": {"nullable": true, "type": "string"}
+							},
+							"required": ["id", "username", "global_name"]
+						},
+						"maxItems": 100,
+						"description": "Users referenced by the message, which system message text is phrased around"
+					}
 				},
 				"required": [
 					"id",

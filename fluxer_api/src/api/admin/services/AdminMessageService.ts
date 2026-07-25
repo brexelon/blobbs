@@ -347,6 +347,16 @@ export class AdminMessageService {
 			author_avatar: message.author.avatar,
 			content: message.content ?? '',
 			timestamp: message.timestamp,
+			// System messages carry no content: their text is derived from the type plus
+			// the users and thread they reference, so those travel with the message.
+			type: message.type,
+			thread_name: message.thread_name ?? null,
+			mentions:
+				message.mentions?.map((mention) => ({
+					id: mention.id,
+					username: mention.username,
+					global_name: mention.global_name ?? null,
+				})) ?? [],
 			user_prior_ncmec_report_ids: priorReports.get(message.author.id) ?? [],
 			attachments:
 				message.attachments?.map((attachment) => ({
