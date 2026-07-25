@@ -6,6 +6,7 @@ import {submitThreadCreate} from '@app/features/channel/utils/ThreadCreateFlow';
 import {EmojiPickerPopout} from '@app/features/emoji/components/popouts/EmojiPickerPopout';
 import type {FlatEmoji} from '@app/features/emoji/types/EmojiTypes';
 import {ExpressionPickerSheet} from '@app/features/expressions/components/modals/ExpressionPickerSheet';
+import type {ExpressionPickerTabType} from '@app/features/expressions/components/popouts/ExpressionPickerPopout';
 import {CLOSE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {Input} from '@app/features/ui/components/form/FormInput';
@@ -22,6 +23,10 @@ import type React from 'react';
 import {useCallback, useRef, useState} from 'react';
 
 const logger = new Logger('ThreadCreatePanel');
+
+// The mobile starter composer only supports emoji (the thread's first message is
+// text-only until it is created), so the slide-up sheet shows just the Emojis tab.
+const EMOJI_ONLY_TABS: Array<ExpressionPickerTabType> = ['emojis'];
 
 const NEW_THREAD_DESCRIPTOR = msg({
 	message: 'New Thread',
@@ -232,6 +237,7 @@ export const ThreadCreatePanel = observer(
 						isOpen={emojiSheetOpen}
 						onClose={() => setEmojiSheetOpen(false)}
 						onEmojiSelect={insertEmoji}
+						visibleTabs={EMOJI_ONLY_TABS}
 					/>
 				)}
 			</aside>
