@@ -5,6 +5,7 @@ import * as PrivateChannelCommands from '@app/features/channel/commands/PrivateC
 import styles from '@app/features/channel/components/direct_message/DirectMessageList.module.css';
 import Channels from '@app/features/channel/state/Channels';
 import {isSystemDmChannel} from '@app/features/channel/utils/ChannelUtils';
+import {Logger} from '@app/features/platform/utils/AppLogger';
 import ReadStates from '@app/features/read_state/state/ReadStates';
 import * as LayoutCommands from '@app/features/ui/commands/LayoutCommands';
 import {MentionBadge} from '@app/features/ui/components/MentionBadge';
@@ -14,6 +15,8 @@ import {FLUXERBOT_ID} from '@fluxer/constants/src/AppConstants';
 import {MegaphoneIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import {useCallback} from 'react';
+
+const logger = new Logger('MegaphoneDmItem');
 
 /**
  * The announcements conversation the instance's staff write to. It is pinned above
@@ -29,7 +32,12 @@ function useMegaphoneChannelId(): string | null {
 
 function useOpenMegaphone(): () => void {
 	return useCallback(() => {
-		void PrivateChannelCommands.openDMChannel(FLUXERBOT_ID);
+		// The channel may not exist yet, in which case opening it creates it. A failure
+		// here leaves the viewer on the current channel rather than throwing away the
+		// click silently as an unhandled rejection.
+		PrivateChannelCommands.openDMChannel(FLUXERBOT_ID).catch((error) => {
+			logger.error('Failed to open the announcements channel:', error);
+		});
 		if (MobileLayout.isMobileLayout()) {
 			LayoutCommands.updateMobileLayoutState(false, true);
 		}
