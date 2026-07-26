@@ -1286,13 +1286,31 @@ const AdminMessageAttachmentSchema = z.object({
 	ncmec_failure_reason: createStringType(1, 4000).nullable(),
 });
 /**
- * Just enough of a mentioned user to name them in system message text; the admin
- * surfaces render these as plain names rather than as mention pills.
+ * Just enough of a mentioned user to name them: system message text is phrased
+ * around these, and the admin surfaces resolve `<@id>` in message content with them.
  */
 const AdminMessageMentionSchema = z.object({
 	id: SnowflakeStringType,
 	username: createStringType(1, 100),
 	global_name: z.string().nullable(),
+});
+/**
+ * A role named by a message's content. A role has no admin page of its own, so this
+ * carries the name and colour needed to render the mention rather than a link.
+ */
+const AdminMessageRoleMentionSchema = z.object({
+	id: SnowflakeStringType,
+	name: z.string(),
+	color: Int32Type,
+});
+/**
+ * A channel or thread named by a message's content, resolved so the mention reads as
+ * a name and links to that channel's messages.
+ */
+const AdminMessageChannelMentionSchema = z.object({
+	id: SnowflakeStringType,
+	name: z.string().nullable(),
+	type: Int32Type,
 });
 export const AdminMessageSchema = z.object({
 	id: SnowflakeStringType,
@@ -1325,7 +1343,17 @@ export const AdminMessageSchema = z.object({
 		.array(AdminMessageMentionSchema)
 		.max(100)
 		.optional()
-		.describe('Users referenced by the message, which system message text is phrased around'),
+		.describe('Users referenced by the message, both by its content and by system message text'),
+	mention_roles: z
+		.array(AdminMessageRoleMentionSchema)
+		.max(100)
+		.optional()
+		.describe('Roles named by the message content, resolved so the mention can be rendered by name'),
+	mention_channels: z
+		.array(AdminMessageChannelMentionSchema)
+		.max(100)
+		.optional()
+		.describe('Channels and threads named by the message content, resolved so the mention can be rendered by name'),
 });
 export const LookupMessageResponse = z.object({
 	messages: z.array(AdminMessageSchema).max(100),

@@ -13722,7 +13722,35 @@
 							"required": ["id", "username", "global_name"]
 						},
 						"maxItems": 100,
-						"description": "Users referenced by the message, which system message text is phrased around"
+						"description": "Users referenced by the message, both by its content and by system message text"
+					},
+					"mention_roles": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"name": {"type": "string"},
+								"color": {"$ref": "#/components/schemas/Int32Type"}
+							},
+							"required": ["id", "name", "color"]
+						},
+						"maxItems": 100,
+						"description": "Roles named by the message content, resolved so the mention can be rendered by name"
+					},
+					"mention_channels": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"name": {"nullable": true, "type": "string"},
+								"type": {"$ref": "#/components/schemas/Int32Type"}
+							},
+							"required": ["id", "name", "type"]
+						},
+						"maxItems": 100,
+						"description": "Channels and threads named by the message content, resolved so the mention can be rendered by name"
 					}
 				},
 				"required": [
