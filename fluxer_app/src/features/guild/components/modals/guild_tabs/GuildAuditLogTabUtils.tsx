@@ -88,6 +88,24 @@ const renderEntityInline = (label: string, guildId: string | undefined, i18n: I1
 		);
 	return <strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-entity-inline.strong--4">{label}</strong>;
 };
+/**
+ * A value that is already a name rather than an id: a channel's name, a nickname, a
+ * vanity code. It is printed as written, because looking it up would resolve a name
+ * that happens to be all digits to whatever entity owns that id — a channel named
+ * after someone's user id read as that user's name.
+ */
+const renderNameInline = (name: string, i18n: I18n): React.ReactNode => {
+	if (!name.trim())
+		return (
+			<strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-name-inline.strong">
+				{i18n._(SOMETHING_DESCRIPTOR)}
+			</strong>
+		);
+	return <strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-name-inline.strong--2">{name}</strong>;
+};
+/** Renders whichever of the two an entry's target turned out to be. */
+const renderTargetInline = (target: AuditLogTarget, guildId: string | undefined, i18n: I18n): React.ReactNode =>
+	target.kind === 'id' ? renderEntityInline(target.value, guildId, i18n) : renderNameInline(target.value, i18n);
 const renderActorInline = (
 	actorUser: User | null,
 	actorId: string | null | undefined,
@@ -117,7 +135,7 @@ const renderActorInline = (
 };
 const renderMemberInline = (
 	memberUser: User | null,
-	memberIdOrLabel: string | null | undefined,
+	fallback: AuditLogTarget | null,
 	guildId: string | undefined,
 	i18n: I18n,
 ): React.ReactNode => {
@@ -130,7 +148,7 @@ const renderMemberInline = (
 				data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-member-inline.clickable-user"
 			/>
 		);
-	if (memberIdOrLabel) return renderEntityInline(memberIdOrLabel, guildId, i18n);
+	if (fallback) return renderTargetInline(fallback, guildId, i18n);
 	return (
 		<strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-member-inline.strong">
 			{i18n._(SOMEONE_DESCRIPTOR)}
@@ -146,25 +164,20 @@ export const renderValueInline = (value: unknown, guildId: string | undefined, i
 	if (scalar !== null) {
 		if (typeof value === 'number') return renderBoldValue(scalar);
 		if (typeof value === 'boolean') return renderBoldValue(scalar);
-		if (typeof value === 'string' && looksLikeSnowflake(value)) {
-			if (guildId) {
-				const name = resolveIdToName(value, guildId);
-				if (name)
-					return (
-						<CopyIdInline
-							id={value}
-							data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.copy-id-inline"
-						>
-							<strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.strong">{name}</strong>
-						</CopyIdInline>
-					);
-			}
+		// A guild is passed only where the value is an id to resolve. Without one the
+		// value is a plain field — a name, a code, a number — so it is printed as
+		// written rather than guessed at from its shape, which would offer to copy the
+		// "id" of a channel merely named after one.
+		if (typeof value === 'string' && guildId && looksLikeSnowflake(value)) {
+			const name = resolveIdToName(value, guildId);
 			return (
 				<CopyIdInline
 					id={value}
-					data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.copy-id-inline--2"
+					data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.copy-id-inline"
 				>
-					<strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.strong--2">{value}</strong>
+					<strong data-flx="guild.guild-tabs.guild-audit-log-tab-utils.render-value-inline.strong">
+						{name ?? value}
+					</strong>
 				</CopyIdInline>
 			);
 		}
@@ -248,7 +261,7 @@ export const renderOptionDetailSentence = (
 		return <Trans>Invited by {renderValueInline(value, guildId, i18n)}.</Trans>;
 	}
 	if (key === 'vanity_url_code') {
-		return <Trans>Vanity URL code: {renderValueInline(value, guildId, i18n)}.</Trans>;
+		return <Trans>Vanity URL code: {renderValueInline(value, undefined, i18n)}.</Trans>;
 	}
 	if (key === 'uses') {
 		const count = typeof value === 'number' ? value : Number(value);
@@ -285,7 +298,7 @@ export const renderOptionDetailSentence = (
 		);
 	}
 	if (key === 'name') {
-		return <Trans>Name: {renderValueInline(value, guildId, i18n)}.</Trans>;
+		return <Trans>Name: {renderValueInline(value, undefined, i18n)}.</Trans>;
 	}
 	if (key === 'count' || key === 'delete_count' || key === 'messages' || key === 'message_count') {
 		const count = typeof value === 'number' ? value : Number(value);
@@ -446,23 +459,35 @@ const getOptionNumber = (entry: GuildAuditLogEntryResponse, keys: Array<string>,
 	}
 	return null;
 };
-export const resolveTargetLabel = (entry: GuildAuditLogEntryResponse, i18n: I18n): string => {
-	if (entry.target_id) return entry.target_id;
+/**
+ * What an entry is about: either the id of its target, or a name read out of its
+ * options when no target id was recorded. Which one it is has to travel with the
+ * value, since only an id may be looked up — resolving a name would turn one that
+ * happens to be all digits into whatever entity owns that id.
+ */
+export type AuditLogTarget = {kind: 'id'; value: string} | {kind: 'name'; value: string};
+
+/** Options that can stand in for a missing target id, in order of preference. */
+const TARGET_OPTION_KEYS: ReadonlyArray<readonly [string, AuditLogTarget['kind']]> = [
+	['name', 'name'],
+	['title', 'name'],
+	['code', 'name'],
+	['channel', 'id'],
+	['channel_id', 'id'],
+	['id', 'id'],
+	['target_id', 'id'],
+];
+
+export const resolveTargetLabel = (entry: GuildAuditLogEntryResponse, i18n: I18n): AuditLogTarget => {
+	if (entry.target_id) return {kind: 'id', value: entry.target_id};
 	const options: unknown = entry.options;
 	if (isBasicRecord(options)) {
-		const maybe: unknown =
-			options.name ??
-			options.title ??
-			options.code ??
-			options.channel ??
-			options.channel_id ??
-			options.id ??
-			options.target_id ??
-			null;
-		const scalar = safeScalarString(maybe, i18n);
-		if (scalar) return scalar;
+		for (const [key, kind] of TARGET_OPTION_KEYS) {
+			const scalar = safeScalarString(options[key], i18n);
+			if (scalar) return {kind, value: scalar};
+		}
 	}
-	return i18n._(UNKNOWN_TARGET_DESCRIPTOR);
+	return {kind: 'name', value: i18n._(UNKNOWN_TARGET_DESCRIPTOR)};
 };
 export const resolveChannelLabel = (
 	entry: GuildAuditLogEntryResponse,
@@ -511,15 +536,20 @@ export const renderEntrySummary = (args: {
 	entry: GuildAuditLogEntryResponse;
 	actorUser: User | null;
 	targetUser: User | null;
-	targetLabel: string;
+	target: AuditLogTarget;
 	channelLabel: string | null;
 	guildId: string;
 	i18n: I18n;
 }): React.ReactNode => {
-	const {entry, actorUser, targetUser, targetLabel, channelLabel, guildId, i18n} = args;
+	const {entry, actorUser, targetUser, target, channelLabel, guildId, i18n} = args;
 	const actor = renderActorInline(actorUser, entry.user_id, guildId, i18n);
-	const targetMember = renderMemberInline(targetUser, entry.target_id ?? targetLabel, guildId, i18n);
-	const targetEntity = renderEntityInline(targetLabel, guildId, i18n);
+	const targetMember = renderMemberInline(
+		targetUser,
+		entry.target_id ? {kind: 'id', value: entry.target_id} : target,
+		guildId,
+		i18n,
+	);
+	const targetEntity = renderTargetInline(target, guildId, i18n);
 	const channelRecord = resolveChannelRecord(entry, i18n);
 	const channelDisplayLabel = channelRecord
 		? `${channelRecord.type === ChannelTypes.GUILD_TEXT ? '#' : ''}${channelRecord.name ?? i18n._(UNKNOWN_CHANNEL_DESCRIPTOR)}`
@@ -539,7 +569,9 @@ export const renderEntrySummary = (args: {
 		findChangeScalar(entry.changes, 'code', i18n) ??
 		getOptionScalar(entry, ['name', 'title', 'code'], i18n) ??
 		null;
-	const namedTarget = changedName ? renderEntityInline(changedName, guildId, i18n) : targetEntity;
+	// `changedName` is the name the entry recorded, never an id, so it is printed as
+	// written. Resolving it turned a channel named after a user's id into that user.
+	const namedTarget = changedName ? renderNameInline(changedName, i18n) : targetEntity;
 	const pruneDaysRaw = findChangeNewScalar(entry.changes, 'prune_delete_days', i18n);
 	const pruneDays = pruneDaysRaw ? Number(pruneDaysRaw) : null;
 	const bulkCount = getOptionNumber(entry, ['count', 'delete_count', 'messages', 'message_count'], i18n);
