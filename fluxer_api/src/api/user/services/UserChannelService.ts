@@ -170,7 +170,9 @@ export class UserChannelService {
 				requestCache,
 			});
 		}
-		if (!data.recipient_id) {
+		// Presence check rather than truthiness: the system account's id is 0n, and a
+		// falsy test would read that as "no recipient given".
+		if (data.recipient_id == null) {
 			throw InputValidationError.fromCode('recipient_id', ValidationErrorCodes.RECIPIENT_IDS_CANNOT_BE_EMPTY);
 		}
 		const recipientId = createUserID(data.recipient_id);
