@@ -48,6 +48,54 @@ export const MegaphoneDmItem = observer(({isSelected}: {isSelected: boolean}) =>
 	const channelId = useMegaphoneChannelId();
 	const openMegaphone = useOpenMegaphone();
 	const mentionCount = channelId ? ReadStates.getMentionCount(channelId) : 0;
+	// The two layouts style their pinned rows differently — the mobile one sits in a
+	// taller row with a filled circular icon — so this mirrors whichever set the row
+	// beside it uses rather than carrying the desktop styling onto both.
+	if (MobileLayout.isMobileLayout()) {
+		return (
+			<FocusRing offset={-2} data-flx="channel.direct-message.megaphone-dm-item.mobile-focus-ring">
+				<button
+					type="button"
+					className={isSelected ? styles.mobilePersonalNotesButtonSelected : styles.mobilePersonalNotesButton}
+					onClick={openMegaphone}
+					aria-current={isSelected ? 'page' : undefined}
+					aria-label={MEGAPHONE_NAME}
+					data-flx="channel.direct-message.megaphone-dm-item.mobile-button"
+				>
+					<div
+						className={styles.mobileSpecialButtonContent}
+						data-flx="channel.direct-message.megaphone-dm-item.mobile-special-button-content"
+					>
+						<div
+							className={styles.mobileSpecialButtonIcon}
+							data-flx="channel.direct-message.megaphone-dm-item.mobile-special-button-icon"
+						>
+							<MegaphoneIcon
+								weight="fill"
+								className={styles.iconSize5}
+								data-flx="channel.direct-message.megaphone-dm-item.mobile-icon"
+							/>
+						</div>
+						<div
+							className={styles.mobileSpecialButtonText}
+							data-flx="channel.direct-message.megaphone-dm-item.mobile-special-button-text"
+						>
+							<span
+								className={styles.mobileSpecialButtonLabel}
+								data-flx="channel.direct-message.megaphone-dm-item.mobile-special-button-label"
+							>
+								{MEGAPHONE_NAME}
+							</span>
+						</div>
+						<MentionBadge
+							mentionCount={mentionCount}
+							data-flx="channel.direct-message.megaphone-dm-item.mobile-mention-badge"
+						/>
+					</div>
+				</button>
+			</FocusRing>
+		);
+	}
 	return (
 		<FocusRing offset={-2} data-flx="channel.direct-message.megaphone-dm-item.focus-ring">
 			<button
