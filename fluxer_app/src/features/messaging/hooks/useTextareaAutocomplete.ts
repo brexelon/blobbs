@@ -346,7 +346,7 @@ export function useTextareaAutocomplete({
 		const searchQuery = autocompleteTriggerMatchedText;
 		const guildId = channel.guildId;
 		const channelAccessibleMembers = collectChannelAccessibleMembers(guildId, mentionChannelId || channel.id);
-		const isGuildFullyLoaded = GuildMembers.isGuildFullyLoaded(guildId);
+		const isGuildSynced = GuildMembers.isGuildSynced(guildId);
 		currentGuildIdRef.current = guildId;
 		const sessionKey = `${guildId}:${searchQuery}`;
 		if (mentionSessionRef.current.key !== sessionKey) {
@@ -362,7 +362,7 @@ export function useTextareaAutocomplete({
 		} else {
 			setMemberSearchResults([]);
 		}
-		if (isGuildFullyLoaded) {
+		if (isGuildSynced) {
 			context.clearQuery();
 			setIsMemberSearchLoading(false);
 			if (memberFetchDebounceTimerRef.current) {

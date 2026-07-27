@@ -133,14 +133,15 @@ export const AddOverridePopout: React.FC<AddOverridePopoutProps> = observer(func
 		order: new Map(),
 		nextRank: 0,
 	});
-	// The member cache holds only whoever the member sidebar happened to load, which
-	// for a guild whose list has not been opened is next to nobody. Without asking for
-	// the guild's members the popout lists that near-arbitrary handful, so adding an
-	// override for anyone else means guessing a name to search for first.
+	// A guild's sync payload carries only the viewer and anyone sitting in a voice
+	// channel, so the member cache starts out holding barely anybody and nothing else
+	// fills it in for this popout. The guild's members are requested on open so an
+	// override can be added for someone without having to guess a name to search for.
+	//
+	// This is unconditional on purpose. Being synced is not the same as having members
+	// cached, so skipping the request for a synced guild would skip it for the only
+	// guild that matters — the one whose settings are open.
 	useEffect(() => {
-		if (GuildMembers.isGuildFullyLoaded(guildId)) {
-			return;
-		}
 		GuildMembers.requestMembersInBackground({
 			guildIds: [guildId],
 			query: '',
@@ -177,9 +178,9 @@ export const AddOverridePopout: React.FC<AddOverridePopoutProps> = observer(func
 			return;
 		}
 		context?.setQuery(queryForServer, {guild: guildId});
-		if (GuildMembers.isGuildFullyLoaded(guildId)) {
-			return;
-		}
+		// Searching also asks the server regardless of sync state, for the same reason:
+		// a synced guild's members are not cached, so treating sync as "already have
+		// them" left the search matching against the handful the cache happened to hold.
 		debounceTimerRef.current = setTimeout(() => {
 			debounceTimerRef.current = null;
 			void MemberSearch.fetchMembersInBackground(queryForServer, [guildId], guildId);
