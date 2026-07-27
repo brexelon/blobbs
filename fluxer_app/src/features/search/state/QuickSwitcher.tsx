@@ -358,9 +358,7 @@ class QuickSwitcher {
 		const currentChannel = currentChannelId ? Channels.getChannel(currentChannelId) : null;
 		const guildId = currentChannel?.guildId ?? null;
 		const allGuilds = Guilds.getGuilds();
-		const guildsToFetch = allGuilds
-			.filter((guild) => !GuildMembers.isGuildFullyLoaded(guild.id))
-			.map((guild) => guild.id);
+		const guildsToFetch = allGuilds.filter((guild) => !GuildMembers.isGuildSynced(guild.id)).map((guild) => guild.id);
 		if (guildsToFetch.length === 0) {
 			this.memberFetchDebounceTimer = null;
 			this.isFetchingMembersInBackground = false;

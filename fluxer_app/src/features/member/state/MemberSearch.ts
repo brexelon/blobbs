@@ -399,16 +399,12 @@ class MemberSearch {
 		const sortedGuildIds = priorityGuildId
 			? [...guildIds].sort((a, b) => (a === priorityGuildId ? -1 : b === priorityGuildId ? 1 : 0))
 			: guildIds;
-		const eligibleGuildIds = sortedGuildIds.filter((guildId) => {
-			if (!guildId) {
-				return false;
-			}
-			const guild = Guilds.getGuild(guildId);
-			if (!guild) {
-				return false;
-			}
-			return !GuildMembers.isGuildFullyLoaded(guildId);
-		});
+		// Only guilds we actually know about are worth asking for. A synced guild used to
+		// be dropped here as well, on the assumption that syncing had loaded its members;
+		// it has not — a sync carries only the viewer and anyone in voice — so that
+		// dropped the request for whichever guild the viewer was looking at. Callers that
+		// want to skip a guild for their own reasons already filter before calling.
+		const eligibleGuildIds = sortedGuildIds.filter((guildId) => guildId.length > 0 && Guilds.getGuild(guildId) != null);
 		if (eligibleGuildIds.length === 0) {
 			return;
 		}
