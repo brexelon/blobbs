@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use maud::{Markup, PreEscaped, html};
+use serde_json::Value;
+use std::cmp::Ordering;
 
 use super::icons::paperclip_icon;
 use super::media::user_avatar_url;
@@ -37,6 +39,48 @@ pub struct Message {
     pub channel_content_warning_text: Option<String>,
     pub guild_nsfw: Option<bool>,
     pub attachments: Vec<Attachment>,
+    /// Message type. Anything other than DEFAULT/REPLY is a system message whose
+    /// text is derived rather than stored in `content`.
+    pub message_type: i32,
+    pub thread_id: Option<String>,
+    pub thread_name: Option<String>,
+    pub mentions: Vec<MessageMention>,
+    pub mention_roles: Vec<MessageRoleMention>,
+    pub mention_channels: Vec<MessageChannelMention>,
+}
+
+/// A user named by a message: by its content, or by the text a system message is
+/// phrased around.
+#[derive(Clone, Debug)]
+pub struct MessageMention {
+    pub id: String,
+    pub username: String,
+    pub global_name: Option<String>,
+}
+
+impl MessageMention {
+    pub fn display_name(&self) -> &str {
+        self.global_name
+            .as_deref()
+            .filter(|name| !name.is_empty())
+            .unwrap_or(&self.username)
+    }
+}
+
+/// A role named by message content. Roles have no admin page of their own, so a role
+/// mention renders as its name in its own colour rather than as a link.
+#[derive(Clone, Debug)]
+pub struct MessageRoleMention {
+    pub id: String,
+    pub name: String,
+    pub color: i64,
+}
+
+/// A channel or thread named by message content.
+#[derive(Clone, Debug)]
+pub struct MessageChannelMention {
+    pub id: String,
+    pub name: Option<String>,
 }
 
 fn is_image(att: &Attachment) -> bool {
@@ -168,6 +212,287 @@ fn render_other_attachments(msg: &Message, has_content_or_images: bool) -> Marku
     }
 }
 
+const MESSAGE_TYPE_DEFAULT: i32 = 0;
+const MESSAGE_TYPE_RECIPIENT_ADD: i32 = 1;
+const MESSAGE_TYPE_RECIPIENT_REMOVE: i32 = 2;
+const MESSAGE_TYPE_CALL: i32 = 3;
+const MESSAGE_TYPE_CHANNEL_NAME_CHANGE: i32 = 4;
+const MESSAGE_TYPE_CHANNEL_ICON_CHANGE: i32 = 5;
+const MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE: i32 = 6;
+const MESSAGE_TYPE_USER_JOIN: i32 = 7;
+const MESSAGE_TYPE_THREAD_CREATED: i32 = 18;
+const MESSAGE_TYPE_REPLY: i32 = 19;
+const MESSAGE_TYPE_THREAD_MEMBER_REMOVE: i32 = 20;
+
+/// Whether the message's body is derived from its type rather than stored in
+/// `content`. Replies are ordinary messages that merely reference another one.
+pub fn is_system_message(message_type: i32) -> bool {
+    message_type != MESSAGE_TYPE_DEFAULT && message_type != MESSAGE_TYPE_REPLY
+}
+
+fn author_display(msg: &Message) -> &str {
+    msg.author_global_name
+        .as_deref()
+        .filter(|name| !name.is_empty())
+        .unwrap_or(&msg.author_username)
+}
+
+/// Link to an admin surface for a resource named inside a system message. Only the
+/// resource itself is linked; the surrounding wording stays plain text.
+const SYSTEM_LINK_CLASS: &str = "font-medium text-blue-600 not-italic hover:underline";
+
+fn system_user_link(base_path: &str, id: &str, name: &str) -> Markup {
+    html! {
+        a href={(base_path) "/users/" (id)} class=(SYSTEM_LINK_CLASS) title=(id) { (name) }
+    }
+}
+
+fn system_channel_link(base_path: &str, id: &str, name: &str) -> Markup {
+    html! {
+        a href={(base_path) "/messages?channel_id=" (id)} class=(SYSTEM_LINK_CLASS) title=(id) {
+            (name)
+        }
+    }
+}
+
+/// Rendering of a system message, mirroring what the app shows in the channel. Each
+/// user, channel, and thread it names links to that resource's admin page; the rest
+/// is plain text. Falls back to naming the type so an unrecognised one still reads
+/// as something rather than as an empty row.
+fn system_message_body(base_path: &str, msg: &Message) -> Markup {
+    let author = system_user_link(base_path, &msg.author_id, author_display(msg));
+    let mentioned = msg.mentions.first();
+    let mentioned_link =
+        mentioned.map(|user| system_user_link(base_path, &user.id, user.display_name()));
+    match msg.message_type {
+        MESSAGE_TYPE_USER_JOIN => html! { (author) " joined the community." },
+        MESSAGE_TYPE_CHANNEL_PINNED_MESSAGE => html! {
+            (author) " pinned a message to "
+            (system_channel_link(base_path, &msg.channel_id, "this channel"))
+            "."
+        },
+        MESSAGE_TYPE_RECIPIENT_ADD => match mentioned_link {
+            Some(user) => html! { (author) " added " (user) " to the group." },
+            None => html! { (author) " added someone to the group." },
+        },
+        MESSAGE_TYPE_RECIPIENT_REMOVE => match (mentioned, mentioned_link) {
+            (Some(user), _) if user.id == msg.author_id => html! { (author) " left the group." },
+            (_, Some(user)) => html! { (author) " removed " (user) " from the group." },
+            _ => html! { (author) " removed someone from the group." },
+        },
+        MESSAGE_TYPE_CHANNEL_NAME_CHANGE => {
+            if msg.content.is_empty() {
+                html! { (author) " changed the channel name." }
+            } else {
+                html! {
+                    (author) " changed the channel name to "
+                    (system_channel_link(base_path, &msg.channel_id, &msg.content))
+                    "."
+                }
+            }
+        }
+        MESSAGE_TYPE_CHANNEL_ICON_CHANGE => html! { (author) " changed the channel icon." },
+        MESSAGE_TYPE_CALL => html! { (author) " started a call." },
+        MESSAGE_TYPE_THREAD_CREATED => {
+            let name = msg.thread_name.as_deref().filter(|name| !name.is_empty());
+            match (msg.thread_id.as_deref(), name) {
+                (Some(id), Some(name)) => html! {
+                    (author) " started a thread: " (system_channel_link(base_path, id, name)) "."
+                },
+                (None, Some(name)) => html! { (author) " started a thread: " (name) "." },
+                _ => html! { (author) " started a thread." },
+            }
+        }
+        MESSAGE_TYPE_THREAD_MEMBER_REMOVE => match mentioned_link {
+            Some(user) => html! { (author) " removed " (user) " from the thread." },
+            None => html! { (author) " removed someone from the thread." },
+        },
+        other => html! { "System message (type " (other) ")" },
+    }
+}
+
+/// What a mention token in message content names.
+enum MentionToken<'a> {
+    User(&'a str),
+    Role(&'a str),
+    Channel(&'a str),
+}
+
+/// Which kind of mention a token prefix introduces, before its id is read.
+#[derive(Clone, Copy)]
+enum MentionKind {
+    User,
+    Role,
+    Channel,
+}
+
+/// A snowflake never runs longer than this, so a longer run of digits is not an id
+/// and the text is left as written.
+const MAX_SNOWFLAKE_DIGITS: usize = 20;
+
+/// Reads the mention token starting at `start`, returning where it ends and what it
+/// names. Only digits are accepted between the prefix and the closing `>`, so prose
+/// that happens to contain `<@` or `<#` is left alone.
+fn parse_mention_at(content: &str, start: usize) -> Option<(usize, MentionToken<'_>)> {
+    let rest = content.get(start..)?;
+    // `<@!id>` is the older form of a user mention and still appears in stored
+    // content, so it resolves to the same user as `<@id>`.
+    let (prefix, kind) = [
+        ("<@&", MentionKind::Role),
+        ("<@!", MentionKind::User),
+        ("<@", MentionKind::User),
+        ("<#", MentionKind::Channel),
+    ]
+    .into_iter()
+    .find(|(prefix, _)| rest.starts_with(prefix))?;
+    let digits = &rest[prefix.len()..];
+    let digit_len = digits
+        .find(|ch: char| !ch.is_ascii_digit())
+        .unwrap_or(digits.len());
+    if digit_len == 0 || digit_len > MAX_SNOWFLAKE_DIGITS {
+        return None;
+    }
+    if digits.as_bytes().get(digit_len) != Some(&b'>') {
+        return None;
+    }
+    let id = &digits[..digit_len];
+    let token = match kind {
+        MentionKind::User => MentionToken::User(id),
+        MentionKind::Role => MentionToken::Role(id),
+        MentionKind::Channel => MentionToken::Channel(id),
+    };
+    Some((start + prefix.len() + digit_len + 1, token))
+}
+
+const MENTION_PILL_CLASS: &str = "rounded bg-blue-50 px-1 font-medium text-blue-700";
+
+/// One resolved mention. Users and channels link to their admin page — by id even
+/// when the name could not be resolved, since the page still holds what an admin
+/// wants. A role has no page, so it renders as its name in its own colour.
+fn mention_pill(base_path: &str, msg: &Message, token: &MentionToken<'_>) -> Markup {
+    match token {
+        MentionToken::User(id) => {
+            let name = msg
+                .mentions
+                .iter()
+                .find(|mention| mention.id == *id)
+                .map(MessageMention::display_name);
+            html! {
+                a href={(base_path) "/users/" (id)} title=(id)
+                  class={(MENTION_PILL_CLASS) " hover:underline"} {
+                    "@" (name.unwrap_or(id))
+                }
+            }
+        }
+        MentionToken::Channel(id) => {
+            let name = msg
+                .mention_channels
+                .iter()
+                .find(|mention| mention.id == *id)
+                .and_then(|mention| mention.name.as_deref())
+                .filter(|name| !name.is_empty());
+            html! {
+                a href={(base_path) "/messages?channel_id=" (id)} title=(id)
+                  class={(MENTION_PILL_CLASS) " hover:underline"} {
+                    "#" (name.unwrap_or(id))
+                }
+            }
+        }
+        MentionToken::Role(id) => {
+            let role = msg.mention_roles.iter().find(|mention| mention.id == *id);
+            // A role colour of zero means the role sets none, in which case the pill
+            // keeps the default text colour rather than rendering as black.
+            let color = role
+                .map(|role| role.color)
+                .filter(|color| *color != 0)
+                .map(|color| format!("color: #{:06X}", color & 0xFF_FFFF));
+            html! {
+                span class=(MENTION_PILL_CLASS) style=[color] title=(id) {
+                    "@" (role.map(|role| role.name.as_str()).unwrap_or(id))
+                }
+            }
+        }
+    }
+}
+
+/// Message content with its mention tokens resolved. Content is stored with bare
+/// `<@id>`, `<@&id>` and `<#id>` tokens, which read as noise in a moderation view, so
+/// each is replaced by the name it refers to. Everything around them is left exactly
+/// as written: this is not a markdown renderer, and a mention inside a code span is
+/// still shown resolved rather than pretending to interpret the surrounding syntax.
+fn message_content(base_path: &str, msg: &Message) -> Markup {
+    let content = msg.content.as_str();
+    let mut rendered: Vec<Markup> = Vec::new();
+    let mut plain_from = 0usize;
+    let mut cursor = 0usize;
+    while let Some(offset) = content[cursor..].find('<') {
+        let start = cursor + offset;
+        match parse_mention_at(content, start) {
+            Some((end, token)) => {
+                if plain_from < start {
+                    rendered.push(html! { (content[plain_from..start]) });
+                }
+                rendered.push(mention_pill(base_path, msg, &token));
+                plain_from = end;
+                cursor = end;
+            }
+            // Not a mention after all, so keep looking past this `<` and let it stay
+            // part of the surrounding text.
+            None => cursor = start + 1,
+        }
+    }
+    if plain_from < content.len() {
+        rendered.push(html! { (content[plain_from..]) });
+    }
+    html! { @for part in &rendered { (part) } }
+}
+
+/// System messages are rendered as a single muted line without an avatar, so they
+/// read as channel events rather than as content someone wrote.
+fn system_message_row(
+    base_path: &str,
+    msg: &Message,
+    include_delete: bool,
+    is_highlighted: bool,
+) -> Markup {
+    let highlight = if is_highlighted {
+        " rounded-lg bg-amber-100/90 ring-1 ring-inset ring-amber-300/90 shadow-sm"
+    } else {
+        ""
+    };
+    let row_class = format!(
+        "group relative mt-2 py-1 pr-4 pl-4 transition-colors first:mt-0 \
+         hover:bg-neutral-800/[.04]{highlight}"
+    );
+    html! {
+        div class=(row_class)
+            style="display:grid;grid-template-columns:16px 40px 16px minmax(0,1fr);"
+            data-message-id=(msg.id) data-message-row="" {
+            div class="flex items-center justify-center text-neutral-400"
+                style="grid-row:1;grid-column:2;" { "\u{2726}" }
+            div class="min-w-0" style="grid-column:4;" {
+                div class="flex flex-wrap items-baseline gap-2" {
+                    span class="text-neutral-600 text-sm italic" {
+                        (system_message_body(base_path, msg))
+                    }
+                    span class="text-neutral-400 text-xs" { (msg.timestamp) }
+                    span class="text-neutral-300 text-xs" { (msg.id) }
+                }
+            }
+            @if include_delete {
+                div class="absolute top-0 right-2 hidden group-hover:block" {
+                    button type="button"
+                        class="delete-message-btn rounded bg-white px-2 py-0.5 \
+                               text-red-600 text-xs shadow-sm ring-1 ring-neutral-200 \
+                               transition-colors hover:bg-red-50 hover:text-red-700"
+                        data-channel-id=(msg.channel_id)
+                        data-message-id=(msg.id) { "Delete" }
+                }
+            }
+        }
+    }
+}
+
 fn message_row(
     base_path: &str,
     avatar_url: &str,
@@ -176,6 +501,9 @@ fn message_row(
     is_highlighted: bool,
     is_grouped: bool,
 ) -> Markup {
+    if is_system_message(msg.message_type) {
+        return system_message_row(base_path, msg, include_delete, is_highlighted);
+    }
     let hover = if is_highlighted {
         " hover:bg-amber-100"
     } else {
@@ -201,7 +529,7 @@ fn message_row(
                 div class="min-w-0" style="grid-column:4;" {
                     @if !msg.content.is_empty() {
                         div class="whitespace-pre-wrap break-words text-neutral-800 \
-                                   text-sm leading-snug" { (msg.content) }
+                                   text-sm leading-snug" { (message_content(base_path, msg)) }
                     }
                     @if !msg.attachments.is_empty() {
                         (render_image_attachments(msg, include_delete))
@@ -260,7 +588,7 @@ fn message_row(
                 }
                 @if !msg.content.is_empty() {
                     div class="mt-0.5 whitespace-pre-wrap break-words text-neutral-800 \
-                               text-sm leading-snug" { (msg.content) }
+                               text-sm leading-snug" { (message_content(base_path, msg)) }
                 }
                 @if !msg.attachments.is_empty() {
                     (render_image_attachments(msg, include_delete))
@@ -294,7 +622,12 @@ pub fn message_list(
     html! {
         div class="divide-y-0" {
             @for (i, msg) in messages.iter().enumerate() {
-                @let is_grouped = i > 0 && messages[i - 1].author_id == msg.author_id;
+                // A system message stands on its own, and never lets the message after
+                // it hide its author header by grouping onto it.
+                @let is_grouped = i > 0
+                    && messages[i - 1].author_id == msg.author_id
+                    && !is_system_message(messages[i - 1].message_type)
+                    && !is_system_message(msg.message_type);
                 @let is_highlighted = highlight_message_id == Some(msg.id.as_str());
                 @let avatar_url = user_avatar_url(
                     config, &msg.author_id, msg.author_avatar.as_deref(), 160, true,
@@ -399,5 +732,278 @@ pub fn message_deletion_script(csrf_token: &str) -> Markup {
     .replace("__CSRF__", &csrf);
     html! {
         script defer { (PreEscaped(script)) }
+    }
+}
+
+/// Shared JSON parsing for the admin message shape returned by the message
+/// lookup, browse, and report endpoints. Both pages that render messages build
+/// them through here so the two stay in step.
+pub fn message_from_value(value: &Value) -> Message {
+    let attachments = value
+        .get("attachments")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(attachment_from_value)
+        .collect();
+    Message {
+        id: value.get("id").and_then(value_id).unwrap_or_default(),
+        content: value
+            .get("content")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned(),
+        timestamp: value
+            .get("timestamp")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned(),
+        author_id: value
+            .get("author_id")
+            .and_then(value_id)
+            .unwrap_or_default(),
+        author_username: value
+            .get("author_username")
+            .and_then(Value::as_str)
+            .unwrap_or("Unknown")
+            .to_owned(),
+        author_global_name: value
+            .get("author_global_name")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        author_discriminator: value
+            .get("author_discriminator")
+            .and_then(value_id)
+            .unwrap_or_else(|| "0000".to_owned()),
+        author_avatar: value
+            .get("author_avatar")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        channel_id: value
+            .get("channel_id")
+            .and_then(value_id)
+            .unwrap_or_default(),
+        channel_nsfw: value.get("channel_nsfw").and_then(Value::as_bool),
+        channel_content_warning_level: value
+            .get("channel_content_warning_level")
+            .and_then(Value::as_i64)
+            .map(|n| n as i32),
+        channel_content_warning_text: value
+            .get("channel_content_warning_text")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        guild_nsfw: value.get("guild_nsfw").and_then(Value::as_bool),
+        attachments,
+        message_type: value.get("type").and_then(Value::as_i64).unwrap_or(0) as i32,
+        thread_id: value.get("thread_id").and_then(value_id),
+        thread_name: value
+            .get("thread_name")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        mentions: value
+            .get("mentions")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .map(mention_from_value)
+            .collect(),
+        mention_roles: value
+            .get("mention_roles")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .map(role_mention_from_value)
+            .collect(),
+        mention_channels: value
+            .get("mention_channels")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .map(channel_mention_from_value)
+            .collect(),
+    }
+}
+
+fn role_mention_from_value(value: &Value) -> MessageRoleMention {
+    MessageRoleMention {
+        id: value.get("id").and_then(value_id).unwrap_or_default(),
+        name: value
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned(),
+        color: value.get("color").and_then(Value::as_i64).unwrap_or(0),
+    }
+}
+
+fn channel_mention_from_value(value: &Value) -> MessageChannelMention {
+    MessageChannelMention {
+        id: value.get("id").and_then(value_id).unwrap_or_default(),
+        name: value
+            .get("name")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+    }
+}
+
+fn mention_from_value(value: &Value) -> MessageMention {
+    MessageMention {
+        id: value.get("id").and_then(value_id).unwrap_or_default(),
+        username: value
+            .get("username")
+            .and_then(Value::as_str)
+            .unwrap_or("Unknown")
+            .to_owned(),
+        global_name: value
+            .get("global_name")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+    }
+}
+
+fn attachment_from_value(value: &Value) -> Attachment {
+    Attachment {
+        id: value.get("id").and_then(value_id).unwrap_or_default(),
+        url: value
+            .get("url")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned(),
+        filename: value
+            .get("filename")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_owned(),
+        nsfw: value.get("nsfw").and_then(Value::as_bool),
+        content_type: value
+            .get("content_type")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        width: value.get("width").and_then(Value::as_u64).map(|n| n as u32),
+        height: value
+            .get("height")
+            .and_then(Value::as_u64)
+            .map(|n| n as u32),
+        size: value.get("size").and_then(Value::as_u64),
+        ncmec_status: value
+            .get("ncmec_status")
+            .and_then(Value::as_str)
+            .unwrap_or("not_submitted")
+            .to_owned(),
+        ncmec_report_id: value
+            .get("ncmec_report_id")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+        ncmec_failure_reason: value
+            .get("ncmec_failure_reason")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned),
+    }
+}
+
+pub fn value_id(value: &Value) -> Option<String> {
+    match value {
+        Value::String(s) => Some(s.clone()),
+        Value::Number(n) => Some(n.to_string()),
+        _ => None,
+    }
+}
+
+pub fn compare_message_ids(left: &Message, right: &Message) -> Ordering {
+    match (left.id.parse::<u128>(), right.id.parse::<u128>()) {
+        (Ok(l), Ok(r)) => l.cmp(&r),
+        _ => left.id.cmp(&right.id),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn message_with(content: &str) -> Message {
+        message_from_value(&serde_json::json!({
+            "id": "1",
+            "content": content,
+            "channel_id": "9",
+            "author_id": "7",
+            "author_username": "author",
+            "mentions": [{"id": "42", "username": "someone", "global_name": "Someone"}],
+            "mention_roles": [{"id": "77", "name": "Talent", "color": 3_447_003}],
+            "mention_channels": [{"id": "88", "name": "general", "type": 0}],
+        }))
+    }
+
+    fn render(content: &str) -> String {
+        message_content("/admin", &message_with(content)).into_string()
+    }
+
+    #[test]
+    fn resolves_user_role_and_channel_mentions() {
+        let html = render("hi <@42> and <@&77> in <#88>");
+        assert!(html.contains(">@Someone<"), "{html}");
+        assert!(html.contains("/admin/users/42"), "{html}");
+        assert!(html.contains(">@Talent<"), "{html}");
+        assert!(html.contains("color: #3498DB"), "{html}");
+        assert!(html.contains(">#general<"), "{html}");
+        assert!(html.contains("/admin/messages?channel_id=88"), "{html}");
+        assert!(!html.contains("<@42>"), "{html}");
+    }
+
+    #[test]
+    fn resolves_the_legacy_nickname_form_of_a_user_mention() {
+        assert!(render("<@!42>").contains(">@Someone<"));
+    }
+
+    #[test]
+    fn falls_back_to_the_id_when_the_target_is_unresolved() {
+        let html = render("<@999> <@&999> <#999>");
+        assert!(html.contains(">@999<"), "{html}");
+        assert!(html.contains(">#999<"), "{html}");
+        // A missing user or channel still links, since the admin page for that id is
+        // where an admin would go to find out what happened to it.
+        assert!(html.contains("/admin/users/999"), "{html}");
+        assert!(html.contains("/admin/messages?channel_id=999"), "{html}");
+    }
+
+    #[test]
+    fn leaves_text_that_only_looks_like_a_mention_alone() {
+        for content in ["a < b", "<@>", "<@abc>", "<@42", "<#>", "<@!>"] {
+            let html = message_content("/admin", &message_with(content)).into_string();
+            assert!(!html.contains("/admin/users/"), "{content} -> {html}");
+            assert!(!html.contains("channel_id="), "{content} -> {html}");
+        }
+    }
+
+    #[test]
+    fn escapes_the_text_around_a_mention() {
+        let html = render("<script>alert(1)</script> <@42>");
+        assert!(html.contains("&lt;script&gt;"), "{html}");
+        assert!(!html.contains("<script>"), "{html}");
+    }
+
+    #[test]
+    fn keeps_multibyte_text_intact_around_mentions() {
+        let html = render("héllo 👋 <@42> — done");
+        assert!(html.contains("héllo 👋 "), "{html}");
+        assert!(html.contains(" — done"), "{html}");
+        assert!(html.contains(">@Someone<"), "{html}");
+    }
+
+    #[test]
+    fn rejects_a_digit_run_too_long_to_be_a_snowflake() {
+        let html = render("<@123456789012345678901>");
+        assert!(!html.contains("/admin/users/"), "{html}");
+    }
+
+    #[test]
+    fn a_role_without_a_colour_keeps_the_default_text_colour() {
+        let msg = message_from_value(&serde_json::json!({
+            "id": "1",
+            "content": "<@&5>",
+            "mention_roles": [{"id": "5", "name": "Plain", "color": 0}],
+        }));
+        let html = message_content("/admin", &msg).into_string();
+        assert!(html.contains(">@Plain<"), "{html}");
+        assert!(!html.contains("color:"), "{html}");
     }
 }

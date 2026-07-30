@@ -369,8 +369,8 @@ export function useMessageSearchAutocomplete({
 					}
 					const fallbackGuildId = currentGuildIdForScope;
 					if (fallbackGuildId) {
-						const isGuildFullyLoaded = GuildMembers.isGuildFullyLoaded(fallbackGuildId);
-						if (isGuildFullyLoaded) {
+						const isGuildSynced = GuildMembers.isGuildSynced(fallbackGuildId);
+						if (isGuildSynced) {
 							const cachedMembers = GuildMembers.getMembers(fallbackGuildId);
 							return matchSorter(cachedMembers, searchTerm, {
 								keys: [

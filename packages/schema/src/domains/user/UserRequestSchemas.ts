@@ -269,7 +269,10 @@ export const CreatePrivateChannelRequest = z
 			.optional()
 			.describe(`Array of user IDs for creating a group DM (max ${MAX_GROUP_DM_OTHER_RECIPIENTS})`),
 	})
-	.refine((data) => (data.recipient_id && !data.recipients) || (!data.recipient_id && data.recipients), {
+	// Compared against undefined rather than for truthiness: a snowflake parses to a
+	// bigint, and the system account's id is 0n, which is falsy. Testing truthiness
+	// rejected a DM with that account before the request reached any handler.
+	.refine((data) => (data.recipient_id !== undefined) !== (data.recipients !== undefined), {
 		message: 'Either recipient_id or recipients must be provided, but not both',
 	});
 

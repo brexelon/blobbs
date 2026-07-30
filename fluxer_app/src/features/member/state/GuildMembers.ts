@@ -81,7 +81,12 @@ class GuildMembers {
 	members: Record<string, Members> = {};
 	nonMembers: Record<string, Set<string>> = {};
 	pendingRequests: Map<string, PendingMemberRequest> = new Map();
-	loadedGuilds: Set<string> = new Set();
+	/**
+	 * Guilds whose sync has completed. This says nothing about how many of their
+	 * members are cached: a guild's sync payload carries only the viewer and anyone in
+	 * a voice channel, so a synced guild's member cache is usually near-empty.
+	 */
+	syncedGuilds: Set<string> = new Set();
 	private pendingMessageMemberHydration: Map<string, Set<string>> = new Map();
 	private readonly guildMemberVersions = observable.map<string, number>();
 	private globalMemberVersion = 0;
@@ -153,7 +158,7 @@ class GuildMembers {
 		this.members = {};
 		this.nonMembers = {};
 		this.pendingMessageMemberHydration.clear();
-		this.loadedGuilds.clear();
+		this.syncedGuilds.clear();
 		this.guildMemberVersions.clear();
 		this.globalMemberVersion = 0;
 		for (const guild of guilds) {
@@ -184,7 +189,7 @@ class GuildMembers {
 			});
 		}
 		if (options?.synced || GatewayConnection.hasCompletedGuildSync(guild.id)) {
-			this.loadedGuilds.add(guild.id);
+			this.syncedGuilds.add(guild.id);
 			this.flushPendingMessageMemberHydration(guild.id);
 		}
 	}
@@ -193,7 +198,7 @@ class GuildMembers {
 		delete this.members[guildId];
 		delete this.nonMembers[guildId];
 		this.pendingMessageMemberHydration.delete(guildId);
-		this.loadedGuilds.delete(guildId);
+		this.syncedGuilds.delete(guildId);
 	}
 
 	handleMemberAdd(guildId: string, member: GuildMemberData): void {
@@ -451,8 +456,13 @@ class GuildMembers {
 		});
 	}
 
-	isGuildFullyLoaded(guildId: string): boolean {
-		return this.loadedGuilds.has(guildId);
+	/**
+	 * Whether the guild's sync has completed. Not a test for whether its members are
+	 * cached — see `syncedGuilds` — so it must not be used to decide that fetching
+	 * members would be redundant.
+	 */
+	isGuildSynced(guildId: string): boolean {
+		return this.syncedGuilds.has(guildId);
 	}
 }
 

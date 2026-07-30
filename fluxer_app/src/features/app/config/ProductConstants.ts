@@ -10,4 +10,10 @@ function getBootstrapProductName(): string {
 
 export const PRODUCT_NAME = getBootstrapProductName();
 export const PREMIUM_PRODUCT_NAME = 'Plutonium';
+/**
+ * The system account that carries instance-staff announcements. Deliberately not
+ * derived from the product name: it is its own identity, so it reads the same on
+ * every instance regardless of branding.
+ */
+export const MEGAPHONE_NAME = 'Megaphone';
 export const PREMIUM_PRODUCT_FULL_NAME = `${PRODUCT_NAME} ${PREMIUM_PRODUCT_NAME}`;

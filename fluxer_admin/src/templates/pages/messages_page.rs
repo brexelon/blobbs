@@ -10,7 +10,10 @@ use crate::{
                 FORM_INPUT_CLASS, csrf_input, danger_button, form_actions, form_field_group,
                 submit_button,
             },
-            message_list::{Attachment, Message, message_deletion_script, message_list},
+            message_list::{
+                Message, compare_message_ids, message_deletion_script, message_from_value,
+                message_list, value_id,
+            },
             page_container::{card, page_header},
         },
         layout::LayoutOptions,
@@ -19,7 +22,6 @@ use crate::{
 };
 use maud::{Markup, html};
 use serde_json::Value;
-use std::cmp::Ordering;
 
 const MESSAGE_BROWSE_SCRIPT: &str = r#"
 (function () {
@@ -300,8 +302,26 @@ fn browse_result_card(
         .get("has_more")
         .and_then(Value::as_bool)
         .unwrap_or(false);
+    let target = browse_target(result);
+    let is_thread = target.as_ref().is_some_and(|t| t.is_thread);
+    let heading_prefix = if is_thread {
+        "Browse Thread: "
+    } else {
+        "Browse Channel: "
+    };
+    let guild_name = result
+        .get("messages")
+        .and_then(Value::as_array)
+        .and_then(|messages| messages.first())
+        .and_then(|m| m.get("guild_name"))
+        .and_then(Value::as_str);
     card(html! {
-        (result_heading(config, result, channel_id, "Browse Channel: "))
+        (result_heading(config, result, channel_id, heading_prefix))
+        @if let Some(ref target) = target {
+            @if target.is_thread {
+                (thread_breadcrumb(config, target, channel_id, guild_name))
+            }
+        }
         form method="post" action={(config.base_path) "/messages?action=search"} class="mb-4" {
             (csrf_input(csrf_token))
             input type="hidden" name="channel_id" value=(channel_id);
@@ -500,6 +520,77 @@ fn result_heading(config: &AdminConfig, result: &Value, channel_id: &str, prefix
     }
 }
 
+const CHANNEL_TYPE_THREAD: i64 = 5;
+
+/// The `target` block the browse endpoint returns alongside the messages, which is
+/// what lets this page tell a thread from a channel.
+struct BrowseTarget<'a> {
+    is_thread: bool,
+    name: Option<&'a str>,
+    guild_id: Option<&'a str>,
+    parent_id: Option<&'a str>,
+    parent_name: Option<&'a str>,
+    creator_id: Option<&'a str>,
+    creator_name: Option<&'a str>,
+}
+
+fn browse_target(result: &Value) -> Option<BrowseTarget<'_>> {
+    let target = result.get("target")?;
+    let str_field = |key: &str| target.get(key).and_then(Value::as_str);
+    Some(BrowseTarget {
+        is_thread: target.get("type").and_then(Value::as_i64) == Some(CHANNEL_TYPE_THREAD),
+        name: str_field("name"),
+        guild_id: str_field("guild_id"),
+        parent_id: str_field("parent_id"),
+        parent_name: str_field("parent_name"),
+        creator_id: str_field("thread_creator_id"),
+        creator_name: str_field("thread_creator_name"),
+    })
+}
+
+/// Trail shown above a thread's messages: the channel it lives in, the thread
+/// itself, and who started it, in which community. The creator name is the snapshot
+/// taken when the thread was created, so no extra user lookup is needed to render it.
+fn thread_breadcrumb(
+    config: &AdminConfig,
+    target: &BrowseTarget<'_>,
+    channel_id: &str,
+    guild_name: Option<&str>,
+) -> Markup {
+    let base = &config.base_path;
+    html! {
+        nav class="mb-3 flex flex-wrap items-center gap-1 text-neutral-500 text-sm" {
+            @if let Some(parent_id) = target.parent_id {
+                a href={(base) "/messages?channel_id=" (parent_id)}
+                    class="text-blue-600 hover:underline" {
+                    @if let Some(name) = target.parent_name { "#" (name) } @else { (parent_id) }
+                }
+                span class="text-neutral-300" { "/" }
+            }
+            a href={(base) "/messages?channel_id=" (channel_id)}
+                class="text-blue-600 hover:underline" {
+                (target.name.unwrap_or(channel_id))
+            }
+            @if let Some(creator_name) = target.creator_name {
+                span class="text-neutral-300" { "/" }
+                span { "Thread started by:" }
+                @if let Some(creator_id) = target.creator_id {
+                    a href={(base) "/users/" (creator_id)}
+                        class="text-blue-600 hover:underline" { (creator_name) }
+                } @else {
+                    span class="text-neutral-700" { (creator_name) }
+                }
+            }
+            @if let Some(guild_id) = target.guild_id {
+                span { "in" }
+                a href={(base) "/guilds/" (guild_id)} class="text-blue-600 hover:underline" {
+                    (guild_name.unwrap_or(guild_id))
+                }
+            }
+        }
+    }
+}
+
 fn empty_state(text: &str) -> Markup {
     html! {
         div class="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-8 text-center text-neutral-500 text-sm" {
@@ -520,120 +611,6 @@ fn ordered_messages(result: &Value) -> Vec<Message> {
     messages
 }
 
-fn message_from_value(value: &Value) -> Message {
-    let attachments = value
-        .get("attachments")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .map(attachment_from_value)
-        .collect();
-    Message {
-        id: value.get("id").and_then(value_id).unwrap_or_default(),
-        content: value
-            .get("content")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_owned(),
-        timestamp: value
-            .get("timestamp")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_owned(),
-        author_id: value
-            .get("author_id")
-            .and_then(value_id)
-            .unwrap_or_default(),
-        author_username: value
-            .get("author_username")
-            .and_then(Value::as_str)
-            .unwrap_or("Unknown")
-            .to_owned(),
-        author_global_name: value
-            .get("author_global_name")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        author_discriminator: value
-            .get("author_discriminator")
-            .and_then(value_id)
-            .unwrap_or_else(|| "0000".to_owned()),
-        author_avatar: value
-            .get("author_avatar")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        channel_id: value
-            .get("channel_id")
-            .and_then(value_id)
-            .unwrap_or_default(),
-        channel_nsfw: value.get("channel_nsfw").and_then(Value::as_bool),
-        channel_content_warning_level: value
-            .get("channel_content_warning_level")
-            .and_then(Value::as_i64)
-            .map(|n| n as i32),
-        channel_content_warning_text: value
-            .get("channel_content_warning_text")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        guild_nsfw: value.get("guild_nsfw").and_then(Value::as_bool),
-        attachments,
-    }
-}
-
-fn attachment_from_value(value: &Value) -> Attachment {
-    Attachment {
-        id: value.get("id").and_then(value_id).unwrap_or_default(),
-        url: value
-            .get("url")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_owned(),
-        filename: value
-            .get("filename")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_owned(),
-        nsfw: value.get("nsfw").and_then(Value::as_bool),
-        content_type: value
-            .get("content_type")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        width: value.get("width").and_then(Value::as_u64).map(|n| n as u32),
-        height: value
-            .get("height")
-            .and_then(Value::as_u64)
-            .map(|n| n as u32),
-        size: value.get("size").and_then(Value::as_u64),
-        ncmec_status: value
-            .get("ncmec_status")
-            .and_then(Value::as_str)
-            .unwrap_or("not_submitted")
-            .to_owned(),
-        ncmec_report_id: value
-            .get("ncmec_report_id")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-        ncmec_failure_reason: value
-            .get("ncmec_failure_reason")
-            .and_then(Value::as_str)
-            .map(ToOwned::to_owned),
-    }
-}
-
-fn value_id(value: &Value) -> Option<String> {
-    match value {
-        Value::String(s) => Some(s.clone()),
-        Value::Number(n) => Some(n.to_string()),
-        _ => None,
-    }
-}
-
-fn compare_message_ids(left: &Message, right: &Message) -> Ordering {
-    match (left.id.parse::<u128>(), right.id.parse::<u128>()) {
-        (Ok(l), Ok(r)) => l.cmp(&r),
-        _ => left.id.cmp(&right.id),
-    }
-}
-
 fn browse_channel_form(config: &AdminConfig, csrf_token: &str, prefill: Option<&str>) -> Markup {
     let base = &config.base_path;
     card(html! {
@@ -644,7 +621,8 @@ fn browse_channel_form(config: &AdminConfig, csrf_token: &str, prefill: Option<&
             (csrf_input(csrf_token))
             div class="flex flex-col gap-4" {
                 (form_field_group(
-                    "Channel ID", "browse-channel-id", true, None, None,
+                    "Channel or Thread ID", "browse-channel-id", true,
+                    None, Some("Accepts a channel ID or a thread ID."),
                     html! {
                         input type="text" id="browse-channel-id" name="channel_id"
                             placeholder="123456789" required

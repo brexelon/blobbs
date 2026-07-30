@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import styles from '@app/features/channel/components/ThreadCreatePanel.module.css';
+import {ThreadStarterPreview} from '@app/features/channel/components/ThreadStarterMessage';
 import ThreadSidebar from '@app/features/channel/state/ThreadSidebar';
 import {submitThreadCreate} from '@app/features/channel/utils/ThreadCreateFlow';
 import {EmojiPickerPopout} from '@app/features/emoji/components/popouts/EmojiPickerPopout';
 import type {FlatEmoji} from '@app/features/emoji/types/EmojiTypes';
+import {ExpressionPickerSheet} from '@app/features/expressions/components/modals/ExpressionPickerSheet';
+import type {ExpressionPickerTabType} from '@app/features/expressions/components/popouts/ExpressionPickerPopout';
 import {CLOSE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {Input} from '@app/features/ui/components/form/FormInput';
@@ -21,6 +24,10 @@ import type React from 'react';
 import {useCallback, useRef, useState} from 'react';
 
 const logger = new Logger('ThreadCreatePanel');
+
+// The mobile starter composer only supports emoji (the thread's first message is
+// text-only until it is created), so the slide-up sheet shows just the Emojis tab.
+const EMOJI_ONLY_TABS: Array<ExpressionPickerTabType> = ['emojis'];
 
 const NEW_THREAD_DESCRIPTOR = msg({
 	message: 'New Thread',
@@ -73,6 +80,7 @@ export const ThreadCreatePanel = observer(
 		const [content, setContent] = useState('');
 		const [starterError, setStarterError] = useState(false);
 		const [submitting, setSubmitting] = useState(false);
+		const [emojiSheetOpen, setEmojiSheetOpen] = useState(false);
 		const contentRef = useRef<HTMLTextAreaElement | null>(null);
 
 		const submit = useCallback(async () => {
@@ -159,7 +167,7 @@ export const ThreadCreatePanel = observer(
 						<ThreadIcon size={40} className={styles.bigIcon} />
 					</div>
 				</div>
-				<div className={styles.footer} data-flx="channel.thread-create-panel.footer">
+				<div className={styles.nameSection} data-flx="channel.thread-create-panel.name-section">
 					<Input
 						label={i18n._(THREAD_NAME_DESCRIPTOR)}
 						value={name}
@@ -170,34 +178,50 @@ export const ThreadCreatePanel = observer(
 						placeholder={i18n._(THREAD_NAME_PLACEHOLDER_DESCRIPTOR)}
 						data-flx="channel.thread-create-panel.name"
 					/>
-					<div className={styles.composer} data-flx="channel.thread-create-panel.composer">
-						{starterError && (
-							<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
-								{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
-							</div>
-						)}
-						<div
-							className={starterError ? styles.starterBoxError : styles.starterBox}
-							data-flx="channel.thread-create-panel.starter-box"
-						>
-							<textarea
-								ref={contentRef}
-								className={styles.starterTextarea}
-								value={content}
-								onChange={(event) => {
-									setContent(event.target.value);
-									if (starterError && event.target.value.trim()) {
-										setStarterError(false);
-									}
-								}}
-								onKeyDown={handleContentKeyDown}
-								placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-								maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
-								rows={1}
-								disabled={submitting}
-								aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
-								data-flx="channel.thread-create-panel.starter-textarea"
-							/>
+				</div>
+				{originMessageId && (
+					<ThreadStarterPreview
+						parentChannelId={parentChannelId}
+						originMessageId={originMessageId}
+						data-flx="channel.thread-create-panel.starter-preview"
+					/>
+				)}
+				<div className={styles.composerBar} data-flx="channel.thread-create-panel.composer">
+					{starterError && (
+						<div className={styles.errorLabel} role="alert" data-flx="channel.thread-create-panel.error">
+							{i18n._(STARTER_REQUIRED_DESCRIPTOR)}
+						</div>
+					)}
+					<div className={styles.starterRow} data-flx="channel.thread-create-panel.starter-box">
+						<textarea
+							ref={contentRef}
+							className={styles.starterTextarea}
+							value={content}
+							onChange={(event) => {
+								setContent(event.target.value);
+								if (starterError && event.target.value.trim()) {
+									setStarterError(false);
+								}
+							}}
+							onKeyDown={handleContentKeyDown}
+							placeholder={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+							maxLength={MAX_MESSAGE_LENGTH_PREMIUM}
+							rows={1}
+							disabled={submitting}
+							aria-label={i18n._(STARTER_PLACEHOLDER_DESCRIPTOR)}
+							data-flx="channel.thread-create-panel.starter-textarea"
+						/>
+						{fullScreen ? (
+							<button
+								type="button"
+								className={styles.emojiButton}
+								onClick={() => setEmojiSheetOpen(true)}
+								aria-label={i18n._(EMOJI_DESCRIPTOR)}
+								data-flx="channel.thread-create-panel.emoji-button"
+							>
+								<SmileyIcon className={styles.emojiIcon} />
+							</button>
+						) : (
 							<Popout
 								position="top-end"
 								render={({onClose}) => (
@@ -210,12 +234,20 @@ export const ThreadCreatePanel = observer(
 									aria-label={i18n._(EMOJI_DESCRIPTOR)}
 									data-flx="channel.thread-create-panel.emoji-button"
 								>
-									<SmileyIcon size={22} />
+									<SmileyIcon className={styles.emojiIcon} />
 								</button>
 							</Popout>
-						</div>
+						)}
 					</div>
 				</div>
+				{fullScreen && (
+					<ExpressionPickerSheet
+						isOpen={emojiSheetOpen}
+						onClose={() => setEmojiSheetOpen(false)}
+						onEmojiSelect={insertEmoji}
+						visibleTabs={EMOJI_ONLY_TABS}
+					/>
+				)}
 			</aside>
 		);
 	},

@@ -106,6 +106,9 @@ fn action_label(action_type: i32) -> &'static str {
         90 => "Sticker Create",
         91 => "Sticker Update",
         92 => "Sticker Delete",
+        110 => "Thread Create",
+        111 => "Thread Update",
+        112 => "Thread Delete",
         _ => "Unknown",
     }
 }

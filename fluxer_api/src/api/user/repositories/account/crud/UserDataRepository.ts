@@ -50,7 +50,9 @@ export class UserDataRepository {
 			return new User({
 				...EMPTY_USER_ROW,
 				user_id: createUserID(FLUXER_BOT_USER_ID),
-				username: 'Fluxer',
+				// The announcements account is its own identity rather than the instance's
+				// brand, so it stays "Megaphone" whatever the product is named.
+				username: 'Megaphone',
 				bot: true,
 				system: true,
 				flags: UserFlags.STAFF,

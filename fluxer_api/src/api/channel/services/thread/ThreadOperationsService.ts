@@ -183,6 +183,10 @@ export class ThreadOperationsService {
 			thread_auto_close_duration_seconds: data.auto_close_duration_seconds,
 			thread_auto_close_at: autoCloseAt,
 			thread_origin_message_id: threadOriginMessageId,
+			// Records which of the two the origin is, so clients can tell a thread with a
+			// real starter from one whose origin is only the announcement — including once
+			// that message is gone and its type can no longer be inspected.
+			thread_origin_is_announcement: originMessageId == null,
 			soft_deleted: false,
 			indexed_at: null,
 			version: 1,

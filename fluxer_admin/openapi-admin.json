@@ -6172,63 +6172,6 @@
 				}
 			}
 		},
-		"/admin/reports/list": {
-			"post": {
-				"operationId": "list_reports",
-				"summary": "List reports",
-				"tags": ["Admin"],
-				"responses": {
-					"200": {
-						"description": "Success",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ListReportsResponse"}}}
-					},
-					"400": {
-						"description": "Bad Request - The request was malformed or contained invalid data",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
-					},
-					"401": {
-						"description": "Unauthorized - Authentication is required or the token is invalid",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
-					},
-					"403": {
-						"description": "Forbidden - You do not have permission to perform this action",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
-					},
-					"429": {
-						"description": "Too Many Requests - You are being rate limited",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
-						"headers": {
-							"Retry-After": {
-								"description": "Number of seconds to wait before retrying (only on 429)",
-								"schema": {"type": "integer"}
-							},
-							"X-RateLimit-Limit": {
-								"description": "The number of requests that can be made in the current window",
-								"schema": {"type": "integer"}
-							},
-							"X-RateLimit-Remaining": {
-								"description": "The number of remaining requests that can be made",
-								"schema": {"type": "integer"}
-							},
-							"X-RateLimit-Reset": {
-								"description": "Unix timestamp when the rate limit resets",
-								"schema": {"type": "integer"}
-							}
-						}
-					},
-					"500": {
-						"description": "Internal Server Error - An unexpected error occurred",
-						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
-					}
-				},
-				"description": "Lists user and content reports with optional status filtering and pagination. Requires REPORT_VIEW permission.",
-				"security": [{"adminApiKey": []}],
-				"requestBody": {
-					"required": true,
-					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ListReportsRequest"}}}
-				}
-			}
-		},
 		"/admin/reports/delete": {
 			"post": {
 				"operationId": "delete_report",
@@ -6283,6 +6226,63 @@
 				"requestBody": {
 					"required": true,
 					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteReportRequest"}}}
+				}
+			}
+		},
+		"/admin/reports/list": {
+			"post": {
+				"operationId": "list_reports",
+				"summary": "List reports",
+				"tags": ["Admin"],
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ListReportsResponse"}}}
+					},
+					"400": {
+						"description": "Bad Request - The request was malformed or contained invalid data",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"401": {
+						"description": "Unauthorized - Authentication is required or the token is invalid",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"403": {
+						"description": "Forbidden - You do not have permission to perform this action",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"429": {
+						"description": "Too Many Requests - You are being rate limited",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+						"headers": {
+							"Retry-After": {
+								"description": "Number of seconds to wait before retrying (only on 429)",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Limit": {
+								"description": "The number of requests that can be made in the current window",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Remaining": {
+								"description": "The number of remaining requests that can be made",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Reset": {
+								"description": "Unix timestamp when the rate limit resets",
+								"schema": {"type": "integer"}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error - An unexpected error occurred",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					}
+				},
+				"description": "Lists user and content reports with optional status filtering and pagination. Requires REPORT_VIEW permission.",
+				"security": [{"adminApiKey": []}],
+				"requestBody": {
+					"required": true,
+					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ListReportsRequest"}}}
 				}
 			}
 		},
@@ -7249,6 +7249,120 @@
 				"requestBody": {
 					"required": true,
 					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/ClearUserFieldsRequest"}}}
+				}
+			}
+		},
+		"/admin/users/delete-account-immediately": {
+			"post": {
+				"operationId": "delete_account_immediately",
+				"summary": "Delete account immediately",
+				"tags": ["Admin"],
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserMutationResponse"}}}
+					},
+					"400": {
+						"description": "Bad Request - The request was malformed or contained invalid data",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"401": {
+						"description": "Unauthorized - Authentication is required or the token is invalid",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"403": {
+						"description": "Forbidden - You do not have permission to perform this action",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"429": {
+						"description": "Too Many Requests - You are being rate limited",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+						"headers": {
+							"Retry-After": {
+								"description": "Number of seconds to wait before retrying (only on 429)",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Limit": {
+								"description": "The number of requests that can be made in the current window",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Remaining": {
+								"description": "The number of remaining requests that can be made",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Reset": {
+								"description": "Unix timestamp when the rate limit resets",
+								"schema": {"type": "integer"}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error - An unexpected error occurred",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					}
+				},
+				"description": "Permanently delete a user account without a grace period. Terminates all sessions, cancels subscription, bans identifiers, and queues deletion immediately. Creates audit log entry. Requires USER_DELETE permission.",
+				"security": [{"adminApiKey": []}],
+				"requestBody": {
+					"required": true,
+					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteAccountImmediatelyRequest"}}}
+				}
+			}
+		},
+		"/admin/users/delete-all-user-data": {
+			"post": {
+				"operationId": "delete_all_user_data",
+				"summary": "Delete all user data",
+				"tags": ["Admin"],
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteAllUserDataResponse"}}}
+					},
+					"400": {
+						"description": "Bad Request - The request was malformed or contained invalid data",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"401": {
+						"description": "Unauthorized - Authentication is required or the token is invalid",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"403": {
+						"description": "Forbidden - You do not have permission to perform this action",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					},
+					"429": {
+						"description": "Too Many Requests - You are being rate limited",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}},
+						"headers": {
+							"Retry-After": {
+								"description": "Number of seconds to wait before retrying (only on 429)",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Limit": {
+								"description": "The number of requests that can be made in the current window",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Remaining": {
+								"description": "The number of remaining requests that can be made",
+								"schema": {"type": "integer"}
+							},
+							"X-RateLimit-Reset": {
+								"description": "Unix timestamp when the rate limit resets",
+								"schema": {"type": "integer"}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error - An unexpected error occurred",
+						"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+					}
+				},
+				"description": "Permanently removes a user and all associated data from the database, including their profile. Does not create deleted-user placeholder records. Creates an audit log entry. Requires USER_DELETE permission.",
+				"security": [{"adminApiKey": []}],
+				"requestBody": {
+					"required": true,
+					"content": {"application/json": {"schema": {"$ref": "#/components/schemas/DeleteAllUserDataRequest"}}}
 				}
 			}
 		},
@@ -10540,7 +10654,7 @@
 										"type": {
 											"type": "integer",
 											"format": "int32",
-											"enum": [0, 1, 2, 3, 4, 998, 999],
+											"enum": [0, 1, 2, 3, 4, 5, 998, 999],
 											"description": "The type of the channel"
 										},
 										"guild_id": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]}
@@ -10597,7 +10711,7 @@
 											"type": {
 												"type": "integer",
 												"format": "int32",
-												"enum": [0, 1, 2, 3, 4, 998, 999],
+												"enum": [0, 1, 2, 3, 4, 5, 998, 999],
 												"description": "The type of the channel"
 											},
 											"guild_id": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]}
@@ -10613,7 +10727,7 @@
 												"type": {
 													"type": "integer",
 													"format": "int32",
-													"enum": [0, 1, 2, 3, 4, 998, 999],
+													"enum": [0, 1, 2, 3, 4, 5, 998, 999],
 													"description": "The type of the channel"
 												},
 												"guild_id": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]}
@@ -11780,7 +11894,7 @@
 				"format": "int32",
 				"enum": [
 					1, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 40, 41, 42, 50, 51, 52, 60, 61, 62,
-					90, 91, 92, 72, 73, 74, 75
+					90, 91, 92, 72, 73, 74, 75, 110, 111, 112
 				],
 				"description": "The type of action that occurred"
 			},
@@ -12086,7 +12200,7 @@
 										"type": {
 											"type": "integer",
 											"format": "int32",
-											"enum": [0, 1, 2, 3, 4, 998, 999],
+											"enum": [0, 1, 2, 3, 4, 5, 998, 999],
 											"description": "The type of the channel"
 										},
 										"position": {"$ref": "#/components/schemas/Int32Type"},
@@ -12100,6 +12214,31 @@
 									"required": ["id", "name", "type", "position", "parent_id", "nsfw", "url"]
 								},
 								"maxItems": 500
+							},
+							"threads": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"id": {"$ref": "#/components/schemas/SnowflakeType"},
+										"name": {"nullable": true, "type": "string"},
+										"parent_id": {
+											"description": "The channel the thread hangs beneath",
+											"nullable": true,
+											"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+										},
+										"creator_id": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]},
+										"creator_name": {"nullable": true, "type": "string"},
+										"state": {
+											"description": "Thread lifecycle state (0=open, 1=closed, 2=archived)",
+											"nullable": true,
+											"allOf": [{"$ref": "#/components/schemas/Int32Type"}]
+										},
+										"locked": {"nullable": true, "type": "boolean"}
+									},
+									"required": ["id", "name", "parent_id", "creator_id", "creator_name", "state", "locked"]
+								},
+								"maxItems": 1000
 							},
 							"roles": {
 								"type": "array",
@@ -12150,6 +12289,7 @@
 							"disabled_operations",
 							"member_count",
 							"channels",
+							"threads",
 							"roles"
 						]
 					}
@@ -12709,7 +12849,8 @@
 											"secure": {"nullable": true, "type": "boolean"}
 										},
 										"required": ["host", "port", "username", "password_set", "secure"]
-									}
+									},
+									"disable_new_ip_authorization": {"type": "boolean"}
 								},
 								"required": [
 									"enabled",
@@ -12718,7 +12859,8 @@
 									"effective_provider",
 									"from_email",
 									"from_name",
-									"smtp"
+									"smtp",
+									"disable_new_ip_authorization"
 								]
 							},
 							"bluesky": {
@@ -13085,7 +13227,8 @@
 											"password": {"nullable": true, "type": "string", "maxLength": 4096},
 											"secure": {"nullable": true, "type": "boolean"}
 										}
-									}
+									},
+									"disable_new_ip_authorization": {"nullable": true, "type": "boolean"}
 								}
 							},
 							"bluesky": {
@@ -13477,7 +13620,12 @@
 						"items": {"$ref": "#/components/schemas/MessageResponseSchema"},
 						"maxItems": 100
 					},
-					"has_more": {"type": "boolean"}
+					"has_more": {"type": "boolean"},
+					"target": {
+						"description": "Identity of the browsed channel or thread",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/BrowseChannelTarget"}]
+					}
 				},
 				"required": ["messages", "has_more"]
 			},
@@ -13545,7 +13693,65 @@
 						},
 						"maxItems": 10
 					},
-					"user_prior_ncmec_report_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 100}
+					"user_prior_ncmec_report_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 100},
+					"type": {
+						"type": "integer",
+						"format": "int32",
+						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 18, 19, 20],
+						"description": "The message type. Non-zero types are system messages with no content."
+					},
+					"thread_id": {
+						"description": "ID of the thread this message announces, for thread system messages",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+					},
+					"thread_name": {
+						"description": "Name of the thread this message announces, for thread system messages",
+						"nullable": true,
+						"type": "string"
+					},
+					"mentions": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"username": {"type": "string"},
+								"global_name": {"nullable": true, "type": "string"}
+							},
+							"required": ["id", "username", "global_name"]
+						},
+						"maxItems": 100,
+						"description": "Users referenced by the message, both by its content and by system message text"
+					},
+					"mention_roles": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"name": {"type": "string"},
+								"color": {"$ref": "#/components/schemas/Int32Type"}
+							},
+							"required": ["id", "name", "color"]
+						},
+						"maxItems": 100,
+						"description": "Roles named by the message content, resolved so the mention can be rendered by name"
+					},
+					"mention_channels": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {"$ref": "#/components/schemas/SnowflakeType"},
+								"name": {"nullable": true, "type": "string"},
+								"type": {"$ref": "#/components/schemas/Int32Type"}
+							},
+							"required": ["id", "name", "type"]
+						},
+						"maxItems": 100,
+						"description": "Channels and threads named by the message content, resolved so the mention can be rendered by name"
+					}
 				},
 				"required": [
 					"id",
@@ -13587,7 +13793,7 @@
 					"type": {
 						"type": "integer",
 						"format": "int32",
-						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 19],
+						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 18, 19, 20],
 						"description": "The type of message"
 					},
 					"flags": {"$ref": "#/components/schemas/MessageFlags"},
@@ -13711,6 +13917,16 @@
 						},
 						"required": ["participants"]
 					},
+					"thread_id": {
+						"description": "The ID of the thread started from this message, if any",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+					},
+					"thread_name": {
+						"description": "The name of the thread started from this message, if any",
+						"nullable": true,
+						"type": "string"
+					},
 					"referenced_message": {
 						"description": "The message that this message is replying to or forwarding",
 						"nullable": true,
@@ -13735,7 +13951,7 @@
 							"type": {
 								"type": "integer",
 								"format": "int32",
-								"enum": [0, 1, 2, 3, 4, 5, 6, 7, 19],
+								"enum": [0, 1, 2, 3, 4, 5, 6, 7, 18, 19, 20],
 								"description": "The type of message"
 							},
 							"flags": {"$ref": "#/components/schemas/MessageFlags"},
@@ -13858,6 +14074,16 @@
 									}
 								},
 								"required": ["participants"]
+							},
+							"thread_id": {
+								"description": "The ID of the thread started from this message, if any",
+								"nullable": true,
+								"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+							},
+							"thread_name": {
+								"description": "The name of the thread started from this message, if any",
+								"nullable": true,
+								"type": "string"
 							}
 						},
 						"required": [
@@ -14345,12 +14571,60 @@
 					"type": {
 						"type": "integer",
 						"format": "int32",
-						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 19],
+						"enum": [0, 1, 2, 3, 4, 5, 6, 7, 18, 19, 20],
 						"description": "The type of message"
 					},
 					"flags": {"$ref": "#/components/schemas/MessageFlags"}
 				},
 				"required": ["timestamp", "type", "flags"]
+			},
+			"BrowseChannelTarget": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string",
+						"pattern": "^(0|[1-9][0-9]*)$",
+						"description": "The ID of the channel or thread being browsed"
+					},
+					"type": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 2147483647,
+						"format": "int32",
+						"description": "The channel type. 5 is a thread."
+					},
+					"name": {
+						"description": "The channel name, or the thread name for a thread",
+						"nullable": true,
+						"type": "string"
+					},
+					"guild_id": {
+						"description": "The guild the channel belongs to, if any",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+					},
+					"parent_id": {
+						"description": "The parent category for a channel, or the parent channel for a thread",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+					},
+					"parent_name": {
+						"description": "Name of the parent channel, resolved for threads",
+						"nullable": true,
+						"type": "string"
+					},
+					"thread_creator_id": {
+						"description": "The user who started the thread, for threads",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/SnowflakeType"}]
+					},
+					"thread_creator_name": {
+						"description": "The username of the thread creator at creation time, for threads",
+						"nullable": true,
+						"type": "string"
+					}
+				},
+				"required": ["id", "type"]
 			},
 			"BrowseChannelRequest": {
 				"type": "object",
@@ -14528,6 +14802,16 @@
 				"type": "object",
 				"properties": {"job_id": {"type": "string"}},
 				"required": ["job_id"]
+			},
+			"DeleteReportResponse": {
+				"type": "object",
+				"properties": {"report_id": {"$ref": "#/components/schemas/SnowflakeType"}, "deleted": {"type": "boolean"}},
+				"required": ["report_id", "deleted"]
+			},
+			"DeleteReportRequest": {
+				"type": "object",
+				"properties": {"report_id": {"$ref": "#/components/schemas/SnowflakeType"}},
+				"required": ["report_id"]
 			},
 			"ListReportsResponse": {
 				"type": "object",
@@ -14745,21 +15029,6 @@
 					"public_comment": {"nullable": true, "type": "string"}
 				},
 				"required": ["report_id", "status", "resolved_at", "public_comment"]
-			},
-			"DeleteReportResponse": {
-				"type": "object",
-				"properties": {
-					"report_id": {"$ref": "#/components/schemas/SnowflakeType"},
-					"deleted": {"type": "boolean"}
-				},
-				"required": ["report_id", "deleted"]
-			},
-			"DeleteReportRequest": {
-				"type": "object",
-				"properties": {
-					"report_id": {"$ref": "#/components/schemas/SnowflakeType"}
-				},
-				"required": ["report_id"]
 			},
 			"ResolveReportRequest": {
 				"type": "object",
@@ -15120,6 +15389,37 @@
 					}
 				},
 				"required": ["user_id", "fields"]
+			},
+			"DeleteAccountImmediatelyRequest": {
+				"type": "object",
+				"properties": {
+					"user_id": {"$ref": "#/components/schemas/SnowflakeType"},
+					"reason_code": {
+						"type": "integer",
+						"minimum": 0,
+						"maximum": 2147483647,
+						"format": "int32",
+						"description": "Code indicating the reason for deletion"
+					},
+					"public_reason": {"type": "string", "description": "Public-facing reason for the deletion"}
+				},
+				"required": ["user_id", "reason_code"]
+			},
+			"DeleteAllUserDataResponse": {
+				"type": "object",
+				"properties": {
+					"deleted": {
+						"type": "boolean",
+						"enum": [true],
+						"description": "Indicates the user and all associated data were permanently removed"
+					}
+				},
+				"required": ["deleted"]
+			},
+			"DeleteAllUserDataRequest": {
+				"type": "object",
+				"properties": {"user_id": {"$ref": "#/components/schemas/SnowflakeType"}},
+				"required": ["user_id"]
 			},
 			"DeleteWebAuthnCredentialRequest": {
 				"type": "object",

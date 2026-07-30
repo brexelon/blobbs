@@ -18,6 +18,7 @@ export abstract class IChannelRepository extends IChannelRepositoryAggregate {
 	abstract delete(channelId: ChannelID, guildId?: GuildID): Promise<void>;
 
 	abstract listGuildChannels(guildId: GuildID): Promise<Array<Channel>>;
+	abstract listGuildThreads(guildId: GuildID): Promise<Array<Channel>>;
 
 	abstract listChannels(channelIds: Array<ChannelID>): Promise<Array<Channel>>;
 

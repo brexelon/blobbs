@@ -24,6 +24,15 @@ export const ThreadMetadataResponse = z.object({
 		.datetime()
 		.nullish()
 		.describe('ISO 8601 timestamp when the thread will auto-close if no new messages are sent'),
+	origin_message_id: SnowflakeStringType.nullish().describe(
+		'The message this thread was created from, if any. Rendered as the thread starter; null for threads created directly.',
+	),
+	origin_is_announcement: z
+		.boolean()
+		.nullish()
+		.describe(
+			'Whether origin_message_id points at the system message announcing the thread rather than a message the thread was created from. Such threads have no starter message. Null for threads created before this was recorded.',
+		),
 });
 
 export type ThreadMetadata = z.infer<typeof ThreadMetadataResponse>;

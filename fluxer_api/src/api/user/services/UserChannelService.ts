@@ -30,6 +30,7 @@ import {
 	createMessageResponseDataService,
 	messageResponseAccessForGuild,
 } from '../../channel/services/message/MessageResponseDataService';
+import {SYSTEM_USER_ID} from '../../constants/Core';
 import type {IGatewayService} from '../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../infrastructure/ISnowflakeService';
 import type {UserCacheService} from '../../infrastructure/UserCacheService';
@@ -146,13 +147,21 @@ export class UserChannelService {
 	}): Promise<Channel> {
 		const callingUser = await this.userRepository.findUnique(userId);
 		if (!callingUser) throw new UnknownUserError();
-		if (callingUser.isUnclaimedAccount()) {
-			if (data.recipients !== undefined) {
-				throw new UnclaimedAccountCannotJoinGroupDmsError();
+		// Opening the announcements conversation is not sending a direct message: it is
+		// read-only and written by the instance. The gates below exist to keep unproven
+		// accounts from messaging people, so they do not apply here — and an account that
+		// has not verified its email is exactly one the instance may need to reach.
+		const isSystemRecipient =
+			data.recipients === undefined && data.recipient_id != null && createUserID(data.recipient_id) === SYSTEM_USER_ID;
+		if (!isSystemRecipient) {
+			if (callingUser.isUnclaimedAccount()) {
+				if (data.recipients !== undefined) {
+					throw new UnclaimedAccountCannotJoinGroupDmsError();
+				}
+				throw new UnclaimedAccountCannotSendDirectMessagesError();
 			}
-			throw new UnclaimedAccountCannotSendDirectMessagesError();
+			requireEmailVerified(callingUser, 'direct_message');
 		}
-		requireEmailVerified(callingUser, 'direct_message');
 		if (data.recipients !== undefined) {
 			return await this.createGroupDMChannel({
 				userId,
@@ -161,7 +170,9 @@ export class UserChannelService {
 				requestCache,
 			});
 		}
-		if (!data.recipient_id) {
+		// Presence check rather than truthiness: the system account's id is 0n, and a
+		// falsy test would read that as "no recipient given".
+		if (data.recipient_id == null) {
 			throw InputValidationError.fromCode('recipient_id', ValidationErrorCodes.RECIPIENT_IDS_CANNOT_BE_EMPTY);
 		}
 		const recipientId = createUserID(data.recipient_id);
@@ -256,6 +267,14 @@ export class UserChannelService {
 
 	private async validateNewDmAllowed({sender, recipient}: {sender: User; recipient: User}): Promise<void> {
 		if (isBugHunterBotUser(sender)) {
+			return;
+		}
+		// The announcements conversation is opened from a permanent entry in the sidebar,
+		// so it has to be reachable before the first announcement lands. The system
+		// account shares no guild with anyone and befriends no one, so the checks below
+		// would refuse to create it. Opening it grants no write access: sending is
+		// validated separately, and those same checks still reject a reply here.
+		if (recipient.id === SYSTEM_USER_ID) {
 			return;
 		}
 		const [senderBlockedRecipient, recipientBlockedSender, friendship] = await Promise.all([

@@ -480,13 +480,13 @@ const GuildAuditLogTab: React.FC<{guildId: string}> = observer(({guildId}) => {
 							const ActionIcon = getActionIcon(entry.action_type as AuditLogActionType);
 							const actorUser = entry.user_id ? (Users.getUser(entry.user_id) ?? null) : null;
 							const targetUser = entry.target_id ? (Users.getUser(entry.target_id) ?? null) : null;
-							const targetLabel = resolveTargetLabel(entry, i18n);
+							const target = resolveTargetLabel(entry, i18n);
 							const channelLabel = resolveChannelLabel(entry, guildId, i18n);
 							const summaryNode = renderEntrySummary({
 								entry,
 								actorUser,
 								targetUser,
-								targetLabel,
+								target,
 								channelLabel,
 								guildId,
 								i18n,

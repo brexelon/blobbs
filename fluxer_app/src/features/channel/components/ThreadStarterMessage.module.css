@@ -1,0 +1,34 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+/* Text of the system message that stands in for an origin message that can no
+   longer be loaded. Muted, since it reports an absence rather than content. */
+.unavailableText {
+	color: var(--text-muted);
+}
+
+/* In the thread, the starter already sits in the message list's padding context, so
+   it only needs the gap the list puts between message groups to separate it from
+   the replies that follow. */
+.starterInList {
+	flex: 0 0 auto;
+	min-width: 0;
+	margin-bottom: var(--message-group-spacing, 1rem);
+}
+
+/* Creation-panel preview. A message row negative-margins itself by the chat
+   padding so its hover background bleeds to the edges of the message list, which
+   means it only lands correctly inside a container carrying that same padding.
+   The panel is not the message list, so mirror ChannelMessages' .scrollerInner
+   here — otherwise the row is pulled flush against the panel's left edge. */
+.preview {
+	flex: 0 0 auto;
+	min-width: 0;
+	padding-inline: 0.75rem;
+	padding-block: var(--message-group-spacing, 1rem);
+}
+
+@media (min-width: 768px) {
+	.preview {
+		padding-inline: var(--chat-horizontal-padding);
+	}
+}
