@@ -55,7 +55,7 @@ const FULL_USER_COLUMNS: &str = "\
 const USER_BATCH_SIZE: usize = 128;
 const USER_BATCH_CONCURRENCY: usize = 8;
 const FLUXER_SYSTEM_USER_ID: i64 = 0;
-const FLUXER_SYSTEM_USERNAME: &str = "ZVLN";
+const FLUXER_SYSTEM_USERNAME: &str = "Megaphone";
 const FLUXER_SYSTEM_DISCRIMINATOR: i32 = 0;
 const USER_FLAG_STAFF: i64 = 1;
 

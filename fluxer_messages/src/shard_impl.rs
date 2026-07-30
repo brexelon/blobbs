@@ -48,7 +48,7 @@ const PUBLIC_USER_FLAGS: i64 =
 #[cfg(test)]
 const USER_FLAG_DELETED: i64 = 1_i64 << 34;
 const FLUXER_SYSTEM_USER_ID: i64 = 0;
-const FLUXER_SYSTEM_USERNAME: &str = "ZVLN";
+const FLUXER_SYSTEM_USERNAME: &str = "Megaphone";
 const FLUXER_SYSTEM_DISCRIMINATOR: &str = "0000";
 const USER_FLAG_STAFF: i64 = 1;
 const DELETED_USER_USERNAME: &str = "DeletedUser";
