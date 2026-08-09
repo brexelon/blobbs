@@ -23,7 +23,6 @@ impl AdminApiClient {
         let _: serde_json::Value = self
             .post_typed_with_reason("/admin/messages/delete", &body, audit_log_reason)
             .await?;
-
         Ok(())
     }
 

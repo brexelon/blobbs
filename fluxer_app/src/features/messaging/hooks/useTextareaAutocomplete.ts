@@ -636,7 +636,7 @@ export function useTextareaAutocomplete({
 					const specialMentions = canMentionEveryone
 						? SPECIAL_MENTIONS.filter((mention) => {
 								if (!queryForMatching) return true;
-								return mention.kind.substring(1).toLowerCase().includes(queryForMatching.toLowerCase());
+								return mention.kind.slice(1).toLowerCase().includes(queryForMatching.toLowerCase());
 							})
 						: [];
 					options = [...members, ...specialMentions, ...roles];

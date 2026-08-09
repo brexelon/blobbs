@@ -83,6 +83,13 @@ const ChannelCommonBase = z.object({
 		.array(ChannelOverwriteRequest)
 		.optional()
 		.describe('Permission overwrites for roles and members'),
+	rate_limit_per_user: z
+		.number()
+		.int()
+		.min(CHANNEL_RATE_LIMIT_PER_USER_MIN)
+		.max(CHANNEL_RATE_LIMIT_PER_USER_MAX)
+		.nullish()
+		.describe(`Slowmode delay in seconds (${CHANNEL_RATE_LIMIT_PER_USER_MIN}-${CHANNEL_RATE_LIMIT_PER_USER_MAX})`),
 });
 const ChannelContentWarningFields = {
 	nsfw_override: z
