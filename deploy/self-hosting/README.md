@@ -74,8 +74,8 @@ the repository rather than just the Compose files. The build context is the
 repository root, and you run the stack from this directory.
 
 ```bash
-git clone https://github.com/brexelon/zvln-fluxer.git
-cd zvln-fluxer/deploy/self-hosting
+git clone https://github.com/brexelon/blobbs.git
+cd blobbs/deploy/self-hosting
 cp .env.example .env
 ```
 
@@ -553,5 +553,5 @@ docker compose up -d
 
 ## Getting help
 
-- File issues and follow development on [GitHub](https://github.com/brexelon/zvln-fluxer).
+- File issues and follow development on [GitHub](https://github.com/brexelon/blobbs).
 - See the upstream [operator documentation](https://docs.fluxer.app/operator/get-started/) for additional configuration topics.

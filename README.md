@@ -1,5 +1,5 @@
 > [!CAUTION]
-> This is a customized version of Fluxer built for the ZVLN platform, featuring a number of bug fixes and enhancements to improve the overall user experience.
+> This is a customized version of Fluxer built for the Blobbs platform, featuring a number of bug fixes and enhancements to improve the overall user experience.
 
 > [!NOTE]
 > Learn about the developer behind Fluxer, the goals of the project, the tech stack, and what's coming next.
