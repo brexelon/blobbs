@@ -63,6 +63,40 @@ export interface ChannelRow {
 	version: number;
 }
 
+type ThreadChannelColumn =
+	| 'thread_id'
+	| 'thread_name'
+	| 'thread_creator_id'
+	| 'thread_creator_name'
+	| 'thread_state'
+	| 'thread_locked'
+	| 'thread_auto_close_duration_seconds'
+	| 'thread_auto_close_at'
+	| 'thread_origin_message_id'
+	| 'thread_origin_is_announcement';
+
+/**
+ * The thread columns as they stand on a channel that is not a thread.
+ *
+ * These are optional on `ChannelRow` so that read paths and partial writes do not
+ * have to name them, but a full-row write through `Channels.insert()` or
+ * `Channels.upsertAll()` requires every column in `CHANNEL_COLUMNS` to be present
+ * and throws at runtime otherwise. Spread this into any full row built for a
+ * non-thread channel rather than listing the nulls again at each call site.
+ */
+export const NON_THREAD_CHANNEL_FIELDS = {
+	thread_id: null,
+	thread_name: null,
+	thread_creator_id: null,
+	thread_creator_name: null,
+	thread_state: null,
+	thread_locked: null,
+	thread_auto_close_duration_seconds: null,
+	thread_auto_close_at: null,
+	thread_origin_message_id: null,
+	thread_origin_is_announcement: null,
+} as const satisfies Required<Pick<ChannelRow, ThreadChannelColumn>>;
+
 export interface InviteRow {
 	code: InviteCode;
 	type: number;

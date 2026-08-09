@@ -31,6 +31,7 @@ import {
 	messageResponseAccessForGuild,
 } from '../../channel/services/message/MessageResponseDataService';
 import {SYSTEM_USER_ID} from '../../constants/Core';
+import {NON_THREAD_CHANNEL_FIELDS} from '../../database/types/ChannelTypes';
 import type {IGatewayService} from '../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../infrastructure/ISnowflakeService';
 import type {UserCacheService} from '../../infrastructure/UserCacheService';
@@ -529,6 +530,7 @@ export class UserChannelService {
 			last_pin_timestamp: null,
 			permission_overwrites: null,
 			nicks: null,
+			...NON_THREAD_CHANNEL_FIELDS,
 			soft_deleted: false,
 			indexed_at: null,
 			version: 1,
