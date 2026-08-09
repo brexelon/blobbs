@@ -10,9 +10,9 @@ import type {EmailTemplate, EmailTemplateKey} from '@pkgs/email/src/email_i18n/E
 
 const DEFAULT_LOCALE = 'en-US';
 const DEFAULT_EMAIL_TEMPLATE_VARIABLES = {
-	product_name: 'ZVLN',
-	appeals_email: 'appeals@zvln.net',
-	safety_email: 'safety@zvln.net',
+	product_name: 'Blobbs',
+	appeals_email: 'appeals@blobbs.net',
+	safety_email: 'safety@blobbs.net',
 } satisfies Record<string, string>;
 const emailI18n = createStaticI18n<EmailTemplateKey, EmailTemplate, Record<string, unknown>>(
 	{
