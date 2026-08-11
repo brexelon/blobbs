@@ -244,6 +244,11 @@ fn extract_cookie(headers: &axum::http::HeaderMap, name: &str) -> Option<String>
     None
 }
 
+/// The panel title, escaped for interpolation into the raw HTML below.
+fn escaped_admin_title() -> String {
+    maud::html! { (crate::branding::admin_title()) }.into_string()
+}
+
 fn oauth_start_page(
     config: &AdminConfig,
     authorize_url: &str,
@@ -255,13 +260,14 @@ fn oauth_start_page(
     let login_url = json_string(&format!("{}/login?error=oauth_failed", config.base_path));
     let state = json_string(state);
     let verifier = json_string(verifier);
+    let admin_title = escaped_admin_title();
     format!(
         r#"<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fluxer Admin</title>
+<title>{admin_title}</title>
 </head>
 <body>
 <p>Starting authentication...</p>
@@ -286,13 +292,14 @@ fn oauth_callback_page(config: &AdminConfig, code: Option<&str>, state: Option<&
     let login_url = json_string(&format!("{}/login?error=oauth_failed", config.base_path));
     let code = json_string(code.unwrap_or_default());
     let state = json_string(state.unwrap_or_default());
+    let admin_title = escaped_admin_title();
     format!(
         r#"<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fluxer Admin</title>
+<title>{admin_title}</title>
 </head>
 <body>
 <p>Completing authentication...</p>
