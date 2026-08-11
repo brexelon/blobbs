@@ -377,6 +377,19 @@ export async function getUsernameSuggestions(globalName: string): Promise<Array<
 	}
 }
 
+interface UsernameAvailabilityResponse {
+	available: boolean;
+}
+
+export async function checkUsernameAvailability(username: string, signal?: AbortSignal): Promise<boolean> {
+	const response = await http.post<UsernameAvailabilityResponse>(Endpoints.AUTH_USERNAME_AVAILABLE, {
+		body: {username},
+		headers: withPlatformHeader(),
+		signal,
+	});
+	return response.body?.available ?? false;
+}
+
 export async function forgotPassword(
 	email: string,
 	captchaToken?: string,

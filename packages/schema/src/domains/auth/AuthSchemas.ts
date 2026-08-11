@@ -57,6 +57,18 @@ export const UsernameSuggestionsRequest = z.object({
 
 export type UsernameSuggestionsRequest = z.infer<typeof UsernameSuggestionsRequest>;
 
+/**
+ * Deliberately looser than {@link UsernameType}. A name that is merely unregisterable
+ * — reserved, wrong length, bad characters — is an answer this endpoint should give,
+ * not a request it should reject, so the check runs against a plain bounded string and
+ * reports `available: false`.
+ */
+export const UsernameAvailabilityRequest = z.object({
+	username: createStringType(1, 32).describe('Username to check for availability'),
+});
+
+export type UsernameAvailabilityRequest = z.infer<typeof UsernameAvailabilityRequest>;
+
 export const LoginRequest = z.object({
 	email: EmailType.describe('Email address for authentication'),
 	password: PasswordType.describe('Account password'),
@@ -222,6 +234,12 @@ export const UsernameSuggestionsResponse = z.object({
 });
 
 export type UsernameSuggestionsResponse = z.infer<typeof UsernameSuggestionsResponse>;
+
+export const UsernameAvailabilityResponse = z.object({
+	available: z.boolean().describe('Whether the username is free to register'),
+});
+
+export type UsernameAvailabilityResponse = z.infer<typeof UsernameAvailabilityResponse>;
 
 export const HandoffInitiateResponse = z.object({
 	code: z.string().describe('Handoff code to share with the receiving device'),
