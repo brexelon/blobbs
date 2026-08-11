@@ -65,6 +65,7 @@ impl IntoResponse for AppError {
         let status_code = self.status.as_u16();
         let status_text = self.status.canonical_reason().unwrap_or("Error");
         let home_url = &self.home_url;
+        let admin_title = crate::branding::admin_title();
         let (border, bg, text_color) = if status_code >= 500 {
             ("border-red-300", "bg-red-50", "text-red-800")
         } else if status_code == 403 {
@@ -78,7 +79,7 @@ impl IntoResponse for AppError {
                 head {
                     meta charset="UTF-8";
                     meta name="viewport" content="width=device-width, initial-scale=1.0";
-                    title { (status_code) " " (status_text) " ~ Fluxer Admin" }
+                    title { (status_code) " " (status_text) " ~ " (admin_title) }
                 }
                 body class="min-h-screen bg-neutral-50 flex items-center justify-center" {
                     div class="mx-auto max-w-lg px-4 py-16 text-center" {

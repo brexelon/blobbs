@@ -49,6 +49,7 @@ const PERMISSIONS_POLICY_VALUE: &str = "accelerometer=(), camera=(), geolocation
 
 pub fn build_router(config: AdminConfig) -> Router {
     let state = AppState::new(config);
+    crate::branding::spawn_refresher(state.clone());
     let protected = Router::new()
         .merge(users::router())
         .merge(guilds::router())

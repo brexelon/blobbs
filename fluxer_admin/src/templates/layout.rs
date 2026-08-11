@@ -59,6 +59,8 @@ pub fn admin_layout_ext(
     let base = &config.base_path;
     let asset_version = &config.build_version;
     let csrf_token = options.csrf_token;
+    let branding = crate::branding::current();
+    let admin_title = crate::branding::admin_title();
 
     html! {
         (DOCTYPE)
@@ -69,14 +71,24 @@ pub fn admin_layout_ext(
                 @if options.auto_refresh {
                     meta http-equiv="refresh" content="3";
                 }
-                title { (title) " ~ Fluxer Admin" }
+                title { (title) " ~ " (admin_title) }
                 link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/ibm-plex.css?v=3"};
                 link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/bricolage.css?v=3"};
                 link rel="stylesheet" href=(cache_busted_asset(base, asset_version, "/static/app.css"));
-                link rel="icon" type="image/x-icon" href={(config.static_cdn_endpoint) "/web/favicon.ico"};
-                link rel="apple-touch-icon" href={(config.static_cdn_endpoint) "/web/apple-touch-icon.png"};
-                link rel="icon" type="image/png" sizes="32x32" href={(config.static_cdn_endpoint) "/web/favicon-32x32.png"};
-                link rel="icon" type="image/png" sizes="16x16" href={(config.static_cdn_endpoint) "/web/favicon-16x16.png"};
+                @match branding.favicon_url.as_deref() {
+                    // One instance-supplied favicon replaces the whole default set, since
+                    // its size variants are not ours to guess.
+                    Some(favicon_url) => {
+                        link rel="icon" href=(favicon_url);
+                        link rel="apple-touch-icon" href=(favicon_url);
+                    }
+                    None => {
+                        link rel="icon" type="image/x-icon" href={(config.static_cdn_endpoint) "/web/favicon.ico"};
+                        link rel="apple-touch-icon" href={(config.static_cdn_endpoint) "/web/apple-touch-icon.png"};
+                        link rel="icon" type="image/png" sizes="32x32" href={(config.static_cdn_endpoint) "/web/favicon-32x32.png"};
+                        link rel="icon" type="image/png" sizes="16x16" href={(config.static_cdn_endpoint) "/web/favicon-16x16.png"};
+                    }
+                }
                 script src=(cache_busted_asset(base, asset_version, "/static/htmx.min.js")) defer {}
             }
             body class="min-h-screen overflow-hidden bg-neutral-50" hx-boost="true" {

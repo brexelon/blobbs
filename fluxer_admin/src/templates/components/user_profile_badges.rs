@@ -22,30 +22,34 @@ pub fn user_profile_badges(
     size_sm: bool,
 ) -> Markup {
     let cdn = static_cdn_endpoint.trim_end_matches('/');
+    // Matches the app, which labels these with the instance's product name. The
+    // Plutonium badge below keeps its own name: that is the paid product's brand,
+    // not the instance's, and the app names it separately too.
+    let product_name = crate::branding::current().product_name;
     let mut badges: Vec<BadgeDef> = Vec::new();
 
     if flags & user_flag_bits::STAFF != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/staff.svg?v=2"),
-            tooltip: "Fluxer Staff".into(),
+            tooltip: format!("{product_name} Staff"),
         });
     }
     if flags & user_flag_bits::CTP_MEMBER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/ctp.svg"),
-            tooltip: "Fluxer Community Team".into(),
+            tooltip: format!("{product_name} Community Team"),
         });
     }
     if flags & user_flag_bits::PARTNER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/partner.svg"),
-            tooltip: "Fluxer Partner".into(),
+            tooltip: format!("{product_name} Partner"),
         });
     }
     if flags & user_flag_bits::BUG_HUNTER != 0 {
         badges.push(BadgeDef {
             icon_url: format!("{cdn}/badges/bug-hunter.svg"),
-            tooltip: "Fluxer Bug Hunter".into(),
+            tooltip: format!("{product_name} Bug Hunter"),
         });
     }
     if !is_self_hosted
@@ -54,8 +58,8 @@ pub fn user_profile_badges(
     {
         let tooltip = if pt == premium_types::LIFETIME {
             match premium_since {
-                Some(since) => format!("Fluxer Visionary since {since}"),
-                None => "Fluxer Visionary".into(),
+                Some(since) => format!("{product_name} Visionary since {since}"),
+                None => format!("{product_name} Visionary"),
             }
         } else {
             match premium_since {
