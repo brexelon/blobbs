@@ -74,7 +74,7 @@ export class ApplicationService {
 		username: string;
 		discriminator: number;
 	}> {
-		const preferredUsername = deriveUsernameFromDisplayName(applicationName);
+		const preferredUsername = deriveBotUsernameFromDisplayName(applicationName);
 		if (preferredUsername) {
 			const preferred = await this.deps.discriminatorService.generateDiscriminator({username: preferredUsername});
 			if (preferred.available && preferred.discriminator !== -1) {
