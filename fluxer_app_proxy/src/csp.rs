@@ -12,11 +12,16 @@ pub struct RuntimeCspSources {
     pub s3_uploads_bucket: Option<String>,
 }
 
+/// Cloudflare Turnstile. The instance can be configured to use it instead of hCaptcha,
+/// and it serves its script, its widget iframe and its verification calls from here.
+const TURNSTILE_ORIGIN: &str = "https://challenges.cloudflare.com";
+
 const FRAME_SOURCES: &[&str] = &[
     "https://www.youtube.com/embed/",
     "https://www.youtube.com/s/player/",
     "https://hcaptcha.com",
     "https://*.hcaptcha.com",
+    TURNSTILE_ORIGIN,
 ];
 
 const IMAGE_SOURCES: &[&str] = &[
@@ -38,6 +43,7 @@ const SCRIPT_SOURCES: &[&str] = &[
     "https://*.fluxer.app",
     "https://hcaptcha.com",
     "https://*.hcaptcha.com",
+    TURNSTILE_ORIGIN,
 ];
 
 const STYLE_SOURCES: &[&str] = &[
@@ -62,6 +68,7 @@ const CONNECT_SOURCES: &[&str] = &[
     "https://fluxer-uploads.ewr1.vultrobjects.com",
     "https://hcaptcha.com",
     "https://*.hcaptcha.com",
+    TURNSTILE_ORIGIN,
     "https://fluxerstatus.com",
     "https://fluxer.media",
     "http://127.0.0.1:21863",
@@ -254,6 +261,24 @@ mod tests {
 
     fn runtime_sources() -> RuntimeCspSources {
         RuntimeCspSources::default()
+    }
+
+    /// Turnstile is a supported captcha provider, so its origin has to be allowed
+    /// wherever the widget reaches: the script, the iframe it renders, and its calls.
+    #[test]
+    fn build_csp_allows_turnstile_where_the_widget_needs_it() {
+        let csp = build_csp(&default_csp_config(), "testnonce", &runtime_sources());
+        for directive in ["script-src", "frame-src", "connect-src"] {
+            let section = csp
+                .split(';')
+                .map(str::trim)
+                .find(|part| part.starts_with(directive))
+                .unwrap_or_else(|| panic!("{directive} missing from CSP"));
+            assert!(
+                section.contains(TURNSTILE_ORIGIN),
+                "{directive} does not allow {TURNSTILE_ORIGIN}: {section}"
+            );
+        }
     }
 
     #[test]
