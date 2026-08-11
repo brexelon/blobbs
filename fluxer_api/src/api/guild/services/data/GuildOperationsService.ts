@@ -43,6 +43,7 @@ import type {IChannelRepository} from '../../../channel/IChannelRepository';
 import type {ChannelService} from '../../../channel/services/ChannelService';
 import {BatchBuilder} from '../../../database/CassandraQueryExecution';
 import type {PermissionOverwrite} from '../../../database/types/ChannelTypes';
+import {NON_THREAD_CHANNEL_FIELDS} from '../../../database/types/ChannelTypes';
 import type {GuildRow} from '../../../database/types/GuildTypes';
 import {contentModerationService} from '../../../infrastructure/ContentModerationService';
 import type {EntityAssetService, PreparedAssetUpload} from '../../../infrastructure/EntityAssetService';
@@ -919,6 +920,7 @@ export class GuildOperationsService {
 					last_pin_timestamp: null,
 					permission_overwrites: null,
 					nicks: null,
+					...NON_THREAD_CHANNEL_FIELDS,
 					soft_deleted: false,
 					indexed_at: null,
 					version: 1,
@@ -1115,6 +1117,7 @@ export class GuildOperationsService {
 					last_pin_timestamp: null,
 					permission_overwrites: permissionOverwrites,
 					nicks: null,
+					...NON_THREAD_CHANNEL_FIELDS,
 					soft_deleted: false,
 					indexed_at: null,
 					version: 1,
@@ -1165,6 +1168,7 @@ export class GuildOperationsService {
 					last_pin_timestamp: null,
 					permission_overwrites: null,
 					nicks: null,
+					...NON_THREAD_CHANNEL_FIELDS,
 					soft_deleted: false,
 					indexed_at: null,
 					version: 1,

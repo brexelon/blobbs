@@ -53,6 +53,7 @@ import {createMessageResponseDataService} from '../channel/services/message/Mess
 import {BatchBuilder, deleteOneOrMany, fetchMany, fetchOne} from '../database/CassandraQueryExecution';
 import {defineTable} from '../database/CassandraTableDsl';
 import type {ChannelRow} from '../database/types/ChannelTypes';
+import {NON_THREAD_CHANNEL_FIELDS} from '../database/types/ChannelTypes';
 import {
 	CHANNEL_EMPTY_BUCKET_COLUMNS,
 	CHANNEL_MESSAGE_BUCKET_COLUMNS,
@@ -982,6 +983,7 @@ export function TestHarnessController(app: HonoApp) {
 				last_pin_timestamp: null,
 				permission_overwrites: null,
 				nicks: null,
+				...NON_THREAD_CHANNEL_FIELDS,
 				soft_deleted: false,
 				indexed_at: null,
 				version: 1,
@@ -1024,6 +1026,7 @@ export function TestHarnessController(app: HonoApp) {
 					last_pin_timestamp: null,
 					permission_overwrites: null,
 					nicks: null,
+					...NON_THREAD_CHANNEL_FIELDS,
 					soft_deleted: false,
 					indexed_at: null,
 					version: 1,

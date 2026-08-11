@@ -20,6 +20,7 @@ import {
 import {EMAIL_DESCRIPTOR, PASSWORD_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {useLocation} from '@app/features/platform/components/router/RouterReact';
 import {Button} from '@app/features/ui/button/Button';
+import {useUsernameAvailability} from '@app/features/user/hooks/useUsernameAvailability';
 import {useUsernameSuggestions} from '@app/features/user/hooks/useUsernameSuggestions';
 import type {ThemeType} from '@fluxer/constants/src/UserConstants';
 import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
@@ -48,6 +49,14 @@ const USERNAME_MUST_BE_CHARACTERS_OR_LESS_DESCRIPTOR = msg({
 const ONLY_LOWERCASE_LETTERS_NUMBERS_UNDERSCORES_PERIODS_DESCRIPTOR = msg({
 	message: 'Only lowercase letters, numbers, underscores (_), and periods (.)',
 	comment: 'Short label in the authentication auth register form core. Keep the tone plain and specific.',
+});
+const USERNAME_IS_AVAILABLE_DESCRIPTOR = msg({
+	message: 'Username is available. Nice!',
+	comment: 'Registration form message shown when the typed username is free to register.',
+});
+const USERNAME_IS_UNAVAILABLE_DESCRIPTOR = msg({
+	message: 'Username is unavailable. Try adding numbers, letters, underscores _, or periods.',
+	comment: 'Registration form message shown when the typed username is already taken or reserved.',
 });
 const DISPLAY_NAME_OPTIONAL_DESCRIPTOR = msg({
 	message: 'Display name (optional)',
@@ -279,10 +288,26 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 		collectDateOfBirth,
 		i18n.locale,
 	]);
-	type HelperTextState = {type: 'error'; message: string} | {type: 'suggestion'; username: string} | null;
+	type HelperTextState =
+		| {type: 'error'; message: string}
+		| {type: 'success'; message: string}
+		| {type: 'suggestion'; username: string}
+		| null;
 	const usernameValue = form.getValue('username');
+	const trimmedUsername = usernameValue?.trim() || '';
+	const usernameFormatIsValid =
+		trimmedUsername.length > 0 &&
+		trimmedUsername.length <= MAX_USERNAME_LENGTH &&
+		hasValidUsernameFormat(trimmedUsername);
+	// Follows showUsernameValidation, so forms that opt out of live username validation do
+	// not start reporting availability without the format rules that explain it. Gated on a
+	// valid format as well, so a half-typed username does not produce a request per keystroke.
+	const {status: availabilityStatus} = useUsernameAvailability({
+		username: trimmedUsername,
+		enabled: showUsernameValidation && usernameFormatIsValid,
+	});
 	const helperTextState = useMemo<HelperTextState>(() => {
-		const trimmed = usernameValue?.trim() || '';
+		const trimmed = trimmedUsername;
 		if (showUsernameValidation && trimmed.length > 0) {
 			if (trimmed.length > MAX_USERNAME_LENGTH) {
 				return {
@@ -297,11 +322,17 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 				};
 			}
 		}
+		if (availabilityStatus === 'available') {
+			return {type: 'success', message: i18n._(USERNAME_IS_AVAILABLE_DESCRIPTOR)};
+		}
+		if (availabilityStatus === 'unavailable') {
+			return {type: 'error', message: i18n._(USERNAME_IS_UNAVAILABLE_DESCRIPTOR)};
+		}
 		if (trimmed.length === 0 && suggestions.length > 0) {
 			return {type: 'suggestion', username: suggestions[0]};
 		}
 		return null;
-	}, [usernameValue, suggestions, showUsernameValidation, i18n.locale]);
+	}, [trimmedUsername, suggestions, showUsernameValidation, availabilityStatus, i18n.locale]);
 	const submitDisabled =
 		isLoading ||
 		form.isSubmitting ||
@@ -377,6 +408,19 @@ export const AuthRegisterFormCore = observer(function AuthRegisterFormCore({
 							exit={Accessibility.useReducedMotion ? {opacity: 1, y: 0} : {opacity: 0, y: 5}}
 							transition={{duration: Accessibility.useReducedMotion ? 0 : 0.2}}
 							data-flx="auth.flow.auth-register-form-core.username-error"
+						>
+							{helperTextState.message}
+						</motion.span>
+					)}
+					{helperTextState?.type === 'success' && (
+						<motion.span
+							key="success"
+							className={styles.usernameSuccess}
+							initial={Accessibility.useReducedMotion ? {opacity: 1, y: 0} : {opacity: 0, y: -5}}
+							animate={{opacity: 1, y: 0}}
+							exit={Accessibility.useReducedMotion ? {opacity: 1, y: 0} : {opacity: 0, y: 5}}
+							transition={{duration: Accessibility.useReducedMotion ? 0 : 0.2}}
+							data-flx="auth.flow.auth-register-form-core.username-success"
 						>
 							{helperTextState.message}
 						</motion.span>

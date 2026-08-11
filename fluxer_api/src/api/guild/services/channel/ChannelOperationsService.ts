@@ -29,6 +29,7 @@ import {createChannelID, createRoleID, createUserID} from '../../../BrandedTypes
 import {mapChannelToResponse} from '../../../channel/ChannelMappers';
 import type {IChannelRepository} from '../../../channel/IChannelRepository';
 import type {PermissionOverwrite} from '../../../database/types/ChannelTypes';
+import {NON_THREAD_CHANNEL_FIELDS} from '../../../database/types/ChannelTypes';
 import type {IGatewayService} from '../../../infrastructure/IGatewayService';
 import type {ISnowflakeService} from '../../../infrastructure/ISnowflakeService';
 import type {UserCacheService} from '../../../infrastructure/UserCacheService';
@@ -167,6 +168,7 @@ export class ChannelOperationsService {
 			last_pin_timestamp: null,
 			permission_overwrites: permissionOverwrites,
 			nicks: null,
+			...NON_THREAD_CHANNEL_FIELDS,
 			soft_deleted: false,
 			indexed_at: null,
 			version: 1,
