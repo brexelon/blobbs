@@ -230,6 +230,7 @@ export async function register(
 	let user = await users.create({
 		user_id: userId,
 		username,
+		discriminator: 0,
 		global_name: data.global_name || null,
 		bot: false,
 		system: false,
@@ -405,6 +406,7 @@ export async function register(
 		await instanceConfigRepository.addPendingRegistration({
 			user_id: user.id.toString(),
 			username: user.username,
+
 			global_name: user.globalName,
 			email: rawEmail,
 			requested_at: now.toISOString(),
@@ -569,4 +571,3 @@ async function enforceRegistrationRateLimits(
 		if (!subnetRateLimit.allowed) throwRegistrationRateLimit(subnetRateLimit);
 	}
 }
-

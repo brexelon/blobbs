@@ -20,6 +20,12 @@ export type PushSubscriptionPlatform = 'web_push' | 'android_fcm' | 'ios_apns' |
 export interface UserRow {
 	user_id: UserID;
 	username: string;
+	/**
+	 * Zero for regular users, who are unique by username alone. Bot users carry a real
+	 * discriminator and are unique by (username, discriminator), so several applications
+	 * can share a name without consuming it in the human namespace.
+	 */
+	discriminator: number;
 	global_name: Nullish<string>;
 	bot: Nullish<boolean>;
 	system: Nullish<boolean>;
@@ -82,6 +88,7 @@ export interface UserRow {
 export const USER_COLUMNS = [
 	'user_id',
 	'username',
+	'discriminator',
 	'global_name',
 	'bot',
 	'system',
@@ -143,6 +150,7 @@ export const USER_COLUMNS = [
 export const EMPTY_USER_ROW: UserRow = {
 	user_id: -1n as UserID,
 	username: '',
+	discriminator: 0,
 	global_name: null,
 	bot: null,
 	system: null,
