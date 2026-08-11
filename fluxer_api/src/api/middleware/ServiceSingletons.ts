@@ -112,7 +112,12 @@ export const getReportRepository = singleton(() => new ReportRepository());
 export const getAdminRepository = singleton(() => new AdminRepository());
 export const getAdminArchiveRepository = singleton(() => new AdminArchiveRepository());
 export const getVoiceRepository = singleton(() => new VoiceRepository());
-export const getApplicationRepository = singleton(() => new ApplicationRepository());
+export const getApplicationRepository = singleton(
+	() =>
+		new ApplicationRepository(
+			async () => (await getInstanceConfigRepository().getAppPublicConfig()).branding.product_name,
+		),
+);
 export const getOAuth2TokenRepository = singleton(() => new OAuth2TokenRepository());
 export const getPackRepository = singleton(() => new PackRepository());
 export const getGuildDiscoveryRepository = singleton(() => new GuildDiscoveryRepository());

@@ -297,7 +297,9 @@ access. Use that account for the initial admin login at
 
 Complete the initial setup from the admin dashboard. At minimum, review:
 
-- Branding and instance name.
+- Branding and instance name. The admin panel titles itself after the instance
+  name, and the built-in admin OAuth2 application is named `<instance> Admin`, so
+  both follow whatever you set here.
 - Registration mode: open, approval, or closed.
 - Email delivery.
 - Captcha policy if you open public registration.

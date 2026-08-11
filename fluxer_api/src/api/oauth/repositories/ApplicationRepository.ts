@@ -8,10 +8,13 @@ import {BatchBuilder, fetchMany, fetchOne} from '../../database/CassandraQueryEx
 import {buildPatchFromData, executeVersionedUpdate} from '../../database/CassandraVersionedUpdate';
 import type {ApplicationByOwnerRow, ApplicationRow} from '../../database/types/OAuth2Types';
 import {APPLICATION_COLUMNS} from '../../database/types/OAuth2Types';
+import {Logger} from '../../Logger';
 import {Application} from '../../models/Application';
 import {Applications, ApplicationsByOwner} from '../../Tables';
 import {hashPassword} from '../../utils/PasswordUtils';
 import type {IApplicationRepository} from './IApplicationRepository';
+
+export type InstanceProductNameResolver = () => Promise<string>;
 
 const SELECT_APPLICATION_CQL = Applications.selectCql({
 	where: Applications.where.eq('application_id'),
@@ -23,6 +26,8 @@ const SELECT_APPLICATION_IDS_BY_OWNER_CQL = ApplicationsByOwner.selectCql({
 const FETCH_APPLICATIONS_BY_IDS_CQL = Applications.selectCql({
 	where: Applications.where.in('application_id', 'application_ids'),
 });
+
+const DEFAULT_PRODUCT_NAME = 'Fluxer';
 
 let cachedAdminSecretHash: string | null = null;
 
@@ -41,11 +46,24 @@ function getAdminRedirectUri(): string {
 	return `${Config.endpoints.admin}/oauth2_callback`;
 }
 
-function buildAdminApplication(secretHash: string | null): Application {
+// The built-in admin application is synthesised rather than stored, so it cannot be
+// renamed through the applications API. It instead follows the instance's own name, the
+// way the admin panel titles itself, so a self-hosted instance does not present a
+// consent screen for someone else's product.
+export function buildAdminApplicationName(productName: string): string {
+	const trimmed = productName.trim();
+	return `${trimmed === '' ? DEFAULT_PRODUCT_NAME : trimmed} Admin`;
+}
+
+function getConfiguredProductName(): string {
+	return Config.instance.branding.productName || DEFAULT_PRODUCT_NAME;
+}
+
+function buildAdminApplication(secretHash: string | null, name: string): Application {
 	const row: ApplicationRow = {
 		application_id: createApplicationID(ADMIN_OAUTH2_APPLICATION_ID),
 		owner_user_id: SYSTEM_USER_ID,
-		name: 'Fluxer Admin',
+		name,
 		bot_user_id: null,
 		bot_is_public: false,
 		bot_require_code_grant: false,
@@ -61,13 +79,30 @@ function buildAdminApplication(secretHash: string | null): Application {
 }
 
 export class ApplicationRepository implements IApplicationRepository {
+	// Injected rather than looked up so this repository keeps no dependency on the service
+	// singletons that construct it. Absent a resolver the statically configured name is
+	// used, which is what the instance falls back to anyway.
+	constructor(private readonly resolveInstanceProductName: InstanceProductNameResolver | null = null) {}
+
+	private async getAdminApplicationName(): Promise<string> {
+		if (this.resolveInstanceProductName === null) {
+			return buildAdminApplicationName(getConfiguredProductName());
+		}
+		try {
+			return buildAdminApplicationName(await this.resolveInstanceProductName());
+		} catch (error) {
+			Logger.warn({error}, 'Failed to resolve instance product name for the admin application');
+			return buildAdminApplicationName(getConfiguredProductName());
+		}
+	}
+
 	async getApplication(applicationId: ApplicationID): Promise<Application | null> {
 		if (applicationId === createApplicationID(ADMIN_OAUTH2_APPLICATION_ID)) {
 			const secretHash = await getAdminSecretHash();
 			if (secretHash === null) {
 				return null;
 			}
-			return buildAdminApplication(secretHash);
+			return buildAdminApplication(secretHash, await this.getAdminApplicationName());
 		}
 		const row = await fetchOne<ApplicationRow>(SELECT_APPLICATION_CQL, {application_id: applicationId});
 		return row ? new Application(row) : null;

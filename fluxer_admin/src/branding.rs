@@ -10,6 +10,7 @@
 //! Held in a process-wide cell rather than threaded through `AdminConfig` because the
 //! error page renders from `AppError` alone, with no configuration in scope.
 
+use crate::api::client::with_proxy_client_ip_header;
 use crate::state::AppState;
 use serde::Deserialize;
 use std::sync::{OnceLock, RwLock};
@@ -95,17 +96,25 @@ fn branding_from_document(document: DiscoveryDocument) -> Option<InstanceBrandin
     })
 }
 
+/// The API rejects requests that arrive without the configured client IP header, so the
+/// discovery document is fetched the same way as every other internal call the panel
+/// makes: through `with_proxy_client_ip_header`. Without it the API answers 403.
 async fn fetch(state: &AppState) -> Option<InstanceBranding> {
-    let url = format!("{}/.well-known/fluxer", state.config().api_endpoint);
-    let response = state
-        .http_client()
-        .get(&url)
+    let config = state.config();
+    let url = format!("{}/.well-known/fluxer", config.api_endpoint);
+    let response = match with_proxy_client_ip_header(state.http_client().get(&url), config)
         .timeout(FETCH_TIMEOUT)
         .send()
         .await
-        .ok()?;
+    {
+        Ok(response) => response,
+        Err(error) => {
+            tracing::warn!(%url, %error, "instance branding fetch failed");
+            return None;
+        }
+    };
     if !response.status().is_success() {
-        tracing::warn!(status = %response.status(), "instance branding fetch returned non-success");
+        tracing::warn!(%url, status = %response.status(), "instance branding fetch returned non-success");
         return None;
     }
     let document = response.json::<DiscoveryDocument>().await.ok()?;
