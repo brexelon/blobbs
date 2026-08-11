@@ -314,6 +314,13 @@
 	color: var(--status-danger);
 }
 
+.usernameSuccess {
+	margin-top: 0.25rem;
+	display: block;
+	font-size: 0.75rem;
+	color: var(--accent-success, #16a34a);
+}
+
 .consentRow {
 	display: flex;
 	align-items: flex-start;

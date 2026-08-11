@@ -24,12 +24,14 @@ import type {
 	ResetPasswordRequest,
 	SsoCompleteRequest,
 	SsoStartRequest,
+	UsernameAvailabilityResponse,
 	UsernameSuggestionsResponse,
 	VerifyEmailRequest,
 	WebAuthnAuthenticateRequest,
 	WebAuthnMfaRequest,
 } from '@fluxer/schema/src/domains/auth/AuthSchemas';
 import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
+import {UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import type {ApiContext} from '../ApiContext';
 import {createUserID, type UserID} from '../BrandedTypes';
 import type {RequestCache} from '../middleware/RequestCacheMiddleware';
@@ -100,6 +102,10 @@ interface AuthAuthorizeIpRequest {
 
 interface AuthUsernameSuggestionsRequest {
 	globalName: string;
+}
+
+interface AuthUsernameAvailabilityRequest {
+	username: string;
 }
 
 interface AuthPollIpRequest {
@@ -293,6 +299,17 @@ export class AuthRequestService {
 
 	getUsernameSuggestions({globalName}: AuthUsernameSuggestionsRequest): Promise<UsernameSuggestionsResponse> {
 		return this.generateUsernameSuggestions(globalName);
+	}
+
+	async checkUsernameAvailability({username}: AuthUsernameAvailabilityRequest): Promise<UsernameAvailabilityResponse> {
+		// A reserved or malformed name is unavailable rather than a bad request, so the
+		// form gets one answer to render instead of having to interpret a validation error.
+		const parsed = UsernameType.safeParse(username);
+		if (!parsed.success) {
+			return {available: false};
+		}
+		const available = await this.apiContext.services.users.isUsernameAvailable(parsed.data);
+		return {available};
 	}
 
 	private async generateUsernameSuggestions(globalName: string): Promise<UsernameSuggestionsResponse> {

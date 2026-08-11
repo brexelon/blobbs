@@ -29,6 +29,8 @@ import {
 	SsoStartResponse,
 	SsoStatusResponse,
 	SudoVerificationSchema,
+	UsernameAvailabilityRequest,
+	UsernameAvailabilityResponse,
 	UsernameSuggestionsRequest,
 	UsernameSuggestionsResponse,
 	ValidateResetPasswordTokenResponse,
@@ -533,6 +535,27 @@ export function AuthController(app: HonoApp) {
 		async (ctx) => {
 			const response = await ctx.get('authRequestService').getUsernameSuggestions({
 				globalName: ctx.req.valid('json').global_name,
+			});
+			return ctx.json(response);
+		},
+	);
+	app.post(
+		'/auth/username-available',
+		LocalAuthMiddleware,
+		RateLimitMiddleware(RateLimitConfigs.AUTH_REGISTER),
+		Validator('json', UsernameAvailabilityRequest),
+		OpenAPI({
+			operationId: 'check_username_availability',
+			summary: 'Check username availability',
+			responseSchema: UsernameAvailabilityResponse,
+			statusCode: 200,
+			security: [],
+			tags: ['Auth'],
+			description: 'Check whether a username is free to register, for live feedback on the registration form.',
+		}),
+		async (ctx) => {
+			const response = await ctx.get('authRequestService').checkUsernameAvailability({
+				username: ctx.req.valid('json').username,
 			});
 			return ctx.json(response);
 		},
