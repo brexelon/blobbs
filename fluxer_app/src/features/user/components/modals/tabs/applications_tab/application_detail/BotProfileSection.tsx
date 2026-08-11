@@ -12,7 +12,7 @@ import {SectionCard} from '@app/features/user/components/modals/tabs/application
 import type {ApplicationDetailForm} from '@app/features/user/components/modals/tabs/applications_tab/application_detail/ApplicationDetailTypes';
 import {AvatarUploader} from '@app/features/user/components/modals/tabs/my_profile_tab/AvatarUploader';
 import {BannerUploader} from '@app/features/user/components/modals/tabs/my_profile_tab/BannerUploader';
-import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
+import {hasValidBotUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import type React from 'react';
@@ -43,7 +43,7 @@ const USERNAME_MUST_BE_AT_MOST_32_CHARACTERS_DESCRIPTOR = msg({
 	comment: 'Label in the bot profile section.',
 });
 const USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR = msg({
-	message: 'Username can only contain letters, numbers, and underscores',
+	message: 'Username can only contain letters, numbers, spaces, and underscores',
 	comment: 'Label in the bot profile section.',
 });
 const BOT_USERNAME_DESCRIPTOR = msg({
@@ -161,13 +161,15 @@ export const BotProfileSection: React.FC<BotProfileSectionProps> = ({
 							required: i18n._(USERNAME_IS_REQUIRED_DESCRIPTOR),
 							minLength: {value: 1, message: i18n._(USERNAME_MUST_BE_AT_LEAST_1_CHARACTER_DESCRIPTOR)},
 							maxLength: {value: 32, message: i18n._(USERNAME_MUST_BE_AT_MOST_32_CHARACTERS_DESCRIPTOR)},
-							pattern: {
-								value: /^[a-z0-9_.]+$/,
-								message: i18n._(USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR),
+							validate: (value) => {
+								// Left to the `required` rule when empty, so it owns that message.
+								const trimmed = (value ?? '').trim();
+								return (
+									trimmed === '' ||
+									hasValidBotUsernameFormat(trimmed) ||
+									i18n._(USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR)
+								);
 							},
-							validate: (value) =>
-								hasValidUsernameFormat(value) ||
-								i18n._(USERNAME_CAN_ONLY_CONTAIN_LETTERS_NUMBERS_AND_UNDERSCORES_DESCRIPTOR),
 						}}
 						render={({field}) => (
 							<Input
@@ -194,6 +196,7 @@ export const BotProfileSection: React.FC<BotProfileSectionProps> = ({
 				>
 					<UsernameValidationRules
 						username={form.watch('username') || ''}
+						showCharacterRule={false}
 						data-flx="user.applications-tab.application-detail.bot-profile-section.username-validation-rules"
 					/>
 				</div>

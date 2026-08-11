@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import styles from '@app/features/ui/components/form/UsernameValidationRules.module.css';
+import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 import {Trans} from '@lingui/react/macro';
 import {CheckIcon, XIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 
 export interface UsernameValidationResult {
 	validLength: boolean;
@@ -29,51 +29,62 @@ function validateUsername(username: string): UsernameValidationResult {
 interface UsernameValidationRulesProps {
 	username: string;
 	className?: string;
+	/**
+	 * Applications pass `false`: they follow the looser bot username rules, which this
+	 * component's character rule does not describe.
+	 */
+	showCharacterRule?: boolean;
 }
 
-export const UsernameValidationRules: React.FC<UsernameValidationRulesProps> = observer(({username, className}) => {
-	const validation = validateUsername(username);
-	const rules = [
-		{
-			key: 'length',
-			valid: validation.validLength,
-			label: <Trans>Between 1 and 32 characters</Trans>,
-		},
-		{
-			key: 'characters',
-			valid: validation.validCharacters,
-			label: <Trans>Lowercase letters (a-z), numbers (0-9), underscores (_), and periods (.) only</Trans>,
-		},
-	];
-	return (
-		<div className={clsx(styles.container, className)} data-flx="ui.form.username-validation-rules.container">
-			{rules.map((rule) => (
-				<div key={rule.key} className={styles.rule} data-flx="ui.form.username-validation-rules.rule">
-					<div className={styles.iconContainer} data-flx="ui.form.username-validation-rules.icon-container">
-						{rule.valid ? (
-							<CheckIcon
-								weight="bold"
-								size={16}
-								className={styles.iconValid}
-								data-flx="ui.form.username-validation-rules.icon-valid"
-							/>
-						) : (
-							<XIcon
-								weight="bold"
-								size={16}
-								className={styles.iconInvalid}
-								data-flx="ui.form.username-validation-rules.icon-invalid"
-							/>
-						)}
+export const UsernameValidationRules: React.FC<UsernameValidationRulesProps> = observer(
+	({username, className, showCharacterRule = true}) => {
+		const validation = validateUsername(username);
+		const rules = [
+			{
+				key: 'length',
+				valid: validation.validLength,
+				label: <Trans>Between 1 and 32 characters</Trans>,
+			},
+			...(showCharacterRule
+				? [
+						{
+							key: 'characters',
+							valid: validation.validCharacters,
+							label: <Trans>Lowercase letters (a-z), numbers (0-9), underscores (_), and periods (.) only</Trans>,
+						},
+					]
+				: []),
+		];
+		return (
+			<div className={clsx(styles.container, className)} data-flx="ui.form.username-validation-rules.container">
+				{rules.map((rule) => (
+					<div key={rule.key} className={styles.rule} data-flx="ui.form.username-validation-rules.rule">
+						<div className={styles.iconContainer} data-flx="ui.form.username-validation-rules.icon-container">
+							{rule.valid ? (
+								<CheckIcon
+									weight="bold"
+									size={16}
+									className={styles.iconValid}
+									data-flx="ui.form.username-validation-rules.icon-valid"
+								/>
+							) : (
+								<XIcon
+									weight="bold"
+									size={16}
+									className={styles.iconInvalid}
+									data-flx="ui.form.username-validation-rules.icon-invalid"
+								/>
+							)}
+						</div>
+						<span
+							className={rule.valid ? styles.labelValid : styles.labelInvalid}
+							data-flx="ui.form.username-validation-rules.label-valid"
+						>
+							{rule.label}
+						</span>
 					</div>
-					<span
-						className={rule.valid ? styles.labelValid : styles.labelInvalid}
-						data-flx="ui.form.username-validation-rules.label-valid"
-					>
-						{rule.label}
-					</span>
-				</div>
-			))}
-		</div>
-	);
-});
+				))}
+			</div>
+		);
+	},
+);
