@@ -95,6 +95,14 @@ export class UserRepository implements IUserRepositoryAggregate {
 		return this.accountRepo.findByUsername(username);
 	}
 
+	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
+		return this.accountRepo.findByUsernameDiscriminator(username, discriminator);
+	}
+
+	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
+		return this.accountRepo.findDiscriminatorsByUsername(username);
+	}
+
 	async isUsernameAvailable(username: string): Promise<boolean> {
 		return this.accountRepo.isUsernameAvailable(username);
 	}

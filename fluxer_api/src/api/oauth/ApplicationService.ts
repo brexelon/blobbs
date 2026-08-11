@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
-import {
-	ProfileFieldPrivacyFlags,
-	UserFlags,
-} from '@fluxer/constants/src/UserConstants';
+import {ProfileFieldPrivacyFlags, UserFlags} from '@fluxer/constants/src/UserConstants';
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {ContentBlockedError} from '@fluxer/errors/src/domains/content/ContentBlockedError';
 import {ForbiddenError} from '@fluxer/errors/src/domains/core/ForbiddenError';
@@ -20,6 +17,7 @@ import type {IChannelRepository} from '../channel/IChannelRepository';
 import type {ApplicationRow} from '../database/types/OAuth2Types';
 import type {UserRow} from '../database/types/UserTypes';
 import {contentModerationService} from '../infrastructure/ContentModerationService';
+import type {DiscriminatorService} from '../infrastructure/DiscriminatorService';
 import type {EntityAssetService, PreparedAssetUpload} from '../infrastructure/EntityAssetService';
 import type {UserCacheService} from '../infrastructure/UserCacheService';
 import {Logger} from '../Logger';
@@ -28,8 +26,8 @@ import type {Application} from '../models/Application';
 import type {User} from '../models/User';
 import {enforceFluxerTagChangeRateLimit} from '../user/FluxerTagChangeRateLimit';
 import {hasPartialUserFieldsChanged, mapUserToPrivateResponse} from '../user/UserMappers';
-import {hashPassword} from '../utils/PasswordUtils';
 import {allocateDeletedUserIdentity} from '../utils/DeletedUserIdentityUtils';
+import {hashPassword} from '../utils/PasswordUtils';
 import {generateRandomUsername} from '../utils/UsernameGenerator';
 import {deriveUsernameFromDisplayName} from '../utils/UsernameSuggestionUtils';
 import {remapAuthorMessagesToDeletedUser} from './ApplicationMessageAuthorAnonymization';
@@ -38,6 +36,7 @@ import {generateOAuthTokenSecret} from './OAuthTokenSecret';
 import type {IApplicationRepository} from './repositories/IApplicationRepository';
 
 interface ApplicationServiceDeps {
+	discriminatorService: DiscriminatorService;
 	channelRepository: IChannelRepository;
 	applicationRepository: IApplicationRepository;
 	botAuthService: BotAuthService;
@@ -65,13 +64,21 @@ export class ApplicationService {
 		public readonly deps: ApplicationServiceDeps,
 	) {}
 
-	private async generateBotUsername(applicationName: string): Promise<{username: string}> {
-		const {users} = this.apiContext.services;
+	/**
+	 * Bots are unique by (username, discriminator), so the preferred name is kept even
+	 * when another application already holds it — only the discriminator differs. The
+	 * random fallback is reached only once a base name has exhausted all 9999 of them.
+	 */
+	private async generateBotUsername(applicationName: string): Promise<{
+		username: string;
+		discriminator: number;
+	}> {
 		const preferredUsername = deriveUsernameFromDisplayName(applicationName);
-		if (preferredUsername && (await users.isUsernameAvailable(preferredUsername))) {
-			return {username: preferredUsername};
-		}
 		if (preferredUsername) {
+			const preferred = await this.deps.discriminatorService.generateDiscriminator({username: preferredUsername});
+			if (preferred.available && preferred.discriminator !== -1) {
+				return {username: preferredUsername, discriminator: preferred.discriminator};
+			}
 			Logger.info(
 				{applicationName, preferredUsername},
 				'Application name did not yield a usable bot username, falling back to random username',
@@ -79,8 +86,9 @@ export class ApplicationService {
 		}
 		for (let attempts = 0; attempts < 100; attempts++) {
 			const randomUsername = generateRandomUsername();
-			if (await users.isUsernameAvailable(randomUsername)) {
-				return {username: randomUsername};
+			const random = await this.deps.discriminatorService.generateDiscriminator({username: randomUsername});
+			if (random.available && random.discriminator !== -1) {
+				return {username: randomUsername, discriminator: random.discriminator};
 			}
 		}
 		throw new BotUserGenerationError();
@@ -124,7 +132,7 @@ export class ApplicationService {
 		}
 		const applicationId: ApplicationID = (await this.apiContext.services.snowflake.generate()) as ApplicationID;
 		const botUserId = applicationIdToUserId(applicationId);
-		const {username} = await this.generateBotUsername(args.name);
+		const {username, discriminator} = await this.generateBotUsername(args.name);
 		if (profileSubstringBlocklistCache.containsBannedSubstring('username', username)) {
 			throw new ContentBlockedError();
 		}
@@ -140,6 +148,7 @@ export class ApplicationService {
 		const botUserRow: UserRow = {
 			user_id: botUserId,
 			username,
+			discriminator,
 			global_name: null,
 			bot: true,
 			system: false,

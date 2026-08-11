@@ -116,6 +116,7 @@ import {
 	getChannelRepository,
 	getConnectionRepository,
 	getContactChangeLogService,
+	getDiscriminatorService,
 	getDonationRepository,
 	getDownloadService,
 	getEmailChangeRepository,
@@ -463,11 +464,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		riskAssessmentRepository: getRiskAssessmentRepository(),
 		riskHistoryRepository: getHistoricalOutcomeRepository(),
 	};
-	const ssoService = new SsoService(
-		apiContext,
-		getInstanceConfigRepository(),
-		getKVActivityTracker(),
-	);
+	const ssoService = new SsoService(apiContext, getInstanceConfigRepository(), getKVActivityTracker());
 	const desktopHandoffService = new DesktopHandoffService(apiContext);
 	const authRequestService = new AuthRequestService(
 		apiContext,
@@ -580,6 +577,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 		userCacheService,
 		entityAssetService,
 		botAuthService,
+		discriminatorService: getDiscriminatorService(),
 	});
 	const oauth2Service = new OAuth2Service(apiContext, {applicationRepository, oauth2TokenRepository});
 	ctx.set('adminService', adminService);

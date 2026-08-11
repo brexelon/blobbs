@@ -10,22 +10,48 @@ import {
 	UserByLastActiveIpTrustKey,
 	UserByStripeCustomerId,
 	UserByStripeSubscriptionId,
+	UserByUsername,
 	UserByUsernameV2,
 } from '../../../../Tables';
 
 export class UserIndexRepository {
 	async syncIndices(data: UserRow, oldData?: UserRow | null): Promise<void> {
 		const batch = new BatchBuilder();
+		// Two namespaces. Regular users are unique by username and live in the v2 index;
+		// applications are unique by (username, discriminator) and live in the older index,
+		// so a bot called `weather` never stops a person registering `weather`.
 		if (data.username) {
-			batch.addPrepared(
-				UserByUsernameV2.upsertAll({
-					username: data.username.toLowerCase(),
-					user_id: data.user_id,
-				}),
-			);
+			if (data.bot) {
+				batch.addPrepared(
+					UserByUsername.upsertAll({
+						username: data.username.toLowerCase(),
+						discriminator: data.discriminator,
+						user_id: data.user_id,
+					}),
+				);
+			} else {
+				batch.addPrepared(
+					UserByUsernameV2.upsertAll({
+						username: data.username.toLowerCase(),
+						user_id: data.user_id,
+					}),
+				);
+			}
 		}
 		if (oldData?.username) {
-			if (oldData.username.toLowerCase() !== data.username?.toLowerCase()) {
+			const usernameChanged = oldData.username.toLowerCase() !== data.username?.toLowerCase();
+			const discriminatorChanged = oldData.discriminator !== data.discriminator;
+			if (oldData.bot) {
+				if (usernameChanged || discriminatorChanged) {
+					batch.addPrepared(
+						UserByUsername.deleteByPk({
+							username: oldData.username.toLowerCase(),
+							discriminator: oldData.discriminator,
+							user_id: oldData.user_id,
+						}),
+					);
+				}
+			} else if (usernameChanged) {
 				batch.addPrepared(
 					UserByUsernameV2.deleteByPk({
 						username: oldData.username.toLowerCase(),
@@ -167,13 +193,24 @@ export class UserIndexRepository {
 		stripeCustomerId?: string | null,
 		stripeSubscriptionId?: string | null,
 		lastActiveIp?: string | null,
+		account?: {bot: boolean; discriminator: number},
 	): Promise<void> {
 		const batch = new BatchBuilder();
-		batch.addPrepared(
-			UserByUsernameV2.deleteByPk({
-				username: username.toLowerCase(),
-			}),
-		);
+		if (account?.bot) {
+			batch.addPrepared(
+				UserByUsername.deleteByPk({
+					username: username.toLowerCase(),
+					discriminator: account.discriminator,
+					user_id: userId,
+				}),
+			);
+		} else {
+			batch.addPrepared(
+				UserByUsernameV2.deleteByPk({
+					username: username.toLowerCase(),
+				}),
+			);
+		}
 		if (email) {
 			batch.addPrepared(
 				UserByEmail.deleteByPk({

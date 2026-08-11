@@ -8,6 +8,7 @@ import type {
 	UserByLastActiveIpTrustKeyRow,
 	UserByStripeCustomerIdRow,
 	UserByStripeSubscriptionIdRow,
+	UserByUsernameRow,
 	UserByUsernameV2Row,
 } from '../../../database/types/UserTypes';
 import type {User} from '../../../models/User';
@@ -16,6 +17,7 @@ import {
 	UserByLastActiveIpTrustKey,
 	UserByStripeCustomerId,
 	UserByStripeSubscriptionId,
+	UserByUsername,
 	UserByUsernameV2,
 } from '../../../Tables';
 import type {UserEmailOwnershipRepository} from './crud/UserEmailOwnershipRepository';
@@ -34,6 +36,15 @@ const FETCH_USER_ID_BY_USERNAME_QUERY = UserByUsernameV2.select({
 	columns: ['user_id'],
 	where: UserByUsernameV2.where.eq('username'),
 	limit: 1,
+});
+const FETCH_USER_ID_BY_USERNAME_DISCRIMINATOR_QUERY = UserByUsername.select({
+	columns: ['user_id'],
+	where: [UserByUsername.where.eq('username'), UserByUsername.where.eq('discriminator')],
+	limit: 1,
+});
+const FETCH_DISCRIMINATORS_BY_USERNAME_QUERY = UserByUsername.select({
+	columns: ['discriminator', 'user_id'],
+	where: UserByUsername.where.eq('username'),
 });
 const FETCH_USER_IDS_BY_LAST_ACTIVE_IP_QUERY = UserByLastActiveIp.select({
 	columns: ['user_id'],
@@ -78,6 +89,23 @@ export class UserLookupRepository {
 		);
 		if (!result) return null;
 		return await this.findUniqueUser(result.user_id);
+	}
+
+	/** Bot lookup: applications are unique by (username, discriminator), not username alone. */
+	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
+		const result = await fetchOne<Pick<UserByUsernameRow, 'user_id'>>(
+			FETCH_USER_ID_BY_USERNAME_DISCRIMINATOR_QUERY.bind({username: username.toLowerCase(), discriminator}),
+		);
+		if (!result) return null;
+		return await this.findUniqueUser(result.user_id);
+	}
+
+	/** The discriminators already handed out for a bot base name. */
+	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
+		const result = await fetchMany<Pick<UserByUsernameRow, 'discriminator'>>(
+			FETCH_DISCRIMINATORS_BY_USERNAME_QUERY.bind({username: username.toLowerCase()}),
+		);
+		return new Set(result.map((row) => row.discriminator));
 	}
 
 	async isUsernameAvailable(username: string): Promise<boolean> {

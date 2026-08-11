@@ -72,7 +72,7 @@ export function mapUserToPartialResponse(user: User): UserPartialResponse {
 		return {
 			id: user.id.toString(),
 			username: user.username,
-			discriminator: '0',
+			discriminator: user.discriminator.toString(),
 			global_name: user.globalName ?? user.username,
 			avatar: null,
 			avatar_color: null,
@@ -85,7 +85,7 @@ export function mapUserToPartialResponse(user: User): UserPartialResponse {
 	return {
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: '0',
+		discriminator: user.discriminator.toString(),
 		global_name: user.globalName,
 		avatar: avatarHash,
 		avatar_color: user.avatarColor,
@@ -222,7 +222,7 @@ export function mapUserToOAuthResponse(
 		sub: user.id.toString(),
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: '0',
+		discriminator: user.discriminator.toString(),
 		avatar: stripAvatarForUser(user),
 		verified: includeEmail ? (user.emailVerified ?? false) : undefined,
 		email: includeEmail ? (user.email ?? null) : null,
