@@ -105,7 +105,7 @@ async fn fetch(state: &AppState) -> Option<InstanceBranding> {
         .await
         .ok()?;
     if !response.status().is_success() {
-        tracing::debug!(status = %response.status(), "instance branding fetch returned non-success");
+        tracing::warn!(status = %response.status(), "instance branding fetch returned non-success");
         return None;
     }
     let document = response.json::<DiscoveryDocument>().await.ok()?;
@@ -124,7 +124,7 @@ pub fn spawn_refresher(state: AppState) {
                     store(branding);
                 }
                 None => {
-                    tracing::debug!("instance branding unavailable, keeping previous value");
+                    tracing::warn!("instance branding unavailable, keeping previous value");
                 }
             }
             tokio::time::sleep(REFRESH_INTERVAL).await;
