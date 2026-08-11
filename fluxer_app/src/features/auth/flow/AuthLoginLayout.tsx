@@ -4,7 +4,6 @@ import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import * as AuthenticationCommands from '@app/features/auth/commands/AuthenticationCommands';
 import {AccountSelector} from '@app/features/auth/components/accounts/AccountSelector';
 import styles from '@app/features/auth/components/pages/LoginPage.module.css';
-import {AuthInstanceSelectorControl} from '@app/features/auth/flow/AuthInstanceSelectorControl';
 import {AuthRouterLink} from '@app/features/auth/flow/AuthRouterLink';
 import {
 	AuthSsoPanel,
@@ -312,7 +311,6 @@ export const AuthLoginLayout = observer(function AuthLoginLayout({
 		}
 		return (
 			<>
-				<AuthInstanceSelectorControl dataFlx="auth.flow.auth-login-layout.auth-instance-selector-control" />
 				{extraTopContent}
 				{showTitle ? (
 					<h1 className={styles.title} data-flx="auth.flow.auth-login-layout.title--2">
