@@ -2,10 +2,7 @@
 
 import {randomInt} from 'node:crypto';
 import {ChannelTypes, MessageTypes} from '@fluxer/constants/src/ChannelConstants';
-import {
-	ProfileFieldPrivacyFlags,
-	UserFlags,
-} from '@fluxer/constants/src/UserConstants';
+import {ProfileFieldPrivacyFlags, UserFlags} from '@fluxer/constants/src/UserConstants';
 import * as BucketUtils from '@fluxer/snowflake/src/SnowflakeBuckets';
 import type {IWorkerService} from '@pkgs/worker/src/contracts/IWorkerService';
 import {ms} from 'itty-time';
@@ -14,6 +11,7 @@ import {createMessageID, createUserID, type MessageID, type UserID} from '../../
 import {Config} from '../../Config';
 import {mapChannelToResponse} from '../../channel/ChannelMappers';
 import type {ChannelRepository} from '../../channel/ChannelRepository';
+import {UserMessageDeletionService} from '../../channel/services/message/UserMessageDeletionService';
 import type {FavoriteMemeRepository} from '../../favorite_meme/FavoriteMemeRepository';
 import type {GuildRepository} from '../../guild/repositories/GuildRepository';
 import type {IPurgeQueue} from '../../infrastructure/BunnyPurgeQueue';
@@ -34,13 +32,12 @@ import {
 	getStorageService,
 	getUserRepository,
 } from '../../middleware/ServiceSingletons';
+import type {User} from '../../models/User';
 import type {ApplicationRepository} from '../../oauth/repositories/ApplicationRepository';
 import type {OAuth2TokenRepository} from '../../oauth/repositories/OAuth2TokenRepository';
+import {allocateDeletedUserIdentity} from '../../utils/DeletedUserIdentityUtils';
 import type {WorkerTaskName} from '../../worker/WorkerLaneConfig';
 import type {UserRepository} from '../repositories/UserRepository';
-import {allocateDeletedUserIdentity} from '../../utils/DeletedUserIdentityUtils';
-import {UserMessageDeletionService} from '../../channel/services/message/UserMessageDeletionService';
-import type {User} from '../../models/User';
 
 const CHUNK_SIZE = 100;
 
@@ -243,7 +240,11 @@ async function leaveAllGuilds(userId: UserID, deps: UserDeletionDependencies): P
 	}
 }
 
-async function leaveAllGroupDms(userId: UserID, deps: UserDeletionDependencies, createRecipientRemoveMessage: boolean): Promise<void> {
+async function leaveAllGroupDms(
+	userId: UserID,
+	deps: UserDeletionDependencies,
+	createRecipientRemoveMessage: boolean,
+): Promise<void> {
 	const {userRepository, channelRepository, gatewayService, userCacheService, snowflakeService} = deps;
 	Logger.debug({userId}, 'Leaving all group DMs');
 	const allPrivateChannels = await userRepository.listPrivateChannels(userId);
@@ -362,13 +363,7 @@ export async function processUserDeletion(
 	deletionReasonCode: number,
 	deps: UserDeletionDependencies,
 ): Promise<void> {
-	const {
-		userRepository,
-		channelRepository,
-		userCacheService,
-		snowflakeService,
-		stripe,
-	} = deps;
+	const {userRepository, channelRepository, userCacheService, snowflakeService, stripe} = deps;
 	Logger.debug({userId, deletionReasonCode}, 'Starting user account deletion');
 	const user = await userRepository.findUnique(userId);
 	if (!user) {
@@ -384,6 +379,7 @@ export async function processUserDeletion(
 	await userRepository.create({
 		user_id: deletedUserId,
 		username: deletedMessageAuthorIdentity.username,
+		discriminator: 0,
 		global_name: deletedMessageAuthorIdentity.globalName,
 		bot: false,
 		system: false,

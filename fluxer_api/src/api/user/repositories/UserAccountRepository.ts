@@ -103,6 +103,14 @@ export class UserAccountRepository implements IUserAccountRepository {
 		return this.lookupRepo.findByUsername(username);
 	}
 
+	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
+		return this.lookupRepo.findByUsernameDiscriminator(username, discriminator);
+	}
+
+	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
+		return this.lookupRepo.findDiscriminatorsByUsername(username);
+	}
+
 	async isUsernameAvailable(username: string): Promise<boolean> {
 		return this.lookupRepo.isUsernameAvailable(username);
 	}

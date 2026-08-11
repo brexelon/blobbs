@@ -356,6 +356,7 @@ export class SsoService {
 			await this.instanceConfigRepository.addPendingRegistration({
 				user_id: user.id.toString(),
 				username: user.username,
+
 				global_name: user.globalName,
 				email: user.email,
 				requested_at: new Date().toISOString(),
@@ -450,6 +451,7 @@ export class SsoService {
 		const userRow = {
 			user_id: userId,
 			username,
+			discriminator: 0,
 			global_name: globalName,
 			bot: false,
 			system: false,

@@ -154,6 +154,7 @@ export class UserAccountRepository {
 			user.stripeCustomerId,
 			user.stripeSubscriptionId,
 			user.lastActiveIp,
+			{bot: user.isBot, discriminator: user.discriminator},
 		);
 	}
 
@@ -208,6 +209,14 @@ export class UserAccountRepository {
 		total: number;
 	}> {
 		return this.lookupRepo.listUserIdsByLastActiveIp(lastActiveIp, limit, offset);
+	}
+
+	async findByUsernameDiscriminator(username: string, discriminator: number): Promise<User | null> {
+		return this.lookupRepo.findByUsernameDiscriminator(username, discriminator);
+	}
+
+	async findDiscriminatorsByUsername(username: string): Promise<Set<number>> {
+		return this.lookupRepo.findDiscriminatorsByUsername(username);
 	}
 
 	private applyPremiumFlagsMigration(data: UserRow, oldData: UserRow | null | undefined): void {

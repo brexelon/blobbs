@@ -373,7 +373,7 @@ export const getEmbedService = singleton(
 );
 export const getReadStateService = singleton(() => new ReadStateService(getReadStateRepository(), getGatewayService()));
 export const getDiscriminatorService = singleton(
-	() => new DiscriminatorService(getUserRepository()),
+	() => new DiscriminatorService(getUserRepository(), getCacheService(), getLimitConfigService()),
 );
 export const getBotAuthService = singleton(() => new BotAuthService(getApplicationRepository()));
 export const getBotMfaMirrorService = singleton(
