@@ -3,6 +3,7 @@
 import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import {LimitResolver} from '@app/features/app/utils/LimitResolverAdapter';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
+import {formatUserTag} from '@app/features/user/utils/UserTag';
 import type {LimitKey} from '@fluxer/constants/src/LimitConfigMetadata';
 import {
 	type MentionReplyPreference,
@@ -375,7 +376,7 @@ export class User {
 	}
 
 	get tag(): string {
-		return this.username;
+		return formatUserTag(this.username, this.discriminator);
 	}
 
 	get createdAt(): Date {
