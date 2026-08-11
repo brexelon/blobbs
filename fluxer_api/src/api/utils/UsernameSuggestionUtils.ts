@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {randomInt} from 'node:crypto';
-import {UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
+import {BotUsernameType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import {transliterate as tr} from 'transliteration';
 
 const MAX_USERNAME_LENGTH = 32;
@@ -116,14 +116,29 @@ export function deriveUsernameFromDisplayName(globalName: string): string | null
 	return sanitizeDisplayName(globalName);
 }
 
+/**
+ * Bot variant of {@link deriveUsernameFromDisplayName}: keeps the application's casing,
+ * so an app called `Weather Bot` yields `Weather_Bot` rather than `weather_bot`.
+ */
+export function deriveBotUsernameFromDisplayName(applicationName: string): string | null {
+	const trimmed = applicationName.trim();
+	if (!trimmed) return null;
+	let sanitized = tr(trimmed).replace(/[\s\-.]+/g, '_');
+	sanitized = sanitized.replace(/[^a-zA-Z0-9_]/g, '');
+	if (!sanitized) return null;
+	if (sanitized.length > MAX_USERNAME_LENGTH) {
+		sanitized = sanitized.substring(0, MAX_USERNAME_LENGTH);
+	}
+	const validation = BotUsernameType.safeParse(sanitized);
+	return validation.success ? validation.data : null;
+}
+
 function buildUsernameWithSuffix(base: string, suffix: string): string | null {
 	const maxBaseLength = MAX_USERNAME_LENGTH - suffix.length;
 	if (maxBaseLength <= 0) {
 		return null;
 	}
-	const truncatedBase = normalizeTrailingSeparators(
-		normalizeLeadingSeparators(base.substring(0, maxBaseLength)),
-	);
+	const truncatedBase = normalizeTrailingSeparators(normalizeLeadingSeparators(base.substring(0, maxBaseLength)));
 	if (!truncatedBase) {
 		return null;
 	}

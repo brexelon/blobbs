@@ -10,6 +10,7 @@ import {InternalServerError} from '@fluxer/errors/src/domains/core/InternalServe
 import {BotUserNotFoundError} from '@fluxer/errors/src/domains/oauth/BotUserNotFoundError';
 import {UnclaimedAccountCannotCreateApplicationsError} from '@fluxer/errors/src/domains/oauth/UnclaimedAccountCannotCreateApplicationsError';
 import {UnknownApplicationError} from '@fluxer/errors/src/domains/oauth/UnknownApplicationError';
+import {BotUsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import type {ApiContext} from '../ApiContext';
 import type {ApplicationID, UserID} from '../BrandedTypes';
 import {applicationIdToUserId} from '../BrandedTypes';
@@ -29,7 +30,7 @@ import {hasPartialUserFieldsChanged, mapUserToPrivateResponse} from '../user/Use
 import {allocateDeletedUserIdentity} from '../utils/DeletedUserIdentityUtils';
 import {hashPassword} from '../utils/PasswordUtils';
 import {generateRandomUsername} from '../utils/UsernameGenerator';
-import {deriveUsernameFromDisplayName} from '../utils/UsernameSuggestionUtils';
+import {deriveBotUsernameFromDisplayName} from '../utils/UsernameSuggestionUtils';
 import {remapAuthorMessagesToDeletedUser} from './ApplicationMessageAuthorAnonymization';
 import type {BotAuthService} from './BotAuthService';
 import {generateOAuthTokenSecret} from './OAuthTokenSecret';
@@ -461,9 +462,16 @@ export class ApplicationService {
 			surface: 'profile_field',
 		});
 		const updates: Partial<UserRow> = {};
-		const usernameChanged = args.username !== undefined && args.username.toLowerCase() !== botUser.username;
+		// Compared case-insensitively so `WeatherBot` -> `weatherbot` is not treated as a
+		// rename, but the requested casing is what gets stored.
+		const usernameChanged =
+			args.username !== undefined && args.username.toLowerCase() !== botUser.username.toLowerCase();
 		if (usernameChanged) {
-			const newUsername = args.username!.toLowerCase();
+			const parsedUsername = BotUsernameType.safeParse(args.username);
+			if (!parsedUsername.success) {
+				throw InputValidationError.fromCode('username', ValidationErrorCodes.USERNAME_INVALID_CHARACTERS);
+			}
+			const newUsername = parsedUsername.data;
 			if (!(await this.apiContext.services.users.isUsernameAvailable(newUsername))) {
 				throw InputValidationError.fromCode('username', ValidationErrorCodes.TOO_MANY_USERS_WITH_THIS_USERNAME);
 			}

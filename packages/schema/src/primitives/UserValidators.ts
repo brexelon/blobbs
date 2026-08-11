@@ -22,6 +22,13 @@ export function hasValidUsernameFormat(value: string): boolean {
 	return USERNAME_CHARACTER_REGEX.test(value) && !USERNAME_INVALID_FORMAT_REGEX.test(value);
 }
 
+/** Applications: letters in either case, digits and underscores, as upstream allows. */
+const BOT_USERNAME_CHARACTER_REGEX = /^[a-zA-Z0-9_]+$/;
+
+export function hasValidBotUsernameFormat(value: string): boolean {
+	return BOT_USERNAME_CHARACTER_REGEX.test(value);
+}
+
 function sanitizeUsername(value: string): string {
 	if (value.length > MAX_STRING_PROCESSING_LENGTH) {
 		throw new Error(ValidationErrorCodes.STRING_LENGTH_INVALID);
@@ -67,6 +74,30 @@ export const UsernameType = withOpenApiType(
 			return !value.includes('fluxer') && !value.includes('system message');
 		}, ValidationErrorCodes.USERNAME_CANNOT_CONTAIN_RESERVED_TERMS),
 	'UsernameType',
+);
+/**
+ * Username for an application.
+ *
+ * Unlike {@link UsernameType} the value is not folded to lower case, so `WeatherBot`
+ * is stored as typed. Uniqueness is still case-insensitive: the username index is
+ * keyed on the lower-cased value, and the reserved-word checks lower-case before
+ * comparing, so `WeatherBot` and `weatherbot` cannot both exist.
+ */
+export const BotUsernameType = withOpenApiType(
+	z
+		.string()
+		.transform((value) => value.trim())
+		.pipe(withStringLengthRangeValidation(z.string(), 1, 32, ValidationErrorCodes.USERNAME_LENGTH_INVALID))
+		.refine((value) => hasValidBotUsernameFormat(value), ValidationErrorCodes.USERNAME_INVALID_CHARACTERS)
+		.refine((value) => {
+			const lowerValue = value.toLowerCase();
+			return lowerValue !== 'everyone' && lowerValue !== 'here';
+		}, ValidationErrorCodes.USERNAME_RESERVED_VALUE)
+		.refine((value) => {
+			const lowerValue = value.toLowerCase();
+			return !lowerValue.includes('fluxer') && !lowerValue.includes('system message');
+		}, ValidationErrorCodes.USERNAME_CANNOT_CONTAIN_RESERVED_TERMS),
+	'BotUsernameType',
 );
 export const GlobalNameType = z
 	.string()
