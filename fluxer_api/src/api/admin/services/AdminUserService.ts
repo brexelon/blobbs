@@ -14,6 +14,7 @@ import type {ApiContext} from '../../ApiContext';
 import {createChannelID, createUserID, type UserID} from '../../BrandedTypes';
 import type {IChannelRepository} from '../../channel/IChannelRepository';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
+import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService} from '../../infrastructure/EntityAssetService';
 import type {KVAccountDeletionQueueService} from '../../infrastructure/KVAccountDeletionQueueService';
 import type {KVBulkMessageDeletionQueueService} from '../../infrastructure/KVBulkMessageDeletionQueueService';
@@ -46,6 +47,7 @@ interface AdminUserServiceDeps {
 	stripe: Stripe | null;
 	riskHistoryRepository: Pick<IRiskHistoryRepository, 'recordOutcomeForUser'>;
 	reportService: ReportService;
+	discriminatorService: IDiscriminatorService;
 }
 
 export class AdminUserService {
@@ -86,6 +88,7 @@ export class AdminUserService {
 			auditService: deps.auditService,
 			updatePropagator: this.updatePropagator,
 			guildRepository: deps.guildRepository,
+			discriminatorService: deps.discriminatorService,
 		});
 		this.securityService = new AdminUserSecurityService({
 			apiContext: deps.apiContext,

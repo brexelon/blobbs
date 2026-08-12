@@ -16,6 +16,8 @@ interface OAuth2Application extends Omit<ApplicationResponse, 'bot'> {
 	bot: {
 		id: string;
 		token: string;
+		username: string;
+		discriminator: string;
 	};
 }
 

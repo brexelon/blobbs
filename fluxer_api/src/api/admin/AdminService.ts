@@ -18,6 +18,7 @@ import type {InviteRepository} from '../invite/InviteRepository';
 import type {IJobLedgerRepository} from '../jobs/IJobLedgerRepository';
 import {JobAdminService} from '../jobs/JobAdminService';
 import {
+	getDiscriminatorService,
 	getGuildDiscoveryRepository,
 	getKVAccountDeletionQueue,
 	getNcmecSubmissionService,
@@ -110,6 +111,7 @@ export class AdminService {
 			stripe: this.stripe,
 			riskHistoryRepository: this.riskHistoryRepository,
 			reportService: this.reportService,
+			discriminatorService: getDiscriminatorService(),
 		});
 		this.guildServiceAggregate = new AdminGuildService({
 			guildRepository: this.guildRepository,
