@@ -27144,7 +27144,7 @@
 			},
 			"UsernameAvailabilityRequest": {
 				"type": "object",
-				"properties": {"username": {"$ref": "#/components/schemas/UsernameType"}},
+				"properties": {"username": {"type": "string", "description": "Username to check for availability"}},
 				"required": ["username"]
 			},
 			"UsernameSuggestionsResponse": {
@@ -33051,7 +33051,7 @@
 			"BotProfileUpdateRequest": {
 				"type": "object",
 				"properties": {
-					"username": {"$ref": "#/components/schemas/UsernameType"},
+					"username": {"type": "string", "description": "The username of the bot"},
 					"avatar": {
 						"anyOf": [{"$ref": "#/components/schemas/Base64ImageType"}, {"type": "null"}],
 						"description": "The avatar image as base64"

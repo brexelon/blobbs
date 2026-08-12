@@ -399,11 +399,12 @@ impl AdminApiClient {
         username: &str,
         discriminator: Option<i32>,
     ) -> ApiResult<AdminUser> {
+        // Sent as a plain string: applications and people follow different username
+        // rules, and only the API knows which kind of account this is. It validates.
         let body = generated_types::ChangeUsernameRequest {
             discriminator: discriminator.map(generated_types::Int32Type::from),
             user_id: snowflake(user_id),
-            username: generated_types::UsernameType::try_from(username)
-                .map_err(|e| ApiError::Parse(e.to_string()))?,
+            username: username.to_owned(),
         };
         let response = self
             .generated()

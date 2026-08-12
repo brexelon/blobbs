@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {randomInt} from 'node:crypto';
-import {BotUsernameType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
+import {BotUsernameType, normalizeBotUsernameSpacing, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import {transliterate as tr} from 'transliteration';
 
 const MAX_USERNAME_LENGTH = 32;
@@ -117,17 +117,21 @@ export function deriveUsernameFromDisplayName(globalName: string): string | null
 }
 
 /**
- * Bot variant of {@link deriveUsernameFromDisplayName}: keeps the application's casing,
- * so an app called `Weather Bot` yields `Weather_Bot` rather than `weather_bot`.
+ * Bot variant of {@link deriveUsernameFromDisplayName}: keeps the application's casing
+ * and its spaces, so an app called `Weather Bot` yields `Weather Bot` rather than
+ * `weather_bot`. Only the separators a bot username cannot hold are folded to `_`.
  */
 export function deriveBotUsernameFromDisplayName(applicationName: string): string | null {
 	const trimmed = applicationName.trim();
 	if (!trimmed) return null;
-	let sanitized = tr(trimmed).replace(/[\s\-.]+/g, '_');
-	sanitized = sanitized.replace(/[^a-zA-Z0-9_]/g, '');
+	let sanitized = tr(trimmed).replace(/[-.]+/g, '_');
+	sanitized = sanitized.replace(/\s+/g, ' ');
+	sanitized = sanitized.replace(/[^a-zA-Z0-9_ ]/g, '');
+	sanitized = normalizeBotUsernameSpacing(sanitized);
 	if (!sanitized) return null;
 	if (sanitized.length > MAX_USERNAME_LENGTH) {
-		sanitized = sanitized.substring(0, MAX_USERNAME_LENGTH);
+		// Truncation can strand a trailing space, which the validator would reject.
+		sanitized = normalizeBotUsernameSpacing(sanitized.substring(0, MAX_USERNAME_LENGTH));
 	}
 	const validation = BotUsernameType.safeParse(sanitized);
 	return validation.success ? validation.data : null;

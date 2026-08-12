@@ -13,12 +13,33 @@ describe('BotUsernameType', () => {
 		expect(BotUsernameType.parse('Weather_Bot_9')).toBe('Weather_Bot_9');
 	});
 
+	it('accepts spaces, so an application keeps the name it was given', () => {
+		expect(BotUsernameType.parse('Weather Bot')).toBe('Weather Bot');
+	});
+
+	it('collapses runs of spaces so near-identical names cannot coexist', () => {
+		expect(BotUsernameType.parse('Weather   Bot')).toBe('Weather Bot');
+	});
+
 	it('trims surrounding whitespace', () => {
 		expect(BotUsernameType.parse('  WeatherBot  ')).toBe('WeatherBot');
+		expect(BotUsernameType.parse('  Weather Bot  ')).toBe('Weather Bot');
+	});
+
+	it('counts length after spacing is normalised', () => {
+		// 33 characters as typed, 32 once the doubled space collapses.
+		expect(BotUsernameType.parse(`${'a'.repeat(30)}  b`)).toBe(`${'a'.repeat(30)} b`);
+		expect(BotUsernameType.safeParse(`${'a'.repeat(31)}  b`).success).toBe(false);
+	});
+
+	it('rejects whitespace that is not a plain space', () => {
+		for (const value of ['Weather\tBot', 'Weather\nBot']) {
+			expect(BotUsernameType.safeParse(value).success).toBe(false);
+		}
 	});
 
 	it('rejects characters upstream does not allow', () => {
-		for (const value of ['Weather Bot', 'weather.bot', 'weather-bot', 'weather!']) {
+		for (const value of ['weather.bot', 'weather-bot', 'weather!']) {
 			expect(BotUsernameType.safeParse(value).success).toBe(false);
 		}
 	});
@@ -29,9 +50,10 @@ describe('BotUsernameType', () => {
 		}
 	});
 
-	it("does not catch 'system message', which no username can contain anyway", () => {
-		// The reserved term has a space in it and the character set has none, so this
-		// refine is vacuous here. Kept to stay in step with upstream's validator.
+	it("rejects 'system message', which spaces made reachable", () => {
+		expect(BotUsernameType.safeParse('System Message').success).toBe(false);
+		expect(BotUsernameType.safeParse('A System Message Bot').success).toBe(false);
+		// The underscored form is a different string and stays allowed, as before.
 		expect(BotUsernameType.safeParse('System_Message').success).toBe(true);
 	});
 
