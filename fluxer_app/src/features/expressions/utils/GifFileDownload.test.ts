@@ -53,6 +53,15 @@ function tenorGif(): Gif {
 	});
 }
 
+/** A Klipy clip: every rendition is a video, so nothing here can be uploaded as-is. */
+function clipOnlyGif(): Gif {
+	return gifWith({
+		src: 'https://cdn.klipy.test/hd.webm',
+		proxy_src: '/media/hd.webm',
+		media: {webm: media('https://cdn.klipy.test/hd.webm'), mp4: media('https://cdn.klipy.test/hd.mp4')},
+	});
+}
+
 function stubFetch(handler: (url: string) => {ok: boolean; size?: number}) {
 	const seen: Array<string> = [];
 	vi.stubGlobal(
@@ -122,14 +131,56 @@ describe('downloadGifAsImageFile', () => {
 		expect(file.size).toBeGreaterThan(0);
 	});
 
-	it('throws when the item offers no image rendition at all', async () => {
-		const clipOnly = gifWith({
-			src: 'https://cdn.klipy.test/hd.webm',
-			proxy_src: '/media/hd.webm',
-			media: {webm: media('https://cdn.klipy.test/hd.webm'), mp4: media('https://cdn.klipy.test/hd.mp4')},
-		});
+	it('asks the media proxy for a frame when the item offers no image rendition at all', async () => {
 		const seen = stubFetch(() => ({ok: true}));
-		await expect(downloadGifAsImageFile(clipOnly)).rejects.toThrow('Failed to download GIF media');
-		expect(seen).toEqual([]);
+		const file = await downloadGifAsImageFile(clipOnlyGif());
+		expect(file.type).toBe('image/webp');
+		expect(file.name).toBe('an-item.webp');
+		expect(seen).toEqual(['/media/https%3A%2F%2Fcdn.klipy.test%2Fhd.mp4?format=webp']);
+	});
+
+	it('transcodes only the proxied URL, never the provider one', async () => {
+		const seen = stubFetch(() => ({ok: true}));
+		await downloadGifAsImageFile(clipOnlyGif());
+		expect(seen.some((url) => url.startsWith('https://cdn.klipy.test/'))).toBe(false);
+	});
+
+	it('falls back to the top-level clip when the media map is empty', async () => {
+		const seen = stubFetch(() => ({ok: true}));
+		const file = await downloadGifAsImageFile(
+			gifWith({src: 'https://cdn.klipy.test/hd.webm', proxy_src: '/media/hd.webm'}),
+		);
+		expect(file.type).toBe('image/webp');
+		expect(seen).toEqual(['/media/hd.webm?format=webp']);
+	});
+
+	it('keeps the transcode budget separate from the rendition budget', async () => {
+		const manyBrokenRenditions = gifWith({
+			media: {
+				...Object.fromEntries(
+					['gif', 'mediumgif', 'tinygif', 'nanogif', 'webp', 'mediumwebp', 'tinywebp', 'nanowebp'].map((key) => [
+						key,
+						media(`https://cdn.klipy.test/${key}.img`),
+					]),
+				),
+				mp4: media('https://cdn.klipy.test/hd.mp4'),
+			},
+		});
+		stubFetch((url) => ({ok: url.includes('format=webp')}));
+		const file = await downloadGifAsImageFile(manyBrokenRenditions);
+		expect(file.type).toBe('image/webp');
+	});
+
+	it('reports a failure when even the transcode is unavailable', async () => {
+		stubFetch(() => ({ok: false}));
+		await expect(downloadGifAsImageFile(clipOnlyGif())).rejects.toThrow('Failed to download GIF media');
+	});
+
+	it('appends the transcode parameter to a proxied URL that already carries a query', async () => {
+		const seen = stubFetch(() => ({ok: true}));
+		await downloadGifAsImageFile(
+			gifWith({proxy_src: '/media/hd.webm?size=480', src: 'https://cdn.klipy.test/hd.webm'}),
+		);
+		expect(seen).toEqual(['/media/hd.webm?size=480&format=webp']);
 	});
 });

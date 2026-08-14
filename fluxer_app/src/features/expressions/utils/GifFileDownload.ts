@@ -16,6 +16,8 @@ const IMAGE_FORMAT_TOKENS = [
 const SIZE_PREFIXES = ['', 'medium', 'tiny', 'nano'] as const;
 
 const GIF_VIDEO_FORMAT_KEYS = ['mp4', 'tinymp4'] as const;
+/** Clip renditions, largest first, used only as transcode sources. */
+const VIDEO_FORMAT_TOKENS = ['mp4', 'webm'] as const;
 const TOP_LEVEL_IMAGE_URL_REGEX = /\.(?:gif|webp)(?:$|\?)/iu;
 // Sized across more than one format family, so a missing GIF still leaves room to reach
 // the WebP renditions behind it.
@@ -73,6 +75,36 @@ function collectVideoTargets(gif: Gif): Array<GifDownloadTarget> {
 	return collectFormatTargets(gif, GIF_VIDEO_FORMAT_KEYS, 'video/mp4', 'mp4');
 }
 
+/**
+ * The proxied URL a provider hands us is a signed media-proxy path, and the signature covers
+ * that path alone, so a transform can be asked for with a query parameter. Only the proxied
+ * URL is worth asking: a provider CDN would ignore the parameter and answer with the clip.
+ */
+function withImageTranscode(url: string): string {
+	return `${url}${url.includes('?') ? '&' : '?'}format=webp`;
+}
+
+/**
+ * Last resort for an item that carries no image rendition at all. The media proxy pulls a
+ * single frame out of a clip, so this trades the animation for an image the uploader accepts
+ * — worth it only once every animated rendition has been ruled out.
+ */
+function collectTranscodeTargets(gif: Gif): Array<GifDownloadTarget> {
+	const targets: Array<GifDownloadTarget> = [];
+	const addProxiedUrl = (url: string | undefined) => {
+		if (!url) return;
+		targets.push({url: withImageTranscode(url), contentType: 'image/webp', extension: 'webp'});
+	};
+	for (const token of VIDEO_FORMAT_TOKENS) {
+		for (const prefix of SIZE_PREFIXES) {
+			addProxiedUrl(gif.media?.[`${prefix}${token}`]?.proxy_src);
+		}
+	}
+	// A video-first provider leads with a clip, which is a transcode source like any other.
+	addProxiedUrl(gif.proxy_src);
+	return targets;
+}
+
 async function downloadFirstAvailableTarget(targets: Array<GifDownloadTarget>, baseName: string): Promise<File> {
 	const seenUrls = new Set<string>();
 	let attempts = 0;
@@ -92,11 +124,23 @@ async function downloadFirstAvailableTarget(targets: Array<GifDownloadTarget>, b
 	throw new Error('Failed to download GIF media');
 }
 
+/**
+ * The transcode pass runs on its own budget so a provider that lists many broken renditions
+ * cannot exhaust the candidate cap before the fallback is ever reached.
+ */
+async function downloadWithTranscodeFallback(gif: Gif, targets: Array<GifDownloadTarget>): Promise<File> {
+	const baseName = sanitizeGifFileBaseName(gif);
+	try {
+		return await downloadFirstAvailableTarget(targets, baseName);
+	} catch {
+		return await downloadFirstAvailableTarget(collectTranscodeTargets(gif), baseName);
+	}
+}
+
 export async function downloadGifAsImageFile(gif: Gif): Promise<File> {
-	return downloadFirstAvailableTarget(collectImageTargets(gif), sanitizeGifFileBaseName(gif));
+	return downloadWithTranscodeFallback(gif, collectImageTargets(gif));
 }
 
 export async function downloadGifAsVideoOrImageFile(gif: Gif): Promise<File> {
-	const targets = [...collectVideoTargets(gif), ...collectImageTargets(gif)];
-	return downloadFirstAvailableTarget(targets, sanitizeGifFileBaseName(gif));
+	return downloadWithTranscodeFallback(gif, [...collectVideoTargets(gif), ...collectImageTargets(gif)]);
 }
