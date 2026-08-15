@@ -8,6 +8,7 @@ use crate::common::{
     require_any_env, require_env, require_home, resolve_calver, run_command, runner_temp,
     s3_client, title_case, trim_option, upload_directory_to_s3, upload_directory_to_s3_overwrite,
 };
+use crate::functions::write_json_pretty;
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use aws_sdk_s3::Client as S3Client;
 use chrono::Utc;
@@ -3283,15 +3284,6 @@ fn sha256_file(path: &Path) -> Result<String> {
         hasher.update(&buffer[..read]);
     }
     Ok(hex::encode(hasher.finalize()))
-}
-
-fn write_json_pretty<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create {}", parent.display()))?;
-    }
-    let bytes = serde_json::to_vec_pretty(value)?;
-    fs::write(path, bytes).with_context(|| format!("Failed to write {}", path.display()))
 }
 
 fn print_directory(dir: &Path) -> Result<()> {

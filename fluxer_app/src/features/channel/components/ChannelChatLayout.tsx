@@ -29,27 +29,29 @@ export function useChannelComposerAmbientStatusVisibility(): boolean {
 	return useContext(ChannelComposerAmbientStatusVisibilityContext);
 }
 
-export const ChannelChatLayout = observer(({messages, textarea, banner, hideBottomBar = false}: ChannelChatLayoutProps) => {
-	const {i18n} = useLingui();
-	return (
-		<div className={styles.container} data-flx="channel.channel-chat-layout.container">
-			{banner}
-			<section
-				className={styles.messagesArea}
-				aria-label={i18n._(MESSAGES_DESCRIPTOR)}
-				data-flx="channel.channel-chat-layout.messages-area"
-			>
-				{messages}
-			</section>
-			<section
-				className={styles.textareaArea}
-				aria-label={i18n._(MESSAGE_COMPOSER_DESCRIPTOR)}
-				data-flx="channel.channel-chat-layout.textarea-area"
-			>
-				<ChannelComposerAmbientStatusVisibilityContext.Provider value={!hideBottomBar}>
-					{textarea}
-				</ChannelComposerAmbientStatusVisibilityContext.Provider>
-			</section>
-		</div>
-	);
-});
+export const ChannelChatLayout = observer(
+	({messages, textarea, banner, hideBottomBar = false}: ChannelChatLayoutProps) => {
+		const {i18n} = useLingui();
+		return (
+			<div className={styles.container} data-flx="channel.channel-chat-layout.container">
+				{banner}
+				<section
+					className={styles.messagesArea}
+					aria-label={i18n._(MESSAGES_DESCRIPTOR)}
+					data-flx="channel.channel-chat-layout.messages-area"
+				>
+					{messages}
+				</section>
+				<section
+					className={styles.textareaArea}
+					aria-label={i18n._(MESSAGE_COMPOSER_DESCRIPTOR)}
+					data-flx="channel.channel-chat-layout.textarea-area"
+				>
+					<ChannelComposerAmbientStatusVisibilityContext.Provider value={!hideBottomBar}>
+						{textarea}
+					</ChannelComposerAmbientStatusVisibilityContext.Provider>
+				</section>
+			</div>
+		);
+	},
+);

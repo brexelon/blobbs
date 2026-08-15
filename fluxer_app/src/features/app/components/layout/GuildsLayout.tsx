@@ -1006,7 +1006,11 @@ const GuildList = observer(() => {
 						<HelpButton data-flx="app.guilds-layout.guild-list.help-button" />
 					</div>
 					{showMobileBottomNav && (
-						<div className={styles.guildListBottomSpacer} aria-hidden="true" data-flx="app.guilds-layout.guild-list.bottom-spacer" />
+						<div
+							className={styles.guildListBottomSpacer}
+							aria-hidden="true"
+							data-flx="app.guilds-layout.guild-list.bottom-spacer"
+						/>
 					)}
 				</div>
 			</Scroller>

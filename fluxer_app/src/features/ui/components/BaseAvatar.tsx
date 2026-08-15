@@ -177,13 +177,9 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 		const [hasPrimaryFailed, setHasPrimaryFailed] = useState(false);
 		const [hasFallbackFailed, setHasFallbackFailed] = useState(false);
 		const staticAvatarUrl =
-			hasPrimaryFailed && fallbackAvatarUrl && fallbackAvatarUrl !== avatarUrl
-				? fallbackAvatarUrl
-				: avatarUrl;
+			hasPrimaryFailed && fallbackAvatarUrl && fallbackAvatarUrl !== avatarUrl ? fallbackAvatarUrl : avatarUrl;
 		const resolvedCandidateUrl =
-			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed
-				? hoverAvatarUrl || ''
-				: staticAvatarUrl;
+			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed ? hoverAvatarUrl || '' : staticAvatarUrl;
 		useEffect(() => {
 			setHasPrimaryFailed(false);
 			setHasFallbackFailed(false);

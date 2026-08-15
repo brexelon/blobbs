@@ -158,7 +158,7 @@ jobs:
 
       - name: Set up Python (Windows)
         if: runner.os == 'Windows'
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version: "3.13"
 
@@ -185,7 +185,7 @@ jobs:
           --step set_workdir_unix
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           node-version: 24
 
@@ -207,7 +207,7 @@ jobs:
           --step resolve_pnpm_store_unix
 
       - name: Cache pnpm store
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ${{ env.PNPM_STORE_PATH }}
           key: ${{ runner.os }}-${{ matrix.arch }}-pnpm-store-${{ hashFiles('source/pnpm-lock.yaml') }}
@@ -291,7 +291,7 @@ jobs:
 
       - name: Set up .NET SDK (Windows)
         if: matrix.platform == 'windows'
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2
         with:
           dotnet-version: "8.0.x"
 
@@ -352,7 +352,7 @@ jobs:
 
       - name: Azure login for Artifact Signing
         if: matrix.platform == 'windows'
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
+        uses: azure/login@1384c340ab2dda50fed2bee3041d1d87018aa5e8
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -383,7 +383,7 @@ jobs:
 
       - name: Sign unpacked Windows binaries with Artifact Signing
         if: matrix.platform == 'windows'
-        uses: azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82
+        uses: azure/artifact-signing-action@5289deff81257f39600de2188534e17b633ba835
         with:
           endpoint: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
           signing-account-name: ${{ secrets.AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME }}
