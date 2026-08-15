@@ -7,6 +7,7 @@ import {WellKnownFluxerResponse} from '@fluxer/schema/src/domains/instance/Insta
 import type {Hono} from 'hono';
 import {Config} from '../Config';
 import type {GifService} from '../gif/GifService';
+import type {IGifProvider} from '../gif/IGifProvider';
 import type {LimitConfigService} from '../limits/LimitConfigService';
 import {RateLimitMiddleware} from '../middleware/RateLimitMiddleware';
 import {OpenAPI} from '../middleware/ResponseTypeMiddleware';
@@ -25,7 +26,7 @@ function buildDiscoveryStaticInput(
 ): DiscoveryStaticInput {
 	const apiClientEndpoint = Config.endpoints.apiClient;
 	const apiPublicEndpoint = Config.endpoints.apiPublic;
-	const activeGif = gifService?.getByName(runtime.gif.provider);
+	const activeGif: IGifProvider | null = gifService?.getByName(runtime.gif.provider) ?? null;
 	return {
 		apiCodeVersion: API_CODE_VERSION,
 		endpoints: {

@@ -605,7 +605,7 @@ export function useTextareaAutocomplete({
 					const parsedQuery = parseMentionQuery(matchedText ?? '');
 					const queryForMatching = parsedQuery.usernameQuery.trim();
 					const members = filterGuildMembers(
-						membersToUse,
+						memberSearchResults,
 						parsedQuery,
 						!useChannelMemberList,
 						canViewChannel,
@@ -625,7 +625,7 @@ export function useTextareaAutocomplete({
 								threshold: matchSorter.rankings.CONTAINS,
 							})
 						: mentionableRoles;
-					const roles = matchedRoles
+					const roles = [...matchedRoles]
 						.sort((a, b) => b.position - a.position)
 						.slice(0, MENTION_RESULT_LIMIT)
 						.map((role) => ({
