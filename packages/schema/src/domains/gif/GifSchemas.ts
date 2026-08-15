@@ -9,7 +9,7 @@ export const GIF_PROVIDER_DISPLAY_NAME_HEADER = 'X-Fluxer-GIF-Provider-Display-N
 export const GIF_PROVIDER_ATTRIBUTION_HEADER = 'X-Fluxer-GIF-Provider-Attribution-Required';
 const LocaleType = LocaleSchema.default('en-US').transform((v) => v.replace('-', '_'));
 const GifProviderName = createStringType(1, 32).describe(
-	'Identifier of the active GIF provider. KLIPY is currently the only supported provider.',
+	'Identifier of the active GIF provider (e.g. "klipy", "tenor"). Vendor names are opaque to clients.',
 );
 
 export const GifSearchQuery = z.object({
@@ -69,10 +69,10 @@ export type GifResponse = z.infer<typeof GifResponse>;
 
 export const GifCategoryTagResponse = z.object({
 	name: z.string().describe('Category search term (locale-translated label suitable for display).'),
-	src: z.string().describe('Category preview image URL from the top GIF for this category search term.'),
-	proxy_src: z.string().describe('Proxied category preview image URL from the top GIF for this category search term.'),
+	src: z.string().describe('URL to the category preview image (legacy / fallback).'),
+	proxy_src: z.string().describe('Proxied URL to the category preview image (legacy / fallback).'),
 	gif: GifResponse.nullable().describe(
-		'Enriched category preview GIF from the top search result for this category. Null only when no preview GIF was available.',
+		'Full enriched GIF for the category (first search result for `name`). Null until the background cache is populated for this locale; fall back to `src` / `proxy_src` in that case.',
 	),
 });
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export const EXTERNAL_RESPONSE_LIMITS = {
+	klipyApiBytes: 512 * 1024,
+	tenorApiBytes: 512 * 1024,
 	unfurlDocumentBytes: 8 * 1024 * 1024,
 	unfurlResourceBytes: 500 * 1024 * 1024,
 	ssoUserInfoBytes: 512 * 1024,
