@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import styles from '@app/features/ui/components/form/UsernameValidationRules.module.css';
 import {hasValidUsernameFormat} from '@fluxer/schema/src/primitives/UserValidators';
 import {Trans} from '@lingui/react/macro';

@@ -373,7 +373,7 @@ class MemberSidebar {
 			(channelId ? existingGuildLists[channelId] : undefined);
 		if (ops.length > 0) {
 			this.clearPendingListUpdateBatch(guildId, listId);
-			this.applyListUpdate(params);
+			this.applyListUpdate(params, demand);
 			return;
 		}
 		if (!existingList?.hasReceivedInitialPayload || typeof window === 'undefined') {
@@ -628,30 +628,10 @@ class MemberSidebar {
 		}
 		const listState = guildLists[storageKey];
 		const visibleGroups = this.visibleGroups(groups);
-		const subscribedRanges = normalizeMemberListRanges(listState.subscribedRanges);
 		this.touchList(guildId, storageKey);
-		if (subscribedRanges.length === 0) {
-			listState.memberCount = memberCount;
-			listState.onlineCount = onlineCount;
-			listState.groups = visibleGroups;
-			listState.hasReceivedInitialPayload = true;
-			listState.rows = new Map();
-			listState.items = new Map();
-			listState.presences = new Map();
-			listState.customStatuses = new Map();
-			this.bumpListUpdateVersion(guildId, storageKey);
-			this.lists = {...this.lists, [guildId]: {...guildLists, [storageKey]: listState}};
-			return;
-		}
-		if (ops.length === 0) {
-			listState.memberCount = memberCount;
-			listState.onlineCount = onlineCount;
-			listState.groups = visibleGroups;
-			listState.hasReceivedInitialPayload = true;
-			this.bumpListUpdateVersion(guildId, storageKey);
-			this.lists = {...this.lists, [guildId]: {...guildLists, [storageKey]: listState}};
-			return;
-		}
+		// Every sync is applied in full, including the first one for a channel and
+		// ones that carry no ops. Bailing out early here leaves subscribedRanges
+		// empty, and subscribers treat an empty range set as "never hydrated".
 		const newRows = new Map(listState.rows);
 		const changedPresenceUserIds = new Set<string>();
 		const changedCustomStatusUserIds = new Set<string>();
@@ -1046,16 +1026,6 @@ class MemberSidebar {
 			clearLocalSubscription,
 			ownerId,
 			updateGateway: true,
-		});
-	}
-
-	releaseMemberListSubscription(guildId: string, channelId: string, ownerId: string): void {
-		this.clearChannelSubscription({
-			guildId,
-			channelId,
-			clearLocalSubscription: true,
-			ownerId,
-			updateGateway: false,
 		});
 	}
 
@@ -1718,13 +1688,6 @@ class MemberSidebar {
 	private evictList(guildId: string, listId: string): void {
 		this.clearPendingListUpdateBatch(guildId, listId);
 		this.listUpdateVersions.delete(this.listUpdateVersionKey(guildId, listId));
-		const active = this.activeMemberListSubscription;
-		if (active?.source === 'preload' && active.guildId === guildId) {
-			const activeListId = this.resolveListKey(guildId, active.channelId);
-			if (activeListId === listId || active.channelId === listId) {
-				this.clearPreloadLease();
-			}
-		}
 		const existingGuildLists = this.lists[guildId] ?? {};
 		if (existingGuildLists[listId]) {
 			const {[listId]: _, ...remainingGuildLists} = existingGuildLists;
