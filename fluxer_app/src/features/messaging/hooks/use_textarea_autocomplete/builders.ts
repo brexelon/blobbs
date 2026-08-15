@@ -153,6 +153,8 @@ export function filterMentionableRolesForChannel(
 		}
 	}
 	return mentionableRoles.filter((role) => roleIdsInChannel.has(role.id));
+}
+
 function matchGuildMembers(membersToUse: Array<GuildMember>, parsedQuery: ParsedMentionQuery): Array<GuildMember> {
 	if (parsedQuery.hasTagSeparator) {
 		const usernameQueryLower = parsedQuery.usernameQuery.toLowerCase();

@@ -266,6 +266,8 @@ class MemberSidebar {
 			}
 		}
 		return members;
+	}
+
 	synchronizeGatewaySession(sessionId: string | null): void {
 		const previousSessionId = this.gatewaySessionId;
 		if (previousSessionId === sessionId) {
@@ -1158,6 +1160,8 @@ class MemberSidebar {
 			updateGateway,
 			preservePresenceCache,
 		});
+	}
+
 	private setActiveMemberListSubscription(subscription: MemberListSubscription | null): void {
 		const current = this.activeMemberListSubscription;
 		if (current === subscription) {
