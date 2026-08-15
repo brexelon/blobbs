@@ -14,7 +14,6 @@ import {
 	filterStickersForAutocomplete,
 } from '@app/features/expressions/utils/ExpressionPermissionUtils';
 import type {GuildMember} from '@app/features/member/models/GuildMember';
-import GuildMembers from '@app/features/member/state/GuildMembers';
 import MemberSidebar from '@app/features/member/state/MemberSidebar';
 import type {User} from '@app/features/user/models/User';
 import Users from '@app/features/user/state/Users';

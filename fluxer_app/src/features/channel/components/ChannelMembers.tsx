@@ -16,6 +16,7 @@ import {OFFLINE_DESCRIPTOR, ONLINE_DESCRIPTOR} from '@app/features/i18n/utils/Co
 import {resolveMemberListCustomStatus} from '@app/features/member/hooks/useMemberListCustomStatus';
 import {resolveMemberListPresence} from '@app/features/member/hooks/useMemberListPresence';
 import {useMemberListSubscription} from '@app/features/member/hooks/useMemberListSubscription';
+import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import {resolveMemberListViewportModel} from '@app/features/member/state/MemberListViewportStateMachine';
 import MemberSidebar from '@app/features/member/state/MemberSidebar';
@@ -42,6 +43,7 @@ import {getAppZoomFactor} from '@app/features/ui/utils/AppZoomUtils';
 import type {User} from '@app/features/user/models/User';
 import Users from '@app/features/user/state/Users';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
+import {isOfflineStatus, type StatusType} from '@fluxer/constants/src/StatusConstants';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MEMBER_LIST_RANGE_MAX_SPAN} from '@fluxer/constants/src/GatewayConstants';
 import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
