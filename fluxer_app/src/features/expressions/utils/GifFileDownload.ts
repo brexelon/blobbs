@@ -2,9 +2,26 @@
 
 import type {Gif} from '@app/features/expressions/commands/GifCommands';
 
-const GIF_IMAGE_FORMAT_KEYS = ['gif', 'tinygif', 'nanogif'] as const;
+/**
+ * Image renditions in preference order. GIF first because every provider that has one
+ * offers it at every size; WebP because Klipy is video-first and many of its items carry
+ * no GIF rendition at all, only `webm`, `mp4` and `webp`. Uploads accept both.
+ */
+const IMAGE_FORMAT_TOKENS = [
+	{token: 'gif', contentType: 'image/gif', extension: 'gif'},
+	{token: 'webp', contentType: 'image/webp', extension: 'webp'},
+] as const;
+
+/** Providers name a rendition by size: the bare token is the largest. */
+const SIZE_PREFIXES = ['', 'medium', 'tiny', 'nano'] as const;
+
 const GIF_VIDEO_FORMAT_KEYS = ['mp4', 'tinymp4'] as const;
-const DOWNLOAD_CANDIDATES_MAX = 8;
+/** Clip renditions, largest first, used only as transcode sources. */
+const VIDEO_FORMAT_TOKENS = ['mp4', 'webm'] as const;
+const TOP_LEVEL_IMAGE_URL_REGEX = /\.(?:gif|webp)(?:$|\?)/iu;
+// Sized across more than one format family, so a missing GIF still leaves room to reach
+// the WebP renditions behind it.
+const DOWNLOAD_CANDIDATES_MAX = 12;
 
 interface GifDownloadTarget {
 	url: string;
@@ -38,10 +55,17 @@ function collectFormatTargets(
 }
 
 function collectImageTargets(gif: Gif): Array<GifDownloadTarget> {
-	const targets = collectFormatTargets(gif, GIF_IMAGE_FORMAT_KEYS, 'image/gif', 'gif');
+	const targets: Array<GifDownloadTarget> = [];
+	for (const {token, contentType, extension} of IMAGE_FORMAT_TOKENS) {
+		const keys = SIZE_PREFIXES.map((prefix) => `${prefix}${token}`);
+		targets.push(...collectFormatTargets(gif, keys, contentType, extension));
+	}
+	// The top-level source is whichever rendition the provider leads with, which for a
+	// video-first provider is a clip rather than an image.
 	for (const url of [gif.proxy_src, gif.src]) {
-		if (url && /\.gif(?:$|\?)/iu.test(url)) {
-			targets.push({url, contentType: 'image/gif', extension: 'gif'});
+		if (url && TOP_LEVEL_IMAGE_URL_REGEX.test(url)) {
+			const extension = /\.webp(?:$|\?)/iu.test(url) ? 'webp' : 'gif';
+			targets.push({url, contentType: `image/${extension}`, extension});
 		}
 	}
 	return targets;
@@ -49,6 +73,36 @@ function collectImageTargets(gif: Gif): Array<GifDownloadTarget> {
 
 function collectVideoTargets(gif: Gif): Array<GifDownloadTarget> {
 	return collectFormatTargets(gif, GIF_VIDEO_FORMAT_KEYS, 'video/mp4', 'mp4');
+}
+
+/**
+ * The proxied URL a provider hands us is a signed media-proxy path, and the signature covers
+ * that path alone, so a transform can be asked for with a query parameter. Only the proxied
+ * URL is worth asking: a provider CDN would ignore the parameter and answer with the clip.
+ */
+function withImageTranscode(url: string): string {
+	return `${url}${url.includes('?') ? '&' : '?'}format=webp`;
+}
+
+/**
+ * Last resort for an item that carries no image rendition at all. The media proxy pulls a
+ * single frame out of a clip, so this trades the animation for an image the uploader accepts
+ * — worth it only once every animated rendition has been ruled out.
+ */
+function collectTranscodeTargets(gif: Gif): Array<GifDownloadTarget> {
+	const targets: Array<GifDownloadTarget> = [];
+	const addProxiedUrl = (url: string | undefined) => {
+		if (!url) return;
+		targets.push({url: withImageTranscode(url), contentType: 'image/webp', extension: 'webp'});
+	};
+	for (const token of VIDEO_FORMAT_TOKENS) {
+		for (const prefix of SIZE_PREFIXES) {
+			addProxiedUrl(gif.media?.[`${prefix}${token}`]?.proxy_src);
+		}
+	}
+	// A video-first provider leads with a clip, which is a transcode source like any other.
+	addProxiedUrl(gif.proxy_src);
+	return targets;
 }
 
 async function downloadFirstAvailableTarget(targets: Array<GifDownloadTarget>, baseName: string): Promise<File> {
@@ -70,11 +124,23 @@ async function downloadFirstAvailableTarget(targets: Array<GifDownloadTarget>, b
 	throw new Error('Failed to download GIF media');
 }
 
+/**
+ * The transcode pass runs on its own budget so a provider that lists many broken renditions
+ * cannot exhaust the candidate cap before the fallback is ever reached.
+ */
+async function downloadWithTranscodeFallback(gif: Gif, targets: Array<GifDownloadTarget>): Promise<File> {
+	const baseName = sanitizeGifFileBaseName(gif);
+	try {
+		return await downloadFirstAvailableTarget(targets, baseName);
+	} catch {
+		return await downloadFirstAvailableTarget(collectTranscodeTargets(gif), baseName);
+	}
+}
+
 export async function downloadGifAsImageFile(gif: Gif): Promise<File> {
-	return downloadFirstAvailableTarget(collectImageTargets(gif), sanitizeGifFileBaseName(gif));
+	return downloadWithTranscodeFallback(gif, collectImageTargets(gif));
 }
 
 export async function downloadGifAsVideoOrImageFile(gif: Gif): Promise<File> {
-	const targets = [...collectVideoTargets(gif), ...collectImageTargets(gif)];
-	return downloadFirstAvailableTarget(targets, sanitizeGifFileBaseName(gif));
+	return downloadWithTranscodeFallback(gif, [...collectVideoTargets(gif), ...collectImageTargets(gif)]);
 }

@@ -9,18 +9,15 @@ on:
         type: string
         required: false
         default: ""
-  workflow_call:
-    inputs:
-      build-version:
-        description: "Explicit Fluxer CalVer build version (YYYY.MDD.MICRO, UTC HHMMSS without leading zeroes) to use instead of automatic UTC clock allocation"
-        type: string
-        required: false
-        default: ""
 
 permissions:
   actions: read
   contents: read
   packages: write
+
+concurrency:
+  group: publish-fluxer-app-proxy
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -31,6 +28,8 @@ jobs:
     name: resolve metadata
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
       build_version: ${{ steps.vars.outputs.build_version }}
     steps:
@@ -53,6 +52,10 @@ jobs:
     needs: meta
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         env:
@@ -106,6 +109,10 @@ jobs:
     needs: meta
     runs-on: blacksmith-4vcpu-ubuntu-2404-arm
     timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         env:
@@ -127,6 +134,7 @@ jobs:
           build-args: |
             BUILD_VERSION=${{ needs.meta.outputs.build_version }}
             PUBLIC_ASSET_BASE_URL=https://fluxerstatic.com
+            BUNDLE_LOCAL_ASSETS=false
           cache-from: type=gha,scope=fluxer-app-proxy-arm64
           cache-to: type=gha,scope=fluxer-app-proxy-arm64,mode=max,ignore-error=true
         env:
@@ -138,6 +146,8 @@ jobs:
     needs: [meta, build, build-arm64]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      packages: write
     steps:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
@@ -155,8 +165,16 @@ jobs:
           echo "amd64 digest: ${amd64_digest}"
           docker buildx imagetools create \
             -t "${IMAGE}:${VERSION}" \
-            -t "${IMAGE}:v1" \
-            -t "${IMAGE}:latest" \
             "${IMAGE}@${amd64_digest}" \
             "${IMAGE}:${VERSION}-arm64"
           docker buildx imagetools inspect "${IMAGE}:${VERSION}"
+
+      - name: Advance moving image tags
+        env:
+          IMAGE: ghcr.io/${{ env.GHCR_OWNER }}/fluxer-app-proxy
+          VERSION: ${{ needs.meta.outputs.build_version }}
+        run: >-
+          docker buildx imagetools create
+          -t "${IMAGE}:v1"
+          -t "${IMAGE}:latest"
+          "${IMAGE}:${VERSION}"

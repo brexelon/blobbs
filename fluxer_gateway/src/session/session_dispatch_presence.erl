@@ -128,12 +128,19 @@ flush_added_recipient_pending_presences(Data, State) ->
         RecipientId -> flush_pending_presences_for_ids([RecipientId], State)
     end.
 
+%% Only ids that actually had a buffered presence delivered are reported. The caller
+%% subtracts these from the ids it is newly subscribing to and sends the cached presence
+%% for the remainder, so naming an id here with nothing buffered would suppress the only
+%% presence that user was going to get until the next identify.
 -spec flush_pending_presences_for_ids([user_id()], session_state()) ->
     {session_state(), [user_id()]}.
 flush_pending_presences_for_ids(UserIds, State) ->
     lists:foldl(
         fun(UserId, {AccState, Flushed}) ->
-            {flush_pending_presences(UserId, AccState), [UserId | Flushed]}
+            case flush_pending_presences(UserId, AccState) of
+                {NewState, true} -> {NewState, [UserId | Flushed]};
+                {NewState, false} -> {NewState, Flushed}
+            end
         end,
         {State, []},
         UserIds
@@ -144,19 +151,21 @@ flush_pending_presences_for_ids(UserIds, State) ->
 maybe_flush_relationship_pending_presences(Data, State) ->
     case maps:get(<<"type">>, Data, undefined) of
         1 ->
-            TargetId = relationship_target_id(Data),
-            {flush_pending_presences(TargetId, State), flushed_id_list(TargetId)};
+            flush_pending_presences_for_ids(
+                target_id_list(relationship_target_id(Data)), State
+            );
         _ ->
             {State, []}
     end.
 
--spec flushed_id_list(user_id() | undefined) -> [user_id()].
-flushed_id_list(undefined) -> [];
-flushed_id_list(Id) -> [Id].
+-spec target_id_list(user_id() | undefined) -> [user_id()].
+target_id_list(undefined) -> [];
+target_id_list(Id) -> [Id].
 
--spec flush_pending_presences(user_id() | undefined, session_state()) -> session_state().
+-spec flush_pending_presences(user_id() | undefined, session_state()) ->
+    {session_state(), boolean()}.
 flush_pending_presences(undefined, State) ->
-    State;
+    {State, false};
 flush_pending_presences(UserId, State) ->
     PendingQ = ensure_queue(maps:get(pending_presences, State, [])),
     PendingList = queue:to_list(PendingQ),
@@ -167,7 +176,7 @@ flush_pending_presences(UserId, State) ->
     FlushedState = lists:foldl(
         fun dispatch_presence_now/2, State, ToSend
     ),
-    FlushedState#{pending_presences => queue:from_list(RemainingList)}.
+    {FlushedState#{pending_presences => queue:from_list(RemainingList)}, ToSend =/= []}.
 
 -spec dispatch_presence_now(map(), session_state()) -> session_state().
 dispatch_presence_now(P, State) ->
@@ -432,9 +441,35 @@ event_changes_presence_targets_test() ->
     ?assertEqual(false, event_changes_presence_targets(typing_start)),
     ok.
 
-flushed_id_list_test() ->
-    ?assertEqual([], flushed_id_list(undefined)),
-    ?assertEqual([42], flushed_id_list(42)),
+target_id_list_test() ->
+    ?assertEqual([], target_id_list(undefined)),
+    ?assertEqual([42], target_id_list(42)),
     ok.
+
+%% A friendship is normally created with nothing buffered for the new friend. Naming the
+%% id as flushed anyway made the caller skip the cached presence, leaving the friend shown
+%% as offline until the next identify.
+relationship_update_without_pending_presence_flushes_nothing_test() ->
+    State = flush_test_state([99]),
+    Data = #{<<"id">> => <<"2">>, <<"type">> => 1, <<"user">> => #{<<"id">> => <<"2">>}},
+    {NewState, FlushedIds} = maybe_flush_pending_presences(relationship_update, Data, State),
+    ?assertEqual([], FlushedIds),
+    Remaining = queue:to_list(ensure_queue(maps:get(pending_presences, NewState))),
+    ?assertEqual([99], [maps:get(user_id, P) || P <- Remaining]).
+
+relationship_add_without_pending_presence_flushes_nothing_test() ->
+    State = flush_test_state([]),
+    Data = #{<<"id">> => <<"2">>, <<"type">> => 1, <<"user">> => #{<<"id">> => <<"2">>}},
+    {_NewState, FlushedIds} = maybe_flush_pending_presences(relationship_add, Data, State),
+    ?assertEqual([], FlushedIds).
+
+channel_recipient_add_without_pending_presence_flushes_nothing_test() ->
+    State = flush_test_state([99]),
+    Data = #{
+        <<"channel_id">> => <<"200">>,
+        <<"user">> => #{<<"id">> => <<"3">>, <<"username">> => <<"gdm-user">>}
+    },
+    {_NewState, FlushedIds} = maybe_flush_pending_presences(channel_recipient_add, Data, State),
+    ?assertEqual([], FlushedIds).
 
 -endif.

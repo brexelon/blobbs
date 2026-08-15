@@ -204,7 +204,6 @@ export const ThreadSidebarPreview = observer(({threadId, parentChannelId}: Threa
 			</header>
 			<div className={styles.body} data-flx="channel.thread-sidebar-preview.body">
 				<ChannelChatLayout
-					channel={thread}
 					banner={<ThreadStateBanner channel={thread} />}
 					messages={
 						<Messages

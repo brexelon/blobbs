@@ -59,7 +59,9 @@ export async function mapUserToAdminResponse(
 	return {
 		id: user.id.toString(),
 		username: user.username,
-		discriminator: 0,
+		// Zero for people, who are unique by username alone; applications carry a real
+		// one and are unique by (username, discriminator).
+		discriminator: user.discriminator,
 		global_name: user.globalName,
 		bot: user.isBot,
 		system: user.isSystem,

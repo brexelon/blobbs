@@ -625,7 +625,7 @@ export function useTextareaAutocomplete({
 								threshold: matchSorter.rankings.CONTAINS,
 							})
 						: mentionableRoles;
-					const roles = matchedRoles
+					const roles = [...matchedRoles]
 						.sort((a, b) => b.position - a.position)
 						.slice(0, MENTION_RESULT_LIMIT)
 						.map((role) => ({

@@ -14,12 +14,14 @@ import type {
 	SetUserSystemStatusRequest,
 	VerifyUserEmailRequest,
 } from '@fluxer/schema/src/domains/admin/AdminUserSchemas';
+import {BotUsernameType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
 import {types} from 'cassandra-driver';
 import type {ApiContext} from '../../ApiContext';
 import {EMAIL_CLEARABLE_SUSPICIOUS_ACTIVITY_FLAGS} from '../../auth/AuthEmail';
 import {createUserID, type UserID} from '../../BrandedTypes';
 import type {IGuildRepositoryAggregate} from '../../guild/repositories/IGuildRepositoryAggregate';
 import {GuildMemberSearchIndexService} from '../../guild/services/member/GuildMemberSearchIndexService';
+import type {IDiscriminatorService} from '../../infrastructure/DiscriminatorService';
 import type {EntityAssetService, PreparedAssetUpload} from '../../infrastructure/EntityAssetService';
 import {Logger} from '../../Logger';
 import type {User} from '../../models/User';
@@ -33,6 +35,7 @@ interface AdminUserProfileServiceDeps {
 	auditService: AdminAuditService;
 	updatePropagator: AdminUserUpdatePropagator;
 	guildRepository: IGuildRepositoryAggregate;
+	discriminatorService: IDiscriminatorService;
 }
 
 export class AdminUserProfileService {
@@ -221,6 +224,50 @@ export class AdminUserProfileService {
 		};
 	}
 
+	/**
+	 * People are unique by username alone and always carry discriminator 0, so the name is
+	 * folded to lower case and checked against the human namespace.
+	 */
+	private async resolvePersonUsernameChange(
+		user: User,
+		requestedUsername: string,
+	): Promise<{username: string; discriminator: number}> {
+		const parsed = UsernameType.safeParse(requestedUsername);
+		if (!parsed.success) {
+			throw InputValidationError.fromCode('username', ValidationErrorCodes.USERNAME_INVALID_CHARACTERS);
+		}
+		const username = parsed.data;
+		const {users: userRepository} = this.deps.apiContext.services;
+		if (username !== user.username && !(await userRepository.isUsernameAvailable(username))) {
+			throw new TagAlreadyTakenError();
+		}
+		return {username, discriminator: user.discriminator};
+	}
+
+	/**
+	 * Applications keep their casing and spaces, and are unique by (username,
+	 * discriminator) in a namespace of their own. Availability therefore has to go through
+	 * the discriminator service rather than the human username index, which would both
+	 * miss a clash with another application and refuse a name some person happens to hold.
+	 */
+	private async resolveBotUsernameChange(
+		user: User,
+		requestedUsername: string,
+		requestedDiscriminator: number | undefined,
+	): Promise<{username: string; discriminator: number}> {
+		const parsed = BotUsernameType.safeParse(requestedUsername);
+		if (!parsed.success) {
+			throw InputValidationError.fromCode('username', ValidationErrorCodes.USERNAME_INVALID_CHARACTERS);
+		}
+		return this.deps.discriminatorService.resolveUsernameChange({
+			currentUsername: user.username,
+			currentDiscriminator: user.discriminator,
+			newUsername: parsed.data,
+			requestedDiscriminator,
+			user,
+		});
+	}
+
 	async changeUsername(
 		data: ChangeUsernameRequest,
 		adminUserId: UserID,
@@ -238,14 +285,13 @@ export class AdminUserProfileService {
 		if (!user) {
 			throw new UnknownUserError();
 		}
-		const newUsername = data.username.toLowerCase();
-		const isSameUser = newUsername === user.username;
-		if (!isSameUser && !(await userRepository.isUsernameAvailable(newUsername))) {
-			throw new TagAlreadyTakenError();
-		}
+		const resolved = user.isBot
+			? await this.resolveBotUsernameChange(user, data.username, data.discriminator)
+			: await this.resolvePersonUsernameChange(user, data.username);
+		const {username: newUsername, discriminator: newDiscriminator} = resolved;
 		const updatedUser = await userRepository.patchUpsert(
 			userId,
-			{username: newUsername},
+			{username: newUsername, discriminator: newDiscriminator},
 			user.toRow(),
 		);
 		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
@@ -261,10 +307,19 @@ export class AdminUserProfileService {
 			targetId: BigInt(userId),
 			action: 'change_username',
 			auditLogReason,
-			metadata: new Map([
-				['old_username', user.username],
-				['new_username', newUsername],
-			]),
+			metadata: new Map(
+				user.discriminator === newDiscriminator
+					? [
+							['old_username', user.username],
+							['new_username', newUsername],
+						]
+					: [
+							['old_username', user.username],
+							['new_username', newUsername],
+							['old_discriminator', user.discriminator.toString()],
+							['new_discriminator', newDiscriminator.toString()],
+						],
+			),
 		});
 		void this.reindexGuildMembersForUser(updatedUser);
 		return {

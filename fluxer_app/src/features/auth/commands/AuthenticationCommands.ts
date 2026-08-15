@@ -16,6 +16,9 @@ import type {ValueOf} from '@fluxer/constants/src/ValueOf';
 import type {
 	AuthRegistrationPendingApprovalResponse,
 	RegisterRequest,
+	SsoCompleteResponse,
+	SsoStartRequest,
+	SsoStartResponse,
 } from '@fluxer/schema/src/domains/auth/AuthSchemas';
 import type {UserPartial} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import type {AuthenticationResponseJSON, PublicKeyCredentialRequestOptionsJSON} from '@simplewebauthn/browser';
@@ -639,20 +642,19 @@ export async function completeLogin(
 	}
 }
 
-export async function startSso(redirectTo?: string): Promise<{
-	authorization_url: string;
-}> {
-	const response = await http.post<{
-		authorization_url: string;
-	}>(Endpoints.AUTH_SSO_START, {
-		body: {redirect_to: redirectTo},
+export async function startSso({redirectTo}: {redirectTo?: string} = {}): Promise<SsoStartResponse> {
+	// This instance resolves the SSO redirect URI from its own config, so the
+	// client does not offer one.
+	const body: SsoStartRequest = {redirect_to: redirectTo};
+	const response = await http.post<SsoStartResponse>(Endpoints.AUTH_SSO_START, {
+		body,
 		headers: withPlatformHeader(),
 	});
 	return response.body;
 }
 
-export async function completeSso({code, state}: {code: string; state: string}): Promise<TokenResponse> {
-	const response = await http.post<TokenResponse>(Endpoints.AUTH_SSO_COMPLETE, {
+export async function completeSso({code, state}: {code: string; state: string}): Promise<SsoCompleteResponse> {
+	const response = await http.post<SsoCompleteResponse>(Endpoints.AUTH_SSO_COMPLETE, {
 		body: {code, state},
 		headers: withPlatformHeader(),
 	});

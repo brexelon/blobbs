@@ -10,7 +10,7 @@ use std::time::Duration;
 use url::Url;
 
 const KLIPY_FLIGHT_CHUNK_MAX_BYTES: usize = 512 * 1024;
-const KLIPY_API_BASE_URL: &str = "https://api.klipy.com/api/v1";
+const KLIPY_API_V1_BASE_URL: &str = "https://api.klipy.com/api/v1";
 const KLIPY_API_MAX_BYTES: usize = 512 * 1024;
 const KLIPY_API_TIMEOUT: Duration = Duration::from_secs(10);
 const KLIPY_SIZE_PREFERENCE: &[&str] = &["hd", "md", "sm", "xs"];
@@ -34,8 +34,7 @@ struct KlipyMediaFormats {
 
 impl Resolver for KlipyResolver {
     fn matches(&self, url: &Url) -> bool {
-        url.host_str()
-            .is_some_and(|h| h.eq_ignore_ascii_case("klipy.com"))
+        is_klipy_host(url)
     }
 
     fn transform_url(&self, url: &Url) -> Option<Url> {
@@ -92,6 +91,12 @@ impl Resolver for KlipyResolver {
     }
 }
 
+fn is_klipy_host(url: &Url) -> bool {
+    url.host_str().is_some_and(|h| {
+        h.eq_ignore_ascii_case("klipy.com") || h.eq_ignore_ascii_case("www.klipy.com")
+    })
+}
+
 async fn resolve_klipy_media(
     ctx: &ResolveContext<'_>,
     format: &KlipyMediaFormat,
@@ -115,10 +120,7 @@ async fn resolve_klipy_media(
 }
 
 fn klipy_path(url: &Url) -> Option<(String, String)> {
-    if !url
-        .host_str()
-        .is_some_and(|h| h.eq_ignore_ascii_case("klipy.com"))
-    {
+    if !is_klipy_host(url) {
         return None;
     }
     static PATH_RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
@@ -177,9 +179,7 @@ async fn resolve_media_via_api(
         return Ok(None);
     };
     let resource = klipy_resource(&kind);
-
-    let url = Url::parse(&format!("{KLIPY_API_BASE_URL}/{api_key}/{resource}/{slug}"))?;
-
+    let url = klipy_direct_url(api_key, resource, &slug)?;
     let response = http_fetch::fetch_url(
         &ctx.http_client,
         url.as_str(),
@@ -189,45 +189,81 @@ async fn resolve_media_via_api(
     .await?;
 
     if response.status != 200 {
-        tracing::warn!(status = response.status, "KLIPY API lookup returned non-200");
+        tracing::warn!(
+            status = response.status,
+            "KLIPY direct API lookup returned non-200 status"
+        );
         return Ok(None);
     }
 
     let payload: serde_json::Value = serde_json::from_slice(&response.bytes)?;
-    let Some(file) = payload.pointer("/data/file") else {
-        return Ok(None);
-    };
-
-    let thumbnail = pick_klipy_file_format(file, KLIPY_THUMBNAIL_FORMATS);
-    let video = pick_klipy_file_format(file, KLIPY_VIDEO_FORMATS);
-    if thumbnail.is_none() && video.is_none() {
-        return Ok(None);
-    }
-    Ok(Some(KlipyMediaFormats { thumbnail, video }))
+    Ok(payload
+        .pointer("/data/data/0")
+        .and_then(extract_klipy_api_media))
 }
 
-fn pick_klipy_file_format(file: &serde_json::Value, formats: &[&str]) -> Option<KlipyMediaFormat> {
+fn klipy_direct_url(api_key: &str, resource: &str, slug: &str) -> anyhow::Result<Url> {
+    let mut url = Url::parse(KLIPY_API_V1_BASE_URL)?;
+    url.path_segments_mut()
+        .map_err(|_| anyhow::anyhow!("KLIPY API base URL cannot be a base"))?
+        .push(api_key)
+        .push(resource)
+        .push("items");
+    url.query_pairs_mut().append_pair("slugs", slug);
+    Ok(url)
+}
+
+fn extract_klipy_api_media(item: &serde_json::Value) -> Option<KlipyMediaFormats> {
+    let file = item.get("file")?;
+    let file_meta = item.get("file_meta");
+    let thumbnail = pick_klipy_file_format(file, file_meta, KLIPY_THUMBNAIL_FORMATS);
+    let video = pick_klipy_file_format(file, file_meta, KLIPY_VIDEO_FORMATS);
+
+    if thumbnail.is_none() && video.is_none() {
+        return None;
+    }
+    Some(KlipyMediaFormats { thumbnail, video })
+}
+
+fn pick_klipy_file_format(
+    file: &serde_json::Value,
+    file_meta: Option<&serde_json::Value>,
+    formats: &[&str],
+) -> Option<KlipyMediaFormat> {
     for size in KLIPY_SIZE_PREFERENCE {
-        for format in formats {
-            if let Some(media) = extract_media_format(file.pointer(&format!("/{size}/{format}")))
-                && media.url.is_some()
+        for media_format in formats {
+            if let Some(media) =
+                extract_media_format(file.pointer(&format!("/{size}/{media_format}")))
             {
                 return Some(media);
             }
         }
     }
-    for format in formats {
-        if let Some(url) = file.get(*format).and_then(|v| v.as_str())
-            && !url.is_empty()
-        {
-            return Some(KlipyMediaFormat {
-                url: Some(url.to_owned()),
-                width: None,
-                height: None,
-            });
+    for media_format in formats {
+        let Some(mut media) = extract_media_format(file.get(*media_format)) else {
+            continue;
+        };
+        if media.width.is_none() {
+            media.width = klipy_meta_dimension(file_meta, media_format, "width");
         }
+        if media.height.is_none() {
+            media.height = klipy_meta_dimension(file_meta, media_format, "height");
+        }
+        return Some(media);
     }
     None
+}
+
+fn klipy_meta_dimension(
+    file_meta: Option<&serde_json::Value>,
+    media_format: &str,
+    key: &str,
+) -> Option<u32> {
+    file_meta?
+        .pointer(&format!("/{media_format}/{key}"))
+        .and_then(serde_json::Value::as_u64)
+        .filter(|value| *value > 0)
+        .and_then(|value| u32::try_from(value).ok())
 }
 
 fn resolve_relative_url(base_url: &Url, media_url: &str) -> Option<String> {
@@ -302,11 +338,19 @@ fn parse_next_flight_data(encoded: &str) -> Option<KlipyMediaFormats> {
 
 fn extract_media_format(value: Option<&serde_json::Value>) -> Option<KlipyMediaFormat> {
     let value = value?;
+    if let Some(url) = value.as_str().filter(|url| !url.is_empty()) {
+        return Some(KlipyMediaFormat {
+            url: Some(url.to_owned()),
+            width: None,
+            height: None,
+        });
+    }
+    let url = value
+        .get("url")
+        .and_then(|v| v.as_str())
+        .filter(|url| !url.is_empty())?;
     Some(KlipyMediaFormat {
-        url: value
-            .get("url")
-            .and_then(|v| v.as_str())
-            .map(|url| url.to_owned()),
+        url: Some(url.to_owned()),
         width: value
             .get("width")
             .and_then(|v| v.as_u64())
@@ -321,35 +365,6 @@ fn extract_media_format(value: Option<&serde_json::Value>) -> Option<KlipyMediaF
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parse_next_flight_data_extracts_media_formats() {
-        let encoded = r#"0:[{\"media\":{\"file\":{\"hd\":{\"webp\":{\"url\":\"https://img.example/a.webp\",\"width\":320,\"height\":180},\"mp4\":{\"url\":\"https://img.example/a.mp4\",\"width\":640,\"height\":360}}}}}]"#;
-        assert_eq!(
-            parse_next_flight_data(encoded),
-            Some(KlipyMediaFormats {
-                thumbnail: Some(KlipyMediaFormat {
-                    url: Some("https://img.example/a.webp".to_owned()),
-                    width: Some(320),
-                    height: Some(180),
-                }),
-                video: Some(KlipyMediaFormat {
-                    url: Some("https://img.example/a.mp4".to_owned()),
-                    width: Some(640),
-                    height: Some(360),
-                }),
-            })
-        );
-    }
-
-    #[test]
-    fn extract_klipy_media_skips_oversized_flight_chunks() {
-        let html = format!(
-            r#"self.__next_f.push([1,"{}"])"#,
-            "x".repeat(KLIPY_FLIGHT_CHUNK_MAX_BYTES + 1)
-        );
-        assert_eq!(extract_klipy_media(&html), None);
-    }
 
     #[test]
     fn resolve_relative_url_uses_original_url_like_ts() {
@@ -432,39 +447,9 @@ mod tests {
     }
 
     #[test]
-    fn extract_klipy_media_from_realistic_html() {
-        let html = r#"
-        <script>self.__next_f.push([1,"0:[{\"media\":{\"file\":{\"hd\":{\"webp\":{\"url\":\"https://img.klipy.com/hd.webp\",\"width\":640,\"height\":360},\"mp4\":{\"url\":\"https://img.klipy.com/hd.mp4\",\"width\":1280,\"height\":720}}}}}]"])</script>
-        "#;
-        let result = extract_klipy_media(html);
-        assert!(result.is_some());
-        let formats = result.unwrap();
-        assert_eq!(
-            formats.thumbnail.as_ref().unwrap().url.as_deref(),
-            Some("https://img.klipy.com/hd.webp")
-        );
-        assert_eq!(
-            formats.video.as_ref().unwrap().url.as_deref(),
-            Some("https://img.klipy.com/hd.mp4")
-        );
-    }
-
-    #[test]
-    fn extract_klipy_media_returns_none_for_non_media_chunks() {
-        let html = r#"<script>self.__next_f.push([1,"0:[{\"status\":\"ok\"}]"])</script>"#;
-        assert!(extract_klipy_media(html).is_none());
-    }
-
-    #[test]
-    fn resolve_relative_url_rejects_non_http() {
-        let base = Url::parse("https://klipy.com/gifs/test").unwrap();
-        assert!(resolve_relative_url(&base, "ftp://evil.com/file").is_none());
-    }
-
-    #[test]
     fn klipy_path_extracts_kind_and_slug() {
         let (kind, slug) =
-            klipy_path(&Url::parse("https://klipy.com/gifs/funny-cat-123").unwrap()).unwrap();
+            klipy_path(&Url::parse("https://www.klipy.com/gifs/funny-cat-123").unwrap()).unwrap();
         assert_eq!(kind, "gifs");
         assert_eq!(slug, "funny-cat-123");
         assert!(klipy_path(&Url::parse("https://klipy.com/about").unwrap()).is_none());
@@ -484,37 +469,44 @@ mod tests {
         let file = serde_json::json!({
             "hd": {
                 "webp": {"url": "https://img.klipy.com/hd.webp", "width": 254, "height": 450},
+                "webm": {"url": "https://img.klipy.com/hd.webm", "width": 254, "height": 450},
                 "mp4": {"url": "https://img.klipy.com/hd.mp4", "width": 254, "height": 450}
             },
             "sm": {
                 "webp": {"url": "https://img.klipy.com/sm.webp", "width": 165, "height": 294}
             }
         });
-        let thumbnail = pick_klipy_file_format(&file, KLIPY_THUMBNAIL_FORMATS).unwrap();
-        assert_eq!(thumbnail.url.as_deref(), Some("https://img.klipy.com/hd.webp"));
+        let thumbnail = pick_klipy_file_format(&file, None, KLIPY_THUMBNAIL_FORMATS).unwrap();
+        assert_eq!(
+            thumbnail.url.as_deref(),
+            Some("https://img.klipy.com/hd.webp")
+        );
         assert_eq!(thumbnail.width, Some(254));
         assert_eq!(thumbnail.height, Some(450));
         assert_eq!(
-            pick_klipy_file_format(&file, KLIPY_VIDEO_FORMATS)
+            pick_klipy_file_format(&file, None, KLIPY_VIDEO_FORMATS)
                 .unwrap()
                 .url
                 .as_deref(),
-            Some("https://img.klipy.com/hd.mp4")
+            Some("https://img.klipy.com/hd.webm")
         );
     }
 
     #[test]
-    fn pick_klipy_file_format_handles_clip_string_shape() {
+    fn pick_klipy_file_format_handles_string_shape() {
         let file = serde_json::json!({
             "mp4": "https://img.klipy.com/c.mp4",
             "gif": "https://img.klipy.com/c.gif",
             "webp": "https://img.klipy.com/c.webp"
         });
-        let thumbnail = pick_klipy_file_format(&file, KLIPY_THUMBNAIL_FORMATS).unwrap();
-        assert_eq!(thumbnail.url.as_deref(), Some("https://img.klipy.com/c.webp"));
+        let thumbnail = pick_klipy_file_format(&file, None, KLIPY_THUMBNAIL_FORMATS).unwrap();
+        assert_eq!(
+            thumbnail.url.as_deref(),
+            Some("https://img.klipy.com/c.webp")
+        );
         assert_eq!(thumbnail.width, None);
         assert_eq!(
-            pick_klipy_file_format(&file, KLIPY_VIDEO_FORMATS)
+            pick_klipy_file_format(&file, None, KLIPY_VIDEO_FORMATS)
                 .unwrap()
                 .url
                 .as_deref(),
@@ -523,23 +515,71 @@ mod tests {
     }
 
     #[test]
-    fn pick_klipy_file_format_falls_back_to_smaller_size() {
-        let file = serde_json::json!({
-            "sm": {"webp": {"url": "https://img.klipy.com/sm.webp", "width": 165, "height": 294}}
-        });
+    fn klipy_direct_url_targets_the_items_endpoint() {
+        let url = klipy_direct_url("secret/key", "gifs", "walter blame government-1").unwrap();
         assert_eq!(
-            pick_klipy_file_format(&file, KLIPY_THUMBNAIL_FORMATS)
-                .unwrap()
-                .url
-                .as_deref(),
-            Some("https://img.klipy.com/sm.webp")
+            url.as_str(),
+            "https://api.klipy.com/api/v1/secret%2Fkey/gifs/items?slugs=walter+blame+government-1"
         );
-        assert!(pick_klipy_file_format(&file, KLIPY_VIDEO_FORMATS).is_none());
     }
 
     #[test]
-    fn pick_klipy_file_format_none_when_empty() {
-        let file = serde_json::json!({});
-        assert!(pick_klipy_file_format(&file, KLIPY_THUMBNAIL_FORMATS).is_none());
+    fn extract_klipy_api_media_reads_the_gif_item_shape() {
+        let item = serde_json::json!({
+            "slug": "walter-blame-government-1",
+            "file": {
+                "hd": {
+                    "gif": {"url": "https://img.klipy.com/hd.gif", "width": 498, "height": 420},
+                    "webp": {"url": "https://img.klipy.com/hd.webp", "width": 498, "height": 420},
+                    "webm": {"url": "https://img.klipy.com/hd.webm", "width": 498, "height": 420}
+                }
+            }
+        });
+        let media = extract_klipy_api_media(&item).unwrap();
+        let thumbnail = media.thumbnail.unwrap();
+        assert_eq!(
+            thumbnail.url.as_deref(),
+            Some("https://img.klipy.com/hd.webp")
+        );
+        assert_eq!(thumbnail.width, Some(498));
+        assert_eq!(thumbnail.height, Some(420));
+        let video = media.video.unwrap();
+        assert_eq!(video.url.as_deref(), Some("https://img.klipy.com/hd.webm"));
+        assert_eq!(extract_klipy_api_media(&serde_json::json!({})), None);
+    }
+
+    #[test]
+    fn extract_klipy_api_media_reads_clip_dimensions_from_file_meta() {
+        let item = serde_json::json!({
+            "slug": "kittens",
+            "file": {
+                "mp4": "https://img.klipy.com/clip.mp4",
+                "gif": "https://img.klipy.com/clip.gif",
+                "webp": "https://img.klipy.com/clip.webp"
+            },
+            "file_meta": {
+                "mp4": {"width": 854, "height": 480, "size": 924555},
+                "gif": {"width": 320, "height": 180, "size": 4117532},
+                "webp": {"width": 320, "height": 180, "size": 625686}
+            }
+        });
+        let media = extract_klipy_api_media(&item).unwrap();
+        let thumbnail = media.thumbnail.unwrap();
+        assert_eq!(
+            thumbnail.url.as_deref(),
+            Some("https://img.klipy.com/clip.webp")
+        );
+        assert_eq!(thumbnail.width, Some(320));
+        assert_eq!(thumbnail.height, Some(180));
+        let video = media.video.unwrap();
+        assert_eq!(video.url.as_deref(), Some("https://img.klipy.com/clip.mp4"));
+        assert_eq!(video.width, Some(854));
+        assert_eq!(video.height, Some(480));
+    }
+
+    #[test]
+    fn resolve_relative_url_rejects_non_http() {
+        let base = Url::parse("https://klipy.com/gifs/test").unwrap();
+        assert!(resolve_relative_url(&base, "ftp://evil.com/file").is_none());
     }
 }

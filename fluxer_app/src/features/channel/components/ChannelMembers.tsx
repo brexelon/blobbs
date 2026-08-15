@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import Accessibility from '@app/features/accessibility/state/Accessibility';
 import {OutlineFrame} from '@app/features/app/components/layout/OutlineFrame';
 import Authentication from '@app/features/auth/state/Authentication';
 import * as ThreadCommands from '@app/features/channel/commands/ThreadCommands';
 import styles from '@app/features/channel/components/ChannelMembers.module.css';
-import {UserTag} from '@app/features/channel/components/ChannelUserTag';
-import {CompactMemberCustomStatus} from '@app/features/channel/components/CompactMemberCustomStatus';
 import {MemberListContainer} from '@app/features/channel/components/MemberListContainer';
 import {MemberListItem} from '@app/features/channel/components/MemberListItem';
-import memberItemStyles from '@app/features/channel/components/MemberListItem.module.css';
 import {MemberListUnavailableFallback} from '@app/features/channel/components/shared/MemberListUnavailableFallback';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Threads from '@app/features/channel/state/Threads';
-import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
 import type {Guild} from '@app/features/guild/models/Guild';
 import Guilds from '@app/features/guild/state/Guilds';
 import {OFFLINE_DESCRIPTOR, ONLINE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
@@ -41,32 +38,24 @@ import * as MemberListUtils from '@app/features/member/utils/MemberListUtils';
 import * as PermissionUtils from '@app/features/permissions/utils/PermissionUtils';
 import Presence from '@app/features/presence/state/Presence';
 import {openRoleContextMenu, openRoleContextMenuForElement} from '@app/features/ui/action_menu/RoleContextMenu';
-import {BaseAvatar} from '@app/features/ui/components/BaseAvatar';
 import type {ScrollerHandle} from '@app/features/ui/components/Scroller';
 import {getAppZoomFactor} from '@app/features/ui/utils/AppZoomUtils';
 import type {User} from '@app/features/user/models/User';
-import type {CustomStatus} from '@app/features/user/state/CustomStatus';
 import Users from '@app/features/user/state/Users';
-import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
-import Window from '@app/features/window/state/Window';
+import {isOfflineStatus, type StatusType} from '@fluxer/constants/src/StatusConstants';
 import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MEMBER_LIST_RANGE_MAX_SPAN} from '@fluxer/constants/src/GatewayConstants';
-import {GuildFeatures, GuildOperations} from '@fluxer/constants/src/GuildConstants';
-import {MEDIA_PROXY_AVATAR_SIZE_DEFAULT} from '@fluxer/constants/src/MediaProxyAssetSizes';
-import type {StatusType} from '@fluxer/constants/src/StatusConstants';
-import {isOfflineStatus} from '@fluxer/constants/src/StatusConstants';
+import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
 import {useLingui as useLinguiRuntime} from '@lingui/react';
 import {useLingui} from '@lingui/react/macro';
-import {CrownIcon} from '@phosphor-icons/react';
 import clsx from 'clsx';
-import {reaction} from 'mobx';
 import {observer} from 'mobx-react-lite';
-import type {CSSProperties, ReactNode, RefObject, UIEvent} from 'react';
+import type {ReactNode, UIEvent} from 'react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
 const MEMBER_ITEM_HEIGHT = 44;
-const GROUP_HEADER_HEIGHT = 30;
+const GROUP_HEADER_HEIGHT = 32;
 const INITIAL_SUBSCRIPTION_RANGE: [number, number] = [0, MEMBER_LIST_RANGE_MAX_SPAN];
 const INITIAL_RENDER_RANGE: [number, number] = [0, 64];
 const INITIAL_SUBSCRIPTION_RANGES = normalizeMemberListRanges([INITIAL_SUBSCRIPTION_RANGE]);
@@ -76,59 +65,9 @@ const SUBSCRIPTION_BUFFER_ROWS = 12;
 const SUBSCRIPTION_OVERSCAN_PAGES = 0;
 const RENDER_BUFFER_ROWS = 6;
 const AVATAR_DEFER_AFTER_SCROLL_IDLE_MS = 180;
-const MEMBER_LIST_AVATAR_MEDIA_SIZE = MEDIA_PROXY_AVATAR_SIZE_DEFAULT;
-
-type FrozenMemberListRow =
-	| {
-			type: 'skeleton';
-			key: string;
-			rowIndex: number;
-			rowTop: number;
-	  }
-	| {
-			type: 'group';
-			key: string;
-			groupName: string;
-			count: number;
-			rowTop: number;
-	  }
-	| {
-			type: 'member';
-			key: string;
-			userId: string;
-			avatarUrl: string;
-			bot: boolean;
-			customStatus: CustomStatus | null;
-			displayName: string;
-			isCurrentUser: boolean;
-			isOffline: boolean;
-			roleColor?: string;
-			showOwnerCrown: boolean;
-			status: StatusType;
-			system: boolean;
-			userTag: string;
-			rowTop: number;
-	  };
-
-interface FrozenMemberListSnapshot {
-	channelId: string;
-	estimatedContentSize: number;
-	virtualContentHeight: number;
-	rows: Array<FrozenMemberListRow>;
-}
-
-function getFrozenRowStyle(rowTop: number): CSSProperties {
-	return {transform: `translateY(${rowTop}px)`};
-}
-
-function createInitialFrozenMemberListSnapshot(channelId: string): FrozenMemberListSnapshot {
-	return {
-		channelId,
-		estimatedContentSize: 0,
-		virtualContentHeight: 0,
-		rows: [],
-	};
-}
+const MEMBER_LIST_AVATAR_MEDIA_SIZE = 64;
+const INITIAL_LOADING_SKELETON_COUNT = 24;
+const MEMBER_LIST_SKELETON_INDEXES = Array.from({length: INITIAL_LOADING_SKELETON_COUNT}, (_, index) => index);
 
 function getSeededRandom(seed: number): number {
 	const x = Math.sin(seed) * 10000;
@@ -166,191 +105,30 @@ function SkeletonMemberItem({index}: {index: number}) {
 	);
 }
 
-function FrozenMemberListItem({row}: {row: Extract<FrozenMemberListRow, {type: 'member'}>}) {
-	const nameStyle = row.roleColor ? ({['--member-role-color' as string]: row.roleColor} as CSSProperties) : undefined;
+const MemberListLoadingSkeleton = memo(function MemberListLoadingSkeleton() {
 	return (
-		<div
-			className={clsx(memberItemStyles.button, row.isOffline && memberItemStyles.buttonOffline)}
-			aria-hidden="true"
-			data-flx="channel.channel-members.frozen-member-list-item"
-		>
-			<div className={memberItemStyles.grid} data-flx="channel.channel-members.frozen-member-list-item.grid">
-				<span className={memberItemStyles.content} data-flx="channel.channel-members.frozen-member-list-item.content">
-					<div
-						className={memberItemStyles.avatarContainer}
-						data-flx="channel.channel-members.frozen-member-list-item.avatar-container"
-					>
-						<BaseAvatar
-							size={32}
-							avatarUrl={row.avatarUrl}
-							fallbackAvatarUrl={AvatarUtils.getUserAvatarURL({id: row.userId, avatar: null}, false)}
-							status={row.status}
-							showOffline={row.isCurrentUser}
-							userTag={row.userTag}
-							disableStatusTooltip
-							data-flx="channel.channel-members.frozen-member-list-item.avatar"
-						/>
-					</div>
-					<div
-						className={memberItemStyles.userInfoContainer}
-						data-flx="channel.channel-members.frozen-member-list-item.user-info-container"
-					>
-						<div
-							className={memberItemStyles.nameContainer}
-							data-flx="channel.channel-members.frozen-member-list-item.name-container"
-						>
-							<span
-								className={clsx(memberItemStyles.name, row.roleColor && memberItemStyles.nameRoleColored)}
-								style={nameStyle}
-								data-flx="channel.channel-members.frozen-member-list-item.name"
-							>
-								{row.displayName}
-							</span>
-							{row.showOwnerCrown && (
-								<div
-									className={memberItemStyles.ownerIcon}
-									data-flx="channel.channel-members.frozen-member-list-item.owner-icon"
-								>
-									<CrownIcon
-										className={memberItemStyles.crownIcon}
-										aria-hidden="true"
-										data-flx="channel.channel-members.frozen-member-list-item.crown-icon"
-									/>
-								</div>
-							)}
-							{row.bot && (
-								<UserTag
-									className={memberItemStyles.userTag}
-									system={row.system}
-									data-flx="channel.channel-members.frozen-member-list-item.user-tag"
-								/>
-							)}
-						</div>
-						<CompactMemberCustomStatus
-							customStatus={row.customStatus}
-							className={memberItemStyles.memberCustomStatus}
-							data-flx="channel.channel-members.frozen-member-list-item.custom-status"
-						/>
-					</div>
-				</span>
-			</div>
+		<div className={styles.membersList}>
+			{MEMBER_LIST_SKELETON_INDEXES.map((index) => (
+				<SkeletonMemberItem key={`member-loading-skeleton-${index}`} index={index} />
+			))}
 		</div>
 	);
-}
-
-const FrozenMemberListInteractiveItem = observer(function FrozenMemberListInteractiveItem({
-	row,
-	guild,
-	channel,
-}: {
-	row: Extract<FrozenMemberListRow, {type: 'member'}>;
-	guild: Guild;
-	channel: Channel;
-}) {
-	const user = Users.getUser(row.userId);
-	const guildMember = GuildMembers.getMember(guild.id, row.userId);
-	if (!user || !guildMember) {
-		return (
-			<FrozenMemberListItem row={row} data-flx="channel.channel-members.frozen-member-list-interactive-item.fallback" />
-		);
-	}
-	return (
-		<MemberListItem
-			user={user}
-			channelId={channel.id}
-			guildId={guild.id}
-			guildMember={guildMember}
-			status={row.status}
-			customStatus={row.customStatus}
-			isOwner={guild.isOwner(user.id)}
-			roleColor={row.roleColor}
-			displayName={row.displayName}
-			disableBackdrop={true}
-			avatarMediaSize={MEMBER_LIST_AVATAR_MEDIA_SIZE}
-			data-flx="channel.channel-members.frozen-member-list-interactive-item.member-list-item"
-		/>
-	);
 });
 
-interface FrozenMemberListProps {
-	snapshot: FrozenMemberListSnapshot;
-	scrollerRef: RefObject<ScrollerHandle | null>;
-	guild: Guild;
-	channel: Channel;
-	interactive?: boolean;
+interface MemberListGroupHeaderContentProps {
+	name: string;
+	count: number;
 }
 
-const FrozenMemberList = memo(function FrozenMemberList({
-	snapshot,
-	scrollerRef,
-	guild,
-	channel,
-	interactive = false,
-}: FrozenMemberListProps) {
+function MemberListGroupHeaderContent({name, count}: MemberListGroupHeaderContentProps) {
 	return (
-		<MemberListContainer
-			channelId={snapshot.channelId}
-			scrollerRef={scrollerRef}
-			estimatedContentSize={snapshot.estimatedContentSize}
-			data-flx="channel.channel-members.frozen-member-list.member-list-container"
-		>
-			<div
-				className={styles.virtualListContent}
-				style={{height: `${Math.max(0, snapshot.virtualContentHeight)}px`}}
-				data-flx="channel.channel-members.frozen-member-list.virtual-list-content"
-			>
-				{snapshot.rows.map((row) => (
-					<div
-						key={row.key}
-						className={clsx(styles.virtualRow, row.type === 'group' ? styles.virtualGroupRow : styles.virtualMemberRow)}
-						style={getFrozenRowStyle(row.rowTop)}
-						data-flx="channel.channel-members.frozen-member-list.virtual-row"
-					>
-						{row.type === 'skeleton' ? (
-							<SkeletonMemberItem
-								index={row.rowIndex}
-								data-flx="channel.channel-members.frozen-member-list.skeleton-member-item"
-							/>
-						) : row.type === 'group' ? (
-							<>
-								<span
-									className={styles.virtualGroupLabel}
-									data-flx="channel.channel-members.frozen-member-list.group-label"
-								>
-									{row.groupName}
-								</span>
-								<span
-									className={styles.virtualGroupSeparator}
-									data-flx="channel.channel-members.frozen-member-list.group-separator"
-								>
-									{'\u2014'}
-								</span>
-								<span
-									className={styles.virtualGroupCount}
-									data-flx="channel.channel-members.frozen-member-list.group-count"
-								>
-									{row.count}
-								</span>
-							</>
-						) : interactive ? (
-							<FrozenMemberListInteractiveItem
-								row={row}
-								guild={guild}
-								channel={channel}
-								data-flx="channel.channel-members.frozen-member-list.frozen-member-list-interactive-item"
-							/>
-						) : (
-							<FrozenMemberListItem
-								row={row}
-								data-flx="channel.channel-members.frozen-member-list.frozen-member-list-item"
-							/>
-						)}
-					</div>
-				))}
-			</div>
-		</MemberListContainer>
+		<>
+			<span className={styles.groupHeaderLabel}>{name}</span>
+			<span className={styles.groupHeaderSeparator}>{'—'}</span>
+			<span className={styles.groupHeaderCount}>{count}</span>
+		</>
 	);
-});
+}
 
 interface GroupDMMemberListGroupProps {
 	group: GroupDMMemberGroup;
@@ -361,7 +139,7 @@ interface GroupDMMemberListGroupProps {
 const GroupDMMemberListGroup = observer(({group, channelId, ownerId}: GroupDMMemberListGroupProps) => (
 	<div className={styles.groupContainer} data-flx="channel.channel-members.group-dm-member-list-group.group-container">
 		<div className={styles.groupHeader} data-flx="channel.channel-members.group-dm-member-list-group.group-header">
-			{group.displayName} {'\u2014'} {group.count}
+			<MemberListGroupHeaderContent name={group.displayName} count={group.count} />
 		</div>
 		<div className={styles.membersList} data-flx="channel.channel-members.group-dm-member-list-group.members-list">
 			{group.users.map((user) => {
@@ -397,8 +175,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	const avatarDeferDeadlineRef = useRef(0);
 	const pendingScrollMetricsRef = useRef<{scrollTop: number; clientHeight: number} | null>(null);
 	const scrollerRef = useRef<ScrollerHandle | null>(null);
-	const frozenSnapshotRef = useRef<FrozenMemberListSnapshot | null>(null);
-	const wasPausedRef = useRef(false);
 	const [renderWindowRanges, setRenderWindowRanges] = useState<NormalizedMemberListRanges>(INITIAL_RENDER_RANGES);
 	const [deferAvatarLoad, setDeferAvatarLoad] = useState(false);
 	const memberListIdentityKey = MemberSidebar.getListIdentityKey(guild.id, channel.id);
@@ -406,22 +182,15 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	const currentUserId = Authentication.currentUserId;
 	const lacksMemberViewPermission =
 		currentUserId != null && !PermissionUtils.can(Permissions.VIEW_CHANNEL_MEMBERS, currentUserId, channel.toJSON());
-	const {
-		subscribe,
-		forceSubscribe,
-		isPaused: isSubscriptionPaused,
-	} = useMemberListSubscription({
+	const {subscribe} = useMemberListSubscription({
 		guildId: guild.id,
 		channelId: channel.id,
 		enabled: !memberListUpdatesDisabled && !lacksMemberViewPermission,
 	});
-	const initialFrozenSnapshot = useMemo(
-		() => createInitialFrozenMemberListSnapshot(memberListIdentityKey),
-		[memberListIdentityKey],
-	);
-	const memberListState = isSubscriptionPaused ? undefined : MemberSidebar.getList(guild.id, channel.id);
+	const memberListState = MemberSidebar.getList(guild.id, channel.id);
 	const memberCount = memberListState?.memberCount ?? 0;
 	const groups = memberListState?.groups ?? [];
+	const zoomLevel = Accessibility.zoomLevel;
 	const layouts = useMemo(() => buildMemberListLayout(groups), [groups]);
 	const groupById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups]);
 	const totalRows = useMemo(() => {
@@ -441,7 +210,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 						headerHeight: scaledGroupHeaderHeight,
 					})
 				: null,
-		[layouts, totalRows, scaledMemberItemHeight, scaledGroupHeaderHeight],
+		[layouts, totalRows, scaledMemberItemHeight, scaledGroupHeaderHeight, zoomLevel],
 	);
 	const contentHeight = useMemo(
 		() => (rowOffsets != null ? rowOffsets[rowOffsets.length - 1]! : Math.max(0, totalRows * scaledMemberItemHeight)),
@@ -459,17 +228,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		[memberListState?.hasReceivedInitialPayload, renderWindowRanges, subscribedRanges, totalRows],
 	);
 	const {isInitialLoading, renderRanges} = viewportModel;
-	const hasLoadedVisibleMembers =
-		!isSubscriptionPaused &&
-		memberListState != null &&
-		MemberSidebar.areItemsLoadedForRanges(guild.id, channel.id, subscriptionRangesRef.current);
-	const resyncFrozenSnapshot =
-		frozenSnapshotRef.current?.channelId === memberListIdentityKey ? frozenSnapshotRef.current : null;
-	const shouldShowResyncFrozenList =
-		!isSubscriptionPaused &&
-		!hasLoadedVisibleMembers &&
-		resyncFrozenSnapshot != null &&
-		resyncFrozenSnapshot.rows.some((row) => row.type === 'member');
 	const getGroupName = useCallback(
 		(groupId: string) => {
 			if (groupId === 'online') {
@@ -484,9 +242,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 	);
 	const commitRangeUpdate = useCallback(
 		(scrollTop: number, clientHeight: number) => {
-			if (isSubscriptionPaused) {
-				return;
-			}
 			const nextSubscriptionRanges = buildMemberListRangeWindow({
 				scrollTop,
 				clientHeight,
@@ -513,7 +268,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				subscribe(nextSubscriptionRanges);
 			}
 		},
-		[isSubscriptionPaused, subscribe, totalRows, rowOffsets, scaledMemberItemHeight],
+		[subscribe, totalRows, rowOffsets, scaledMemberItemHeight, zoomLevel],
 	);
 	const finishAvatarLoadingDeferralAfterIdle = useCallback(() => {
 		avatarDeferTimerRef.current = null;
@@ -525,16 +280,17 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		setDeferAvatarLoad(false);
 	}, []);
 	const markAvatarLoadingDeferred = useCallback(() => {
-		setDeferAvatarLoad(true);
-		avatarDeferDeadlineRef.current = performance.now() + AVATAR_DEFER_AFTER_SCROLL_IDLE_MS;
-		if (avatarDeferTimerRef.current != null) {
-			window.clearTimeout(avatarDeferTimerRef.current);
+		if (!deferAvatarLoad) {
+			setDeferAvatarLoad(true);
 		}
-		avatarDeferTimerRef.current = window.setTimeout(
-			finishAvatarLoadingDeferralAfterIdle,
-			AVATAR_DEFER_AFTER_SCROLL_IDLE_MS,
-		);
-	}, [finishAvatarLoadingDeferralAfterIdle]);
+		avatarDeferDeadlineRef.current = performance.now() + AVATAR_DEFER_AFTER_SCROLL_IDLE_MS;
+		if (avatarDeferTimerRef.current == null) {
+			avatarDeferTimerRef.current = window.setTimeout(
+				finishAvatarLoadingDeferralAfterIdle,
+				AVATAR_DEFER_AFTER_SCROLL_IDLE_MS,
+			);
+		}
+	}, [deferAvatarLoad, finishAvatarLoadingDeferralAfterIdle]);
 	const flushScrollRangeUpdate = useCallback(() => {
 		scrollFrameRef.current = null;
 		const metrics = pendingScrollMetricsRef.current;
@@ -561,45 +317,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		}
 		scheduleRangeUpdate(scrollerState.scrollTop, scrollerState.offsetHeight);
 	}, [scheduleRangeUpdate]);
-	const refreshVisibleMemberList = useCallback(
-		(options?: {force?: boolean}) => {
-			const scrollerState = scrollerRef.current?.getScrollerState();
-			if (!scrollerState) {
-				forceSubscribe(
-					subscriptionRangesRef.current.length > 0 ? subscriptionRangesRef.current : INITIAL_SUBSCRIPTION_RANGES,
-				);
-				return;
-			}
-			const scrollTop = scrollerState.scrollTop;
-			const clientHeight = scrollerState.offsetHeight;
-			const nextSubscriptionRanges = buildMemberListRangeWindow({
-				scrollTop,
-				clientHeight,
-				rowHeight: scaledMemberItemHeight,
-				rowOffsets,
-				bufferRows: SUBSCRIPTION_BUFFER_ROWS,
-				overscanPages: SUBSCRIPTION_OVERSCAN_PAGES,
-				totalRows: totalRows > 0 ? totalRows : undefined,
-			});
-			const nextRenderRanges = buildMemberListRenderWindow({
-				scrollTop,
-				clientHeight,
-				rowHeight: scaledMemberItemHeight,
-				rowOffsets,
-				bufferRows: RENDER_BUFFER_ROWS,
-				totalRows: totalRows > 0 ? totalRows : undefined,
-			});
-			renderRangesRef.current = nextRenderRanges;
-			setRenderWindowRanges(nextRenderRanges);
-			subscriptionRangesRef.current = nextSubscriptionRanges;
-			if (options?.force) {
-				forceSubscribe(nextSubscriptionRanges);
-				return;
-			}
-			subscribe(nextSubscriptionRanges);
-		},
-		[forceSubscribe, rowOffsets, scaledMemberItemHeight, subscribe, totalRows],
-	);
 	const handleScroll = useCallback(
 		(event: UIEvent<HTMLDivElement>) => {
 			const target = event.currentTarget;
@@ -612,6 +329,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		scheduleRangeUpdateFromScroller();
 	}, [scheduleRangeUpdateFromScroller]);
 	useEffect(() => {
+		setDeferAvatarLoad(false);
 		const initialSubscriptionRanges = INITIAL_SUBSCRIPTION_RANGES;
 		const initialRenderRanges = INITIAL_RENDER_RANGES;
 		subscriptionRangesRef.current = initialSubscriptionRanges;
@@ -619,64 +337,10 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		setRenderWindowRanges(initialRenderRanges);
 	}, [memberListIdentityKey, guild.id]);
 	useEffect(() => {
-		if (isSubscriptionPaused) {
-			wasPausedRef.current = true;
-			return;
-		}
-		if (wasPausedRef.current) {
-			wasPausedRef.current = false;
-			subscriptionRangesRef.current = INITIAL_SUBSCRIPTION_RANGES;
-			renderRangesRef.current = INITIAL_RENDER_RANGES;
-			setRenderWindowRanges(INITIAL_RENDER_RANGES);
-		}
-		let innerFrame: number | null = null;
-		const frame = window.requestAnimationFrame(() => {
-			innerFrame = window.requestAnimationFrame(() => {
-				refreshVisibleMemberList({force: true});
-			});
-		});
+		scheduleRangeUpdateFromScroller();
+	}, [scheduleRangeUpdateFromScroller, totalRows]);
+	useEffect(() => {
 		return () => {
-			window.cancelAnimationFrame(frame);
-			if (innerFrame != null) {
-				window.cancelAnimationFrame(innerFrame);
-			}
-		};
-	}, [isSubscriptionPaused, refreshVisibleMemberList, totalRows]);
-	useEffect(() => {
-		return reaction(
-			() => Window.visible,
-			(active) => {
-				if (!active || isSubscriptionPaused) {
-					return;
-				}
-				MemberSidebar.flushPendingListUpdates();
-				window.requestAnimationFrame(() => {
-					refreshVisibleMemberList({force: true});
-				});
-			},
-		);
-	}, [isSubscriptionPaused, refreshVisibleMemberList]);
-	useEffect(() => {
-		return reaction(
-			() => GatewayConnection.resumeGeneration,
-			() => {
-				if (isSubscriptionPaused) {
-					return;
-				}
-				MemberSidebar.flushPendingListUpdates();
-				refreshVisibleMemberList({force: true});
-			},
-		);
-	}, [isSubscriptionPaused, refreshVisibleMemberList]);
-	useEffect(() => {
-		setDeferAvatarLoad(false);
-		avatarDeferDeadlineRef.current = 0;
-		if (avatarDeferTimerRef.current != null) {
-			window.clearTimeout(avatarDeferTimerRef.current);
-			avatarDeferTimerRef.current = null;
-		}
-		return () => {
-			setDeferAvatarLoad(false);
 			if (scrollFrameRef.current != null) {
 				window.cancelAnimationFrame(scrollFrameRef.current);
 				scrollFrameRef.current = null;
@@ -714,31 +378,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			</MemberListContainer>
 		);
 	}
-	const currentFrozenSnapshot =
-		frozenSnapshotRef.current?.channelId === memberListIdentityKey ? frozenSnapshotRef.current : initialFrozenSnapshot;
-	if (isSubscriptionPaused) {
-		return (
-			<FrozenMemberList
-				snapshot={currentFrozenSnapshot}
-				scrollerRef={scrollerRef}
-				guild={guild}
-				channel={channel}
-				data-flx="channel.channel-members.lazy-member-list.frozen-member-list"
-			/>
-		);
-	}
-	if (shouldShowResyncFrozenList && resyncFrozenSnapshot != null) {
-		return (
-			<FrozenMemberList
-				snapshot={resyncFrozenSnapshot}
-				scrollerRef={scrollerRef}
-				guild={guild}
-				channel={channel}
-				interactive
-				data-flx="channel.channel-members.lazy-member-list.frozen-member-list--2"
-			/>
-		);
-	}
 	if (isInitialLoading || !memberListState) {
 		return (
 			<MemberListContainer
@@ -746,14 +385,11 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				identityKey={memberListIdentityKey}
 				data-flx="channel.channel-members.lazy-member-list.member-list-container--3"
 			>
-				{null}
+				<MemberListLoadingSkeleton />
 			</MemberListContainer>
 		);
 	}
 	const virtualRows: Array<ReactNode> = [];
-	const frozenRows: Array<FrozenMemberListRow> = [];
-	const virtualContentHeight = Math.max(0, totalRows * scaledMemberItemHeight);
-	const hideOwnerCrown = guild.features.has(GuildFeatures.HIDE_OWNER_CROWN);
 	for (const [rangeStart, rangeEnd] of renderRanges) {
 		const firstRow = Math.max(0, rangeStart);
 		const lastRow = totalRows > 0 ? Math.min(rangeEnd, totalRows - 1) : -1;
@@ -763,12 +399,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			if (layouts.length === 0) {
 				const item = memberListState.items.get(rowIndex);
 				if (!item) {
-					frozenRows.push({
-						type: 'skeleton',
-						key: `member-skeleton-${rowIndex}`,
-						rowIndex,
-						rowTop,
-					});
 					virtualRows.push(
 						<div
 							key={`member-skeleton-${rowIndex}`}
@@ -788,7 +418,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				if (!member) {
 					continue;
 				}
-				const user = Users.getUser(member.user.id) ?? member.user;
+				const user = member.user;
 				const displayName = member.nick ?? NicknameUtils.getNickname(user, guild.id);
 				const status = resolveMemberListPresence({guildId: guild.id, channelId: channel.id, userId: user.id});
 				const customStatus = resolveMemberListCustomStatus({
@@ -797,30 +427,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 					userId: user.id,
 				});
 				const roleColor = member.getColorString?.() ?? undefined;
-				frozenRows.push({
-					type: 'member',
-					key: `member-${rowIndex}-${user.id}`,
-					userId: user.id,
-					avatarUrl: AvatarUtils.getGuildMemberDisplayAvatarURL({
-						guildId: guild.id,
-						user,
-						memberAvatar: member.avatar,
-						avatarUnset: member.isAvatarUnset(),
-						animated: false,
-						size: MEMBER_LIST_AVATAR_MEDIA_SIZE,
-					}),
-					bot: user.bot,
-					customStatus,
-					displayName,
-					isCurrentUser: user.id === currentUserId,
-					isOffline: user.id !== currentUserId && isOfflineStatus(status),
-					roleColor,
-					showOwnerCrown: guild.isOwner(user.id) && !hideOwnerCrown,
-					status,
-					system: user.system,
-					userTag: user.tag,
-					rowTop,
-				});
 				virtualRows.push(
 					<div
 						key={`member-${rowIndex}-${user.id}`}
@@ -856,35 +462,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				const group = groupById.get(layout.id) ?? {id: layout.id, count: layout.count};
 				const role = group.id === 'online' || group.id === 'offline' ? null : (guild.getRole(group.id) ?? null);
 				const groupName = getGroupName(group.id);
-				const groupRowContent = (
-					<>
-						<span
-							className={styles.virtualGroupLabel}
-							data-flx="channel.channel-members.lazy-member-list.virtual-row.group-label"
-						>
-							{groupName}
-						</span>
-						<span
-							className={styles.virtualGroupSeparator}
-							data-flx="channel.channel-members.lazy-member-list.virtual-row.group-separator"
-						>
-							{'\u2014'}
-						</span>
-						<span
-							className={styles.virtualGroupCount}
-							data-flx="channel.channel-members.lazy-member-list.virtual-row.group-count"
-						>
-							{group.count}
-						</span>
-					</>
-				);
-				frozenRows.push({
-					type: 'group',
-					key: `group-${rowIndex}-${group.id}`,
-					groupName,
-					count: group.count,
-					rowTop,
-				});
+				const groupRowContent = <MemberListGroupHeaderContent name={groupName} count={group.count} />;
 				if (role) {
 					virtualRows.push(
 						<div
@@ -922,12 +500,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			}
 			const item = memberListState.items.get(rowIndex);
 			if (!item) {
-				frozenRows.push({
-					type: 'skeleton',
-					key: `member-skeleton-${rowIndex}`,
-					rowIndex,
-					rowTop,
-				});
 				virtualRows.push(
 					<div
 						key={`member-skeleton-${rowIndex}`}
@@ -947,7 +519,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			if (!member) {
 				continue;
 			}
-			const user = Users.getUser(member.user.id) ?? member.user;
+			const user = member.user;
 			const displayName = member.nick ?? NicknameUtils.getNickname(user, guild.id);
 			const status = resolveMemberListPresence({guildId: guild.id, channelId: channel.id, userId: user.id});
 			const customStatus = resolveMemberListCustomStatus({
@@ -956,30 +528,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 				userId: user.id,
 			});
 			const roleColor = member.getColorString?.() ?? undefined;
-			frozenRows.push({
-				type: 'member',
-				key: `member-${rowIndex}-${user.id}`,
-				userId: user.id,
-				avatarUrl: AvatarUtils.getGuildMemberDisplayAvatarURL({
-					guildId: guild.id,
-					user,
-					memberAvatar: member.avatar,
-					avatarUnset: member.isAvatarUnset(),
-					animated: false,
-					size: MEMBER_LIST_AVATAR_MEDIA_SIZE,
-				}),
-				bot: user.bot,
-				customStatus,
-				displayName,
-				isCurrentUser: user.id === currentUserId,
-				isOffline: user.id !== currentUserId && isOfflineStatus(status),
-				roleColor,
-				showOwnerCrown: guild.isOwner(user.id) && !hideOwnerCrown,
-				status,
-				system: user.system,
-				userTag: user.tag,
-				rowTop,
-			});
 			virtualRows.push(
 				<div
 					key={`member-${rowIndex}-${user.id}`}
@@ -1007,14 +555,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 			);
 		}
 	}
-	if (MemberSidebar.areItemsLoadedForRanges(guild.id, channel.id, subscriptionRangesRef.current)) {
-		frozenSnapshotRef.current = {
-			channelId: memberListIdentityKey,
-			estimatedContentSize: contentHeight,
-			virtualContentHeight,
-			rows: frozenRows,
-		};
-	}
 	return (
 		<MemberListContainer
 			channelId={channel.id}
@@ -1027,7 +567,7 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		>
 			<div
 				className={styles.virtualListContent}
-				style={{height: `${virtualContentHeight}px`}}
+				style={{height: `${contentHeight}px`}}
 				data-flx="channel.channel-members.lazy-member-list.virtual-list-content"
 			>
 				{virtualRows}
@@ -1035,11 +575,6 @@ const LazyMemberList = observer(function LazyMemberList({guild, channel}: LazyMe
 		</MemberListContainer>
 	);
 });
-
-interface ChannelMembersProps {
-	guild?: Guild | null;
-	channel: Channel;
-}
 
 interface ThreadMemberRow {
 	user: User;
@@ -1192,6 +727,11 @@ const ThreadMembersList = observer(function ThreadMembersList({channel}: {channe
 		</OutlineFrame>
 	);
 });
+
+interface ChannelMembersProps {
+	guild?: Guild | null;
+	channel: Channel;
+}
 
 export const ChannelMembers = observer(function ChannelMembers({guild = null, channel}: ChannelMembersProps) {
 	useLinguiRuntime();

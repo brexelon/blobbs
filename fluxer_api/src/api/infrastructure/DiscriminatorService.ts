@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {randomInt} from 'node:crypto';
+import {createHash, randomInt} from 'node:crypto';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import {NON_SELF_HOSTED_RESERVED_DISCRIMINATORS} from '@fluxer/constants/src/DiscriminatorConstants';
 import {BadRequestError} from '@fluxer/errors/src/domains/core/BadRequestError';
@@ -36,6 +36,28 @@ interface ResolveUsernameChangeParams {
 interface ResolveUsernameChangeResult {
 	username: string;
 	discriminator: number;
+}
+
+/** Mirrors the cache layer's own lock key rule; see {@link discriminatorLockKey}. */
+const LOCK_KEY_SAFE_REGEX = /^[a-zA-Z0-9:_-]+$/;
+
+/**
+ * Lock keys accept only `[a-zA-Z0-9:_-]`, and an application username may contain
+ * spaces, so a name that does not fit is hashed into the key instead of embedded. The
+ * cache layer throws on an invalid key, which the caller can only read as "lock busy",
+ * so an unencoded space would spin out the retry window and then report the username as
+ * unavailable.
+ *
+ * Names that already fit keep their existing key, so no in-flight lock changes identity
+ * on deploy. Two names sharing a digest would share a lock and nothing else, costing
+ * contention rather than correctness.
+ */
+export function discriminatorLockKey(usernameLower: string): string {
+	const key = `discrim-lock:${usernameLower}`;
+	if (LOCK_KEY_SAFE_REGEX.test(key)) {
+		return key;
+	}
+	return `discrim-lock:h:${createHash('sha256').update(usernameLower).digest('hex').slice(0, 32)}`;
 }
 
 export class UsernameNotAvailableError extends BadRequestError {
@@ -90,7 +112,7 @@ export class DiscriminatorService implements IDiscriminatorService {
 	async generateDiscriminator(params: GenerateDiscriminatorParams): Promise<GenerateDiscriminatorResult> {
 		const {username, requestedDiscriminator, user} = params;
 		const usernameLower = username.toLowerCase();
-		const lockKey = `discrim-lock:${usernameLower}`;
+		const lockKey = discriminatorLockKey(usernameLower);
 		const lockToken = await this.acquireLockWithRetry(lockKey);
 		if (!lockToken) {
 			return {discriminator: -1, available: false};
@@ -118,7 +140,7 @@ export class DiscriminatorService implements IDiscriminatorService {
 
 	async isDiscriminatorAvailableForUsername(username: string, discriminator: number): Promise<boolean> {
 		const usernameLower = username.toLowerCase();
-		const lockKey = `discrim-lock:${usernameLower}`;
+		const lockKey = discriminatorLockKey(usernameLower);
 		const lockToken = await this.acquireLockWithRetry(lockKey);
 		if (!lockToken) {
 			return false;

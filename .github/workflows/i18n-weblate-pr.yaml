@@ -66,7 +66,7 @@ jobs:
       - name: Commit generated artifacts
         run: |
           set -euo pipefail
-          if [[ -z "$(git status --porcelain -- fluxer_app/src/features/i18n/locales packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n)" ]]; then
+          if [[ -z "$(git status --porcelain -- fluxer_app/src/features/i18n/locales packages/i18n/marketing packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n)" ]]; then
             echo "No generated catalog changes."
             exit 0
           fi

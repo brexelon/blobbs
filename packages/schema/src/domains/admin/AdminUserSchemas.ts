@@ -18,7 +18,7 @@ import {
 	SnowflakeStringType,
 	SnowflakeType,
 } from '@fluxer/schema/src/primitives/SchemaPrimitives';
-import {EmailType, UsernameType} from '@fluxer/schema/src/primitives/UserValidators';
+import {EmailType} from '@fluxer/schema/src/primitives/UserValidators';
 import {z} from 'zod';
 
 export const UserAdminResponseSchema = z.object({
@@ -301,8 +301,14 @@ export type SendPasswordResetRequest = z.infer<typeof SendPasswordResetRequest>;
 
 export const ChangeUsernameRequest = z.object({
 	user_id: SnowflakeType.describe('ID of the user to change username for'),
-	username: UsernameType.describe('New username for the user'),
-	discriminator: Int32Type.optional().describe('Legacy discriminator value'),
+	// Carried raw rather than as UsernameType: applications follow the bot username
+	// rules, which permit casing and spaces that UsernameType folds away, and the target
+	// account is not known until the request is handled. Validated there against the
+	// rules for whichever kind of account it names.
+	username: createStringType(1, 32).describe(
+		'New username for the user. Validated against the username rules for the target account: applications may use mixed case and spaces, people may not.',
+	),
+	discriminator: Int32Type.optional().describe('Discriminator to request. Applications only; people always carry 0.'),
 });
 
 export type ChangeUsernameRequest = z.infer<typeof ChangeUsernameRequest>;
@@ -377,7 +383,7 @@ export type SetUserAclsRequest = z.infer<typeof SetUserAclsRequest>;
 
 export const SetUserTraitsRequest = z.object({
 	user_id: SnowflakeType.describe('ID of the user to set traits for'),
-	traits: z.array(createStringType(1, 64)).max(100).describe('List of traits to assign to the user'),
+	traits: z.array(createStringType(1, 128)).max(100).describe('List of traits to assign to the user'),
 });
 
 export type SetUserTraitsRequest = z.infer<typeof SetUserTraitsRequest>;

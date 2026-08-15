@@ -103,6 +103,81 @@ map_from_ids_test() ->
         #{1 => true, 2 => true}, presence_broadcast_subscriptions:map_from_ids([1, 2])
     ).
 
+%% Accepting a friend request adds a friend with nothing buffered for them, so their
+%% cached presence is the only thing that tells the client they are online. Without it
+%% the friend rendered as offline until the next identify.
+new_friend_receives_cached_presence_test() ->
+    maybe_start_presence_bus(),
+    maybe_start_presence_cache(),
+    seed_visible_presence(2),
+    drain_mailbox(),
+    State = friend_sync_base_state(),
+    _ = presence_broadcast_subscriptions:sync_friend_subscriptions([2], [], State),
+    ?assertEqual({ok, <<"online">>}, await_presence_status(2)).
+
+%% The counterpart: an id reported as flushed already had its presence delivered from the
+%% pending buffer, so the cached copy is deliberately not sent again.
+flushed_friend_does_not_receive_cached_presence_test() ->
+    maybe_start_presence_bus(),
+    maybe_start_presence_cache(),
+    seed_visible_presence(3),
+    drain_mailbox(),
+    State = friend_sync_base_state(),
+    _ = presence_broadcast_subscriptions:sync_friend_subscriptions([3], [3], State),
+    ?assertEqual(timeout, await_presence_status(3)).
+
+%% The cache write is asynchronous, so wait for it to be readable before relying on it.
+seed_visible_presence(UserId) ->
+    presence_cache:put(UserId, online_presence(UserId)),
+    ?assertEqual(ok, wait_for_visible_presence(UserId, 100)).
+
+wait_for_visible_presence(_UserId, 0) ->
+    timeout;
+wait_for_visible_presence(UserId, Attempts) ->
+    case presence_cache_safe:get_visible(UserId) of
+        {ok, _} ->
+            ok;
+        not_found ->
+            timer:sleep(10),
+            wait_for_visible_presence(UserId, Attempts - 1)
+    end.
+
+friend_sync_base_state() ->
+    #{
+        user_id => 1,
+        is_bot => false,
+        sessions => #{<<"s1">> => #{pid => self()}},
+        user_data => #{},
+        subscriptions => #{},
+        friends => #{},
+        group_dm_recipients => #{}
+    }.
+
+online_presence(UserId) ->
+    #{
+        <<"user">> => #{<<"id">> => integer_to_binary(UserId)},
+        <<"status">> => <<"online">>,
+        <<"mobile">> => false,
+        <<"afk">> => false,
+        <<"custom_status">> => null
+    }.
+
+await_presence_status(UserId) ->
+    Expected = integer_to_binary(UserId),
+    receive
+        {'$gen_cast', {dispatch, presence_update, #{<<"user">> := #{<<"id">> := Expected}} = P}} ->
+            {ok, maps:get(<<"status">>, P, undefined)}
+    after 1000 ->
+        timeout
+    end.
+
+drain_mailbox() ->
+    receive
+        _ -> drain_mailbox()
+    after 0 ->
+        ok
+    end.
+
 maybe_start_presence_bus() ->
     case whereis(presence_bus) of
         undefined -> start_presence_bus();

@@ -170,11 +170,12 @@ export function getPendingSsoRedirectTo(): string | undefined {
 
 export async function startSsoLogin({redirectTo}: {redirectTo?: string}): Promise<{
 	authorizationUrl: string;
+	redirectUri: string;
 }> {
 	const safeRedirectTo = safeRedirectTarget(redirectTo);
-	const result = await AuthenticationCommands.startSso(safeRedirectTo ?? undefined);
+	const result = await AuthenticationCommands.startSso({redirectTo: safeRedirectTo ?? undefined});
 	storeSsoRedirectTo(safeRedirectTo ?? undefined);
-	return {authorizationUrl: result.authorization_url};
+	return {authorizationUrl: result.authorization_url, redirectUri: result.redirect_uri};
 }
 
 export async function completeSsoLogin({code, state}: {code: string; state: string}): Promise<LoginSuccessPayload> {

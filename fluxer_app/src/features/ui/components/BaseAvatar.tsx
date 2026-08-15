@@ -6,6 +6,7 @@ import {useAnimatedMediaPlaybackAllowed} from '@app/features/app/hooks/useAnimat
 import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import {type AvatarStatusLayout, getAvatarStatusLayout} from '@app/features/ui/components/AvatarStatusLayout';
 import styles from '@app/features/ui/components/BaseAvatar.module.css';
+import {TYPING_DOT_GAP_RATIO, TYPING_DOT_SIZE_RATIO} from '@app/features/ui/constants/TypingConstants';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import type {StatusType} from '@fluxer/constants/src/StatusConstants';
@@ -26,8 +27,6 @@ const STATUS_DESCRIPTOR = msg({
 	message: '{effectiveStatusLabel} status',
 	comment: 'Accessible label for the avatar status badge; placeholder is the localized status name.',
 });
-const TYPING_DOT_GAP_RATIO = 0.12;
-const TYPING_DOT_SIZE_RATIO = 0.25;
 const DEFAULT_CUSTOM_STATUS_BADGE_SCALE = 1.25;
 const DEFAULT_CUSTOM_STATUS_BADGE_CUTOUT_PADDING_SCALE = 1.2;
 const STATUS_TRANSITION_DURATION_MS = 160;
@@ -49,7 +48,7 @@ interface AvatarStatusBox {
 	right: number;
 	bottom: number;
 	radius: number;
-	cutoutPadding?: number;
+	cutoutPadding: number;
 }
 
 const SVG_MASK_URL_CACHE = new Map<string, string>();
@@ -178,13 +177,9 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 		const [hasPrimaryFailed, setHasPrimaryFailed] = useState(false);
 		const [hasFallbackFailed, setHasFallbackFailed] = useState(false);
 		const staticAvatarUrl =
-			hasPrimaryFailed && fallbackAvatarUrl && fallbackAvatarUrl !== avatarUrl
-				? fallbackAvatarUrl
-				: avatarUrl;
+			hasPrimaryFailed && fallbackAvatarUrl && fallbackAvatarUrl !== avatarUrl ? fallbackAvatarUrl : avatarUrl;
 		const resolvedCandidateUrl =
-			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed
-				? hoverAvatarUrl || ''
-				: staticAvatarUrl;
+			animatedMediaPlaybackEnabled && animatedMediaPlaybackAllowed ? hoverAvatarUrl || '' : staticAvatarUrl;
 		useEffect(() => {
 			setHasPrimaryFailed(false);
 			setHasFallbackFailed(false);
@@ -213,7 +208,9 @@ export const BaseAvatar = React.forwardRef<HTMLDivElement, BaseAvatarProps>(
 		const statusMaskId = shouldShowCustomStatusBadge
 			? (customStatusBadgeMaskId ?? 'svg-mask-status-online')
 			: isMobileOnline
-				? `svg-mask-status-online-mobile-${size}`
+				? STATIC_AVATAR_MASK_SIZES.has(size)
+					? `svg-mask-status-online-mobile-${size}`
+					: 'svg-mask-status-online-mobile'
 				: `svg-mask-status-${renderableStatus}`;
 		const avatarViewBox = getAvatarViewBox(size);
 		const statusColor = shouldShowCustomStatusBadge
@@ -420,12 +417,14 @@ const resolveRenderableStatus = (status: StatusType | null | undefined): StatusT
 };
 
 function getAvatarStatusBox(layout: AvatarStatusLayout, isTyping: boolean, isMobileOnline: boolean): AvatarStatusBox {
+	const baseStatusSize = Math.min(layout.innerStatusWidth, layout.innerStatusHeight);
 	return {
 		width: isTyping ? layout.innerTypingWidth : layout.innerStatusWidth,
 		height: isTyping ? layout.innerTypingHeight : layout.innerStatusHeight,
 		right: isTyping ? layout.innerTypingRight : layout.innerStatusRight,
 		bottom: isTyping ? layout.innerTypingBottom : layout.innerStatusBottom,
 		radius: isTyping ? layout.innerTypingHeight / 2 : isMobileOnline ? 0 : layout.innerStatusHeight / 2,
+		cutoutPadding: Math.max(0, layout.cutoutRadius - baseStatusSize / 2),
 	};
 }
 
@@ -474,6 +473,7 @@ function getInterpolatedAvatarStatusBox(
 		right: interpolate(statusBox.right, typingBox.right, progress),
 		bottom: interpolate(statusBox.bottom, typingBox.bottom, progress),
 		radius: interpolate(statusBox.radius, typingBox.radius, progress),
+		cutoutPadding: interpolate(statusBox.cutoutPadding, typingBox.cutoutPadding, progress),
 	};
 }
 
@@ -581,9 +581,7 @@ const DynamicAvatarMask = React.memo(function DynamicAvatarMask({
 }: DynamicAvatarMaskProps) {
 	const cutoutRadius = layout.cutoutRadius;
 	const cutoutY = layout.cutoutCy - cutoutRadius;
-	const statusCutoutGap =
-		statusBox.cutoutPadding ??
-		Math.max(0, layout.cutoutRadius - Math.min(layout.innerStatusWidth, layout.innerStatusHeight) / 2);
+	const statusCutoutGap = statusBox.cutoutPadding;
 	const animatedCutoutX = size - statusBox.right - statusBox.width - statusCutoutGap;
 	const animatedCutoutY = size - statusBox.bottom - statusBox.height - statusCutoutGap;
 	const animatedCutoutWidth = statusBox.width + statusCutoutGap * 2;
@@ -650,12 +648,12 @@ const DynamicAvatarMask = React.memo(function DynamicAvatarMask({
 				) : kind === 'mobile' ? (
 					<rect
 						fill="black"
-						x={layout.cutoutCx - layout.innerStatusWidth / 2}
-						y={layout.cutoutCy - layout.innerStatusHeight / 2}
-						width={layout.innerStatusWidth}
-						height={layout.innerStatusHeight}
-						rx={Math.max(1, layout.innerStatusWidth * 0.1)}
-						ry={Math.max(1, layout.innerStatusWidth * 0.1)}
+						x={layout.cutoutCx - layout.innerStatusWidth / 2 - statusCutoutGap}
+						y={layout.cutoutCy - layout.innerStatusHeight / 2 - statusCutoutGap}
+						width={layout.innerStatusWidth + statusCutoutGap * 2}
+						height={layout.innerStatusHeight + statusCutoutGap * 2}
+						rx={Math.max(1, layout.innerStatusWidth * 0.1) + statusCutoutGap}
+						ry={Math.max(1, layout.innerStatusWidth * 0.1) + statusCutoutGap}
 						data-flx="ui.base-avatar.dynamic-avatar-mask.mobile"
 					/>
 				) : (

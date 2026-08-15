@@ -22,11 +22,24 @@ export function hasValidUsernameFormat(value: string): boolean {
 	return USERNAME_CHARACTER_REGEX.test(value) && !USERNAME_INVALID_FORMAT_REGEX.test(value);
 }
 
-/** Applications: letters in either case, digits and underscores, as upstream allows. */
-const BOT_USERNAME_CHARACTER_REGEX = /^[a-zA-Z0-9_]+$/;
+/**
+ * Applications: letters in either case, digits, underscores and spaces. Spaces let an
+ * application called `Weather Bot` carry that name verbatim; a bot's display name is its
+ * username, since applications never set a global name.
+ */
+const BOT_USERNAME_CHARACTER_REGEX = /^[a-zA-Z0-9_ ]+$/;
 
 export function hasValidBotUsernameFormat(value: string): boolean {
 	return BOT_USERNAME_CHARACTER_REGEX.test(value);
+}
+
+/**
+ * Runs of spaces collapse to one. Uniqueness is keyed on the lower-cased username, so
+ * `Weather  Bot` would otherwise be a distinct name that renders indistinguishably from
+ * `Weather Bot`.
+ */
+export function normalizeBotUsernameSpacing(value: string): string {
+	return value.trim().replace(/ +/g, ' ');
 }
 
 function sanitizeUsername(value: string): string {
@@ -82,11 +95,13 @@ export const UsernameType = withOpenApiType(
  * is stored as typed. Uniqueness is still case-insensitive: the username index is
  * keyed on the lower-cased value, and the reserved-word checks lower-case before
  * comparing, so `WeatherBot` and `weatherbot` cannot both exist.
+ *
+ * Spaces are permitted, so `Weather Bot` is a valid application username.
  */
 export const BotUsernameType = withOpenApiType(
 	z
 		.string()
-		.transform((value) => value.trim())
+		.transform(normalizeBotUsernameSpacing)
 		.pipe(withStringLengthRangeValidation(z.string(), 1, 32, ValidationErrorCodes.USERNAME_LENGTH_INVALID))
 		.refine((value) => hasValidBotUsernameFormat(value), ValidationErrorCodes.USERNAME_INVALID_CHARACTERS)
 		.refine((value) => {
