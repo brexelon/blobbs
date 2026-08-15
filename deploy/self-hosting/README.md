@@ -20,7 +20,7 @@ The self-hosted stack is one Docker Compose project defined in
 - **Worker** runs background jobs, the cron scheduler, and voice reconciliation.
 - **Admin dashboard** is required and is served at `/admin`.
 - **Gateway** handles WebSocket sessions, presence, dispatch, push fanout, and realtime events.
-- **Messages, users, snowflakes, and unfurl services** provide sharded backend functionality over NATS.
+- **Messages, users, snowflakes, gifs, and unfurl services** provide sharded backend functionality over NATS.
 - **Media proxy** handles attachment upload relay, media metadata, thumbnails, and object reads.
 - **Static proxy** serves Fluxer fonts, icons, emoji, badges, default avatars, and voice client assets from the same hostname.
 - **LiveKit** handles voice and video signaling and WebRTC media.
@@ -327,6 +327,35 @@ docker compose restart api worker admin
 ```
 
 Then test the SMTP configuration from `/admin/instance-config`.
+
+## GIF picker
+
+The GIF picker is disabled until you give the instance an API key for one of the
+two supported providers, KLIPY or Tenor. The instance calls the provider itself
+and hands clients media-proxy URLs, so browsers never talk to the provider
+directly. The stack defaults to KLIPY and ships the `gifs` and `gifs-shard`
+containers, which expose KLIPY lookups over NATS to the rest of the stack.
+
+Get a key from [KLIPY](https://klipy.com/) or
+[Tenor](https://developers.google.com/tenor), set it in `.env`, and restart the
+services that read it:
+
+```ini
+FLUXER_GIF_PROVIDER=klipy
+FLUXER_KLIPY_API_KEY=your-klipy-api-key
+```
+
+```bash
+docker compose restart api worker gifs gifs-shard unfurl unfurl-shard
+```
+
+For Tenor, set `FLUXER_GIF_PROVIDER=tenor` and `FLUXER_TENOR_API_KEY` instead.
+Only the active provider's key is used.
+
+The provider and its key can also be set from `/admin/instance-config`, which
+stores them in the database and overrides the values from `.env`. Leaving the
+key unset is supported: the rest of the instance works normally and only GIF
+search is unavailable.
 
 ## Voice and video
 
