@@ -14,8 +14,7 @@ pub fn login_page(config: &AdminConfig, error_message: Option<&str>) -> Markup {
                 meta charset="UTF-8";
                 meta name="viewport" content="width=device-width, initial-scale=1.0";
                 title { "Login ~ " (admin_title) }
-                link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/ibm-plex.css?v=3"};
-                link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/bricolage.css?v=3"};
+                link rel="stylesheet" href={(base) "/static/fonts/" (crate::fonts::STYLESHEET_FILE_NAME)};
                 link rel="stylesheet" href={(base) "/static/app.css"};
                 @match branding.favicon_url.as_deref() {
                     Some(favicon_url) => { link rel="icon" href=(favicon_url); }

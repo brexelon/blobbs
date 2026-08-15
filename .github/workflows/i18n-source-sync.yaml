@@ -60,7 +60,7 @@ jobs:
       - name: Open source catalog PR
         run: |
           set -euo pipefail
-          if [[ -z "$(git status --porcelain -- fluxer_app/src/features/i18n/locales fluxer_marketing/locales packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n)" ]]; then
+          if [[ -z "$(git status --porcelain -- fluxer_app/src/features/i18n/locales packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n)" ]]; then
             echo "No source catalog changes."
             exit 0
           fi
@@ -68,8 +68,9 @@ jobs:
           git config user.name "fluxer-i18n-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git switch -c "$SOURCE_BRANCH"
-          git add fluxer_app/src/features/i18n/locales fluxer_marketing/locales packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n
-          git commit -m "i18n: refresh source catalogs"
+          git add fluxer_app/src/features/i18n/locales packages/errors/src/i18n fluxer_api/pkgs/email/src/email_i18n fluxer_api/src/api/content_i18n
+          git commit -m "chore(i18n): refresh source catalogs"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch origin "$SOURCE_BRANCH" || true
           git push --force-with-lease="refs/heads/$SOURCE_BRANCH" origin "HEAD:$SOURCE_BRANCH"
 

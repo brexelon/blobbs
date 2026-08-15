@@ -72,8 +72,7 @@ pub fn admin_layout_ext(
                     meta http-equiv="refresh" content="3";
                 }
                 title { (title) " ~ " (admin_title) }
-                link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/ibm-plex.css?v=3"};
-                link rel="stylesheet" href={(config.static_cdn_endpoint) "/fonts/bricolage.css?v=3"};
+                link rel="stylesheet" href={(base) "/static/fonts/" (crate::fonts::STYLESHEET_FILE_NAME)};
                 link rel="stylesheet" href=(cache_busted_asset(base, asset_version, "/static/app.css"));
                 @match branding.favicon_url.as_deref() {
                     // One instance-supplied favicon replaces the whole default set, since

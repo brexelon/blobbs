@@ -9,6 +9,7 @@ import styles from '@app/features/app/components/layout/ChannelListContent.modul
 import scrollerStyles from '@app/features/ui/components/Scroller.module.css';
 import {ChannelListSkeleton} from '@app/features/app/components/layout/ChannelListSkeleton';
 import {computeVerticalDropPosition} from '@app/features/app/components/layout/dnd/DndDropPosition';
+import {useDragTargetRect} from '@app/features/app/components/layout/dnd/useDragTargetRect';
 import favoritesChannelListStyles from '@app/features/app/components/layout/FavoritesChannelListContent.module.css';
 import {GenericChannelItem} from '@app/features/app/components/layout/GenericChannelItem';
 import {getChannelUnreadState} from '@app/features/app/components/layout/utils/ChannelUnreadState';
@@ -40,9 +41,10 @@ import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuComma
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import {MentionBadge} from '@app/features/ui/components/MentionBadge';
-import {Scroller} from '@app/features/ui/components/Scroller';
+import {Scroller, type ScrollerHandle} from '@app/features/ui/components/Scroller';
 import {StatusAwareAvatar} from '@app/features/ui/components/StatusAwareAvatar';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
+import {useDragAutoScroll} from '@app/features/ui/hooks/useDragAutoScroll';
 import KeyboardMode from '@app/features/ui/state/KeyboardMode';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
@@ -58,7 +60,7 @@ import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {ConnectableElement} from 'react-dnd';
-import {useDrag, useDrop} from 'react-dnd';
+import {useDrag, useDragLayer, useDrop} from 'react-dnd';
 import {getEmptyImage} from 'react-dnd-html5-backend';
 
 const EMPTY_FAVORITES_DESCRIPTOR = msg({
@@ -99,7 +101,7 @@ const FavoriteChannelResolvedItem = observer(
 	({favoriteChannel, channel, guild}: {favoriteChannel: FavoriteChannel; channel: Channel; guild: Guild | null}) => {
 		const {i18n} = useLingui();
 		const elementRef = useRef<HTMLDivElement | null>(null);
-		const dropTargetRectRef = useRef<DOMRect | null>(null);
+		const getDropTargetRect = useDragTargetRect(elementRef);
 		const [dropIndicator, setDropIndicator] = useState<FavoriteDropIndicator | null>(null);
 		const setFavoriteDropIndicator = useCallback((indicator: FavoriteDropIndicator | null) => {
 			setDropIndicator((current) => {
@@ -114,7 +116,6 @@ const FavoriteChannelResolvedItem = observer(
 			});
 		}, []);
 		const resetFavoriteDropIndicator = useCallback(() => {
-			dropTargetRectRef.current = null;
 			setFavoriteDropIndicator(null);
 		}, [setFavoriteDropIndicator]);
 		const location = useLocation();
@@ -143,12 +144,10 @@ const FavoriteChannelResolvedItem = observer(
 		const [{isOver}, dropRef] = useDrop<ChannelDragItem, unknown, {isOver: boolean}>({
 			accept: DND_TYPES.FAVORITES_CHANNEL,
 			hover: (_item, monitor) => {
-				const node = elementRef.current;
-				if (!node) return;
 				const clientOffset = monitor.getClientOffset();
 				if (!clientOffset) return;
-				const hoverBoundingRect = dropTargetRectRef.current ?? node.getBoundingClientRect();
-				dropTargetRectRef.current = hoverBoundingRect;
+				const hoverBoundingRect = getDropTargetRect();
+				if (!hoverBoundingRect) return;
 				const dropPos = computeVerticalDropPosition(clientOffset, hoverBoundingRect);
 				setFavoriteDropIndicator({
 					position: dropPos === 'before' ? 'top' : 'bottom',
@@ -409,7 +408,7 @@ const FavoriteCategoryItem = observer(
 	}) => {
 		const {i18n} = useLingui();
 		const elementRef = useRef<HTMLDivElement | null>(null);
-		const dropTargetRectRef = useRef<DOMRect | null>(null);
+		const getDropTargetRect = useDragTargetRect(elementRef);
 		const [dropIndicator, setDropIndicator] = useState<FavoriteDropIndicator | null>(null);
 		const setCategoryDropIndicator = useCallback((indicator: FavoriteDropIndicator | null) => {
 			setDropIndicator((current) => {
@@ -424,7 +423,6 @@ const FavoriteCategoryItem = observer(
 			});
 		}, []);
 		const resetCategoryDropIndicator = useCallback(() => {
-			dropTargetRectRef.current = null;
 			setCategoryDropIndicator(null);
 		}, [setCategoryDropIndicator]);
 		const [isFocused, setIsFocused] = useState(false);
@@ -456,12 +454,10 @@ const FavoriteCategoryItem = observer(
 					resetCategoryDropIndicator();
 					return;
 				}
-				const node = elementRef.current;
-				if (!node) return;
 				const clientOffset = monitor.getClientOffset();
 				if (!clientOffset) return;
-				const hoverBoundingRect = dropTargetRectRef.current ?? node.getBoundingClientRect();
-				dropTargetRectRef.current = hoverBoundingRect;
+				const hoverBoundingRect = getDropTargetRect();
+				if (!hoverBoundingRect) return;
 				const dropPos = computeVerticalDropPosition(clientOffset, hoverBoundingRect);
 				setCategoryDropIndicator({
 					position: dropPos === 'before' ? 'top' : 'bottom',
@@ -587,7 +583,7 @@ const FavoriteCategoryItem = observer(
 							>
 								<button
 									type="button"
-									className={favoritesChannelListStyles.addButton}
+									className={favoritesChannelListStyles.categoryAddButton}
 									aria-label={i18n._(ADD_CHANNEL_DESCRIPTOR)}
 									onClick={(e) => {
 										e.stopPropagation();
@@ -597,7 +593,7 @@ const FavoriteCategoryItem = observer(
 								>
 									<PlusIcon
 										weight="bold"
-										className={favoritesChannelListStyles.addButtonIcon}
+										className={favoritesChannelListStyles.categoryAddButtonIcon}
 										data-flx="app.favorites-channel-list-content.favorite-category-item.plus-icon"
 									/>
 								</button>
@@ -645,6 +641,19 @@ export const FavoritesChannelListContent = observer(() => {
 	const {i18n} = useLingui();
 	const location = useLocation();
 	const showMobileBottomNav = MobileLayout.shouldShowBottomNav(location.pathname);
+	const isDraggingFavorite = useDragLayer((monitor) => {
+		const itemType = monitor.getItemType();
+		return (
+			monitor.isDragging() && (itemType === DND_TYPES.FAVORITES_CHANNEL || itemType === DND_TYPES.FAVORITES_CATEGORY)
+		);
+	});
+	const scrollerRef = useRef<ScrollerHandle>(null);
+	const getScrollElement = useCallback(() => {
+		const scroller = scrollerRef.current;
+		if (scroller == null) return null;
+		return scroller.getScrollerNode();
+	}, []);
+	useDragAutoScroll({active: isDraggingFavorite, getScrollElement});
 	const favorites = Favorites.sortedChannels;
 	const categories = Favorites.sortedCategories;
 	const hideMutedChannels = Favorites.hideMutedChannels;
@@ -688,6 +697,7 @@ export const FavoritesChannelListContent = observer(() => {
 	if (!hasVisibleChannels && categories.length === 0) {
 		return (
 			<Scroller
+				ref={scrollerRef}
 				className={styles.channelListScroller}
 				contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 				key="favorites-channel-list-empty-scroller"
@@ -710,6 +720,7 @@ export const FavoritesChannelListContent = observer(() => {
 	}
 	return (
 		<Scroller
+			ref={scrollerRef}
 			className={styles.channelListScroller}
 			contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 			key="favorites-channel-list-scroller"

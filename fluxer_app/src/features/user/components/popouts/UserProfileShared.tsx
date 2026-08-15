@@ -16,6 +16,7 @@ import {SafeMarkdown} from '@app/features/messaging/components/markdown';
 import {MarkdownContext} from '@app/features/messaging/components/markdown/renderers/RendererTypes';
 import {openExternalUrlWithWarning} from '@app/features/messaging/utils/ExternalLinkUtils';
 import StreamerMode from '@app/features/streamer_mode/state/StreamerMode';
+import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import markupStyles from '@app/features/theme/styles/Markup.module.css';
 import {BlueskyIcon} from '@app/features/ui/components/icons/BlueskyIcon';
 import {FluxerIcon} from '@app/features/ui/components/icons/FluxerIcon';
@@ -480,7 +481,7 @@ const ConnectionCard: React.FC<{
 					<BlueskyIcon size={18} data-flx="user.user-profile-shared.connection-card.bluesky-icon" />
 				) : (
 					<GlobeSimpleIcon
-						size={18}
+						size={remFromPx(18)}
 						className={styles.connectionDomainIcon}
 						data-flx="user.user-profile-shared.connection-card.connection-domain-icon"
 					/>
@@ -536,7 +537,7 @@ const ConnectionCard: React.FC<{
 				{icon}
 				{nameRow}
 				<ArrowSquareOutIcon
-					size={16}
+					size={remFromPx(16)}
 					weight="bold"
 					className={styles.connectionExternalArrow}
 					data-flx="user.user-profile-shared.connection-card.connection-external-arrow"
@@ -559,7 +560,7 @@ const ConnectionCard: React.FC<{
 						data-flx="user.user-profile-shared.connection-card.connection-external-link.link-click"
 					>
 						<ArrowSquareOutIcon
-							size={16}
+							size={remFromPx(16)}
 							weight="bold"
 							data-flx="user.user-profile-shared.connection-card.arrow-square-out-icon"
 						/>
@@ -648,7 +649,7 @@ export const UserProfileConnections: React.FC<{
 											/>
 										) : (
 											<GlobeSimpleIcon
-												size={16}
+												size={remFromPx(16)}
 												className={styles.connectionDomainIcon}
 												data-flx="user.user-profile-shared.user-profile-connections.connection-domain-icon"
 											/>
