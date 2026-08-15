@@ -605,7 +605,7 @@ export function useTextareaAutocomplete({
 					const parsedQuery = parseMentionQuery(matchedText ?? '');
 					const queryForMatching = parsedQuery.usernameQuery.trim();
 					const members = filterGuildMembers(
-						memberSearchResults,
+						membersToUse,
 						parsedQuery,
 						!useChannelMemberList,
 						canViewChannel,
