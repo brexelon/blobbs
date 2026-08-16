@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {Gif} from '@app/features/expressions/commands/GifCommands';
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {downloadGifAsImageFile} from './GifFileDownload';
+
+const transcodeClipToAnimatedGifFile = vi.hoisted(() => vi.fn(async () => null));
+
+vi.mock('@app/features/expressions/utils/ClipGifTranscode', () => ({transcodeClipToAnimatedGifFile}));
 
 function media(url: string) {
 	return {src: url, proxy_src: `/media/${encodeURIComponent(url)}`, width: 480, height: 270};
@@ -78,6 +82,11 @@ function stubFetch(handler: (url: string) => {ok: boolean; size?: number}) {
 	return seen;
 }
 
+beforeEach(() => {
+	transcodeClipToAnimatedGifFile.mockReset();
+	transcodeClipToAnimatedGifFile.mockResolvedValue(null);
+});
+
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
@@ -131,7 +140,39 @@ describe('downloadGifAsImageFile', () => {
 		expect(file.size).toBeGreaterThan(0);
 	});
 
-	it('asks the media proxy for a frame when the item offers no image rendition at all', async () => {
+	it('never decodes a clip when the item already carries an image rendition', async () => {
+		stubFetch(() => ({ok: true}));
+		await downloadGifAsImageFile(klipyGif());
+		expect(transcodeClipToAnimatedGifFile).not.toHaveBeenCalled();
+	});
+
+	it('re-encodes a clip as an animated GIF before settling for a still frame', async () => {
+		const seen = stubFetch(() => ({ok: true}));
+		transcodeClipToAnimatedGifFile.mockResolvedValue(
+			new File([new Uint8Array(64)], 'an-item.gif', {type: 'image/gif'}) as never,
+		);
+		const file = await downloadGifAsImageFile(clipOnlyGif());
+		expect(file.type).toBe('image/gif');
+		expect(seen.some((url) => url.includes('format=webp'))).toBe(false);
+	});
+
+	it('offers the clip renditions to the transcode largest first, proxied URL ahead of the provider one', async () => {
+		stubFetch(() => ({ok: true}));
+		await downloadGifAsImageFile(clipOnlyGif());
+		expect(transcodeClipToAnimatedGifFile).toHaveBeenCalledWith(
+			[
+				{url: '/media/https%3A%2F%2Fcdn.klipy.test%2Fhd.mp4', contentType: 'video/mp4'},
+				{url: 'https://cdn.klipy.test/hd.mp4', contentType: 'video/mp4'},
+				{url: '/media/https%3A%2F%2Fcdn.klipy.test%2Fhd.webm', contentType: 'video/webm'},
+				{url: 'https://cdn.klipy.test/hd.webm', contentType: 'video/webm'},
+				{url: '/media/hd.webm', contentType: 'video/webm'},
+				{url: 'https://cdn.klipy.test/hd.webm', contentType: 'video/webm'},
+			],
+			'an-item',
+		);
+	});
+
+	it('asks the media proxy for a frame when the clip cannot be decoded either', async () => {
 		const seen = stubFetch(() => ({ok: true}));
 		const file = await downloadGifAsImageFile(clipOnlyGif());
 		expect(file.type).toBe('image/webp');

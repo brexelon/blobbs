@@ -20,6 +20,7 @@ import {
 } from '@app/features/platform/utils/ImageDecoderInterop';
 import {
 	cropRotateRgba,
+	encodeGifFrames,
 	ensureLibfluxcoreReady,
 	releaseLibfluxcoreMemoryIfIdle,
 } from '@app/features/platform/utils/LibFluxcore';
@@ -63,6 +64,36 @@ export interface CropSource {
 export interface CropOptionsEx extends CropParams {
 	outputFormat?: CropOutputFormat;
 }
+
+/**
+ * The crop pipeline does not always answer in the container it was handed: animated output
+ * falls back to GIF where nothing can encode animated WebP, so the produced content type
+ * travels with the bytes rather than being assumed from the source.
+ */
+export interface CroppedImage {
+	bytes: Uint8Array;
+	contentType: string;
+}
+
+const CONTENT_TYPE_BY_OUTPUT_FORMAT: Readonly<Record<CropOutputFormat, string>> = {
+	// APNG is a PNG container, and every consumer downstream already labels one as PNG.
+	animated_webp: 'image/webp',
+	apng: 'image/png',
+	gif: 'image/gif',
+	webp: 'image/webp',
+	png: 'image/png',
+	jpeg: 'image/jpeg',
+	avif: 'image/avif',
+};
+
+const WORKER_OUTPUT_FORMAT_BY_SOURCE: Readonly<Record<CropWorkerImageFormat, CropOutputFormat>> = {
+	gif: 'gif',
+	webp: 'webp',
+	avif: 'avif',
+	apng: 'apng',
+	png: 'png',
+	jpeg: 'jpeg',
+};
 
 export class AnimatedImageCropWorkerManager {
 	private static instance: AnimatedImageCropWorkerManager | null = null;
@@ -155,11 +186,11 @@ export class AnimatedImageCropWorkerManager {
 		}
 	}
 
-	async cropImage(imageBytes: Uint8Array, format: AnimatedImageFormat, options: CropParams): Promise<Uint8Array> {
+	async cropImage(imageBytes: Uint8Array, format: AnimatedImageFormat, options: CropParams): Promise<CroppedImage> {
 		return this.cropImageEx({bytes: imageBytes, mime: mimeForAnimatedFormat(format), format}, options);
 	}
 
-	async cropImageEx(source: CropSource, options: CropOptionsEx): Promise<Uint8Array> {
+	async cropImageEx(source: CropSource, options: CropOptionsEx): Promise<CroppedImage> {
 		if (this.terminated) {
 			throw new CropPipelineError('internal', 'Worker manager has been terminated');
 		}
@@ -179,7 +210,9 @@ export class AnimatedImageCropWorkerManager {
 			throw new CropPipelineError('unsupported_mime', `unsupported MIME type: ${mime}`);
 		}
 		if (route === 'libfluxcore' && wasmFormat) {
-			return this.runLibfluxcoreWorker(source.bytes, wasmFormat, options, options.outputFormat);
+			const bytes = await this.runLibfluxcoreWorker(source.bytes, wasmFormat, options, options.outputFormat);
+			const produced = options.outputFormat ?? WORKER_OUTPUT_FORMAT_BY_SOURCE[wasmFormat];
+			return {bytes, contentType: CONTENT_TYPE_BY_OUTPUT_FORMAT[produced]};
 		}
 		if (route !== 'native' && route !== 'browser') {
 			throw new CropPipelineError('unsupported_mime', `unhandled decoder route: ${route}`);
@@ -256,7 +289,7 @@ export class AnimatedImageCropWorkerManager {
 		return decodeViaImageDecoder(source);
 	}
 
-	private async encodeCroppedFrames(frames: Array<NativeFrame>, options: CropOptionsEx): Promise<Uint8Array> {
+	private async encodeCroppedFrames(frames: Array<NativeFrame>, options: CropOptionsEx): Promise<CroppedImage> {
 		if (frames.length === 0) {
 			throw new CropPipelineError('decode_failed', 'no frames decoded');
 		}
@@ -273,12 +306,16 @@ export class AnimatedImageCropWorkerManager {
 		const outputFormat: CropOutputFormat = options.outputFormat ?? (isAnimated ? 'animated_webp' : 'webp');
 		const bridge = getNativeBridge();
 		if (outputFormat === 'animated_webp' || outputFormat === 'apng') {
+			// Only the desktop bridge can encode animated WebP or APNG. A browser still has a
+			// container for a moving image — GIF, which libfluxcore encodes here — so the crop
+			// changes container rather than dropping the animation on the floor.
 			if (!bridge) {
-				throw new CropPipelineError('encode_failed', 'animated output requires the native bridge (desktop app)');
+				return {bytes: await encodeFramesAsGif(cropped), contentType: CONTENT_TYPE_BY_OUTPUT_FORMAT.gif};
 			}
 			try {
-				if (outputFormat === 'animated_webp') return bridge.encodeAnimatedWebp(cropped);
-				return bridge.encodeAnimatedApng(cropped);
+				const bytes =
+					outputFormat === 'animated_webp' ? bridge.encodeAnimatedWebp(cropped) : bridge.encodeAnimatedApng(cropped);
+				return {bytes, contentType: CONTENT_TYPE_BY_OUTPUT_FORMAT[outputFormat]};
 			} catch (err) {
 				throw new CropPipelineError('encode_failed', err instanceof Error ? err.message : 'animated encode failed');
 			}
@@ -290,12 +327,18 @@ export class AnimatedImageCropWorkerManager {
 		if (outputFormat === 'avif') {
 			if (!bridge) throw new CropPipelineError('encode_failed', 'AVIF encode requires the native bridge');
 			try {
-				return bridge.encodeAvif(first.rgba, first.width, first.height, true);
+				return {
+					bytes: bridge.encodeAvif(first.rgba, first.width, first.height, true),
+					contentType: CONTENT_TYPE_BY_OUTPUT_FORMAT.avif,
+				};
 			} catch (err) {
 				throw new CropPipelineError('encode_failed', err instanceof Error ? err.message : 'AVIF encode failed');
 			}
 		}
-		return encodeViaCanvas(first, outputFormat);
+		return {
+			bytes: await encodeViaCanvas(first, outputFormat),
+			contentType: CONTENT_TYPE_BY_OUTPUT_FORMAT[outputFormat],
+		};
 	}
 
 	private async cropDecodedFrames(frames: Array<NativeFrame>, options: CropOptionsEx): Promise<Array<NativeFrame>> {
@@ -521,6 +564,21 @@ function createFrameBatches(
 	return batches.filter((batch) => batch.length > 0);
 }
 
+/**
+ * libfluxcore is reset when it is holding too much memory, and the crop pass above may have
+ * tripped that, so the module is readied again rather than assumed to still be loaded.
+ */
+async function encodeFramesAsGif(frames: Array<NativeFrame>): Promise<Uint8Array> {
+	try {
+		await ensureLibfluxcoreReady();
+		return encodeGifFrames(frames);
+	} catch (err) {
+		throw new CropPipelineError('encode_failed', err instanceof Error ? err.message : 'animated GIF encode failed');
+	} finally {
+		releaseLibfluxcoreMemoryIfIdle();
+	}
+}
+
 async function encodeViaCanvas(frame: NativeFrame, format: 'webp' | 'png' | 'jpeg' | 'gif'): Promise<Uint8Array> {
 	if (typeof OffscreenCanvas === 'undefined') {
 		throw new CropPipelineError('encode_failed', 'OffscreenCanvas required for static encode fallback');
@@ -587,12 +645,12 @@ export async function cropAnimatedImageWithWorkerPool(
 	imageBytes: Uint8Array,
 	format: AnimatedImageFormat,
 	options: CropParams,
-): Promise<Uint8Array> {
+): Promise<CroppedImage> {
 	const manager = AnimatedImageCropWorkerManager.getInstance();
 	return manager.cropImage(imageBytes, format, options);
 }
 
-export async function cropImageWithSource(source: CropSource, options: CropOptionsEx): Promise<Uint8Array> {
+export async function cropImageWithSource(source: CropSource, options: CropOptionsEx): Promise<CroppedImage> {
 	const manager = AnimatedImageCropWorkerManager.getInstance();
 	return manager.cropImageEx(source, options);
 }
