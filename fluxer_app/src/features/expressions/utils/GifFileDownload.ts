@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {Gif} from '@app/features/expressions/commands/GifCommands';
+import {
+	type ClipTranscodeSource,
+	transcodeClipToAnimatedGifFile,
+} from '@app/features/expressions/utils/ClipGifTranscode';
 
 /**
  * Image renditions in preference order. GIF first because every provider that has one
@@ -18,6 +22,11 @@ const SIZE_PREFIXES = ['', 'medium', 'tiny', 'nano'] as const;
 const GIF_VIDEO_FORMAT_KEYS = ['mp4', 'tinymp4'] as const;
 /** Clip renditions, largest first, used only as transcode sources. */
 const VIDEO_FORMAT_TOKENS = ['mp4', 'webm'] as const;
+const VIDEO_CONTENT_TYPES: Readonly<Record<(typeof VIDEO_FORMAT_TOKENS)[number], string>> = {
+	mp4: 'video/mp4',
+	webm: 'video/webm',
+};
+const TOP_LEVEL_VIDEO_URL_REGEX = /\.(?:mp4|webm)(?:$|\?)/iu;
 const TOP_LEVEL_IMAGE_URL_REGEX = /\.(?:gif|webp)(?:$|\?)/iu;
 // Sized across more than one format family, so a missing GIF still leaves room to reach
 // the WebP renditions behind it.
@@ -85,7 +94,35 @@ function withImageTranscode(url: string): string {
 }
 
 /**
- * Last resort for an item that carries no image rendition at all. The media proxy pulls a
+ * Clips worth decoding in the browser, largest first. Both the proxied and the provider URL
+ * are offered: the proxy answers a clip untransformed, and the provider CDN is a working
+ * second chance when the proxy cannot reach the item.
+ */
+function collectClipTranscodeSources(gif: Gif): Array<ClipTranscodeSource> {
+	const sources: Array<ClipTranscodeSource> = [];
+	const addUrl = (url: string | undefined, contentType: string) => {
+		if (!url) return;
+		sources.push({url, contentType});
+	};
+	for (const token of VIDEO_FORMAT_TOKENS) {
+		const contentType = VIDEO_CONTENT_TYPES[token];
+		for (const prefix of SIZE_PREFIXES) {
+			const format = gif.media?.[`${prefix}${token}`];
+			addUrl(format?.proxy_src, contentType);
+			addUrl(format?.src, contentType);
+		}
+	}
+	// A video-first provider leads with a clip, which is a decode source like any other.
+	for (const url of [gif.proxy_src, gif.src]) {
+		if (url && TOP_LEVEL_VIDEO_URL_REGEX.test(url)) {
+			addUrl(url, /\.webm(?:$|\?)/iu.test(url) ? 'video/webm' : 'video/mp4');
+		}
+	}
+	return sources;
+}
+
+/**
+ * Last resort for an item whose clip the browser cannot decode either. The media proxy pulls a
  * single frame out of a clip, so this trades the animation for an image the uploader accepts
  * — worth it only once every animated rendition has been ruled out.
  */
@@ -125,16 +162,19 @@ async function downloadFirstAvailableTarget(targets: Array<GifDownloadTarget>, b
 }
 
 /**
- * The transcode pass runs on its own budget so a provider that lists many broken renditions
- * cannot exhaust the candidate cap before the fallback is ever reached.
+ * Each fallback pass runs on its own budget so a provider that lists many broken renditions
+ * cannot exhaust the candidate cap before the fallbacks are ever reached. Animation survives
+ * as far down the chain as it can: a rendition that is already an image, then the clip decoded
+ * and re-encoded here, and only then a single frame.
  */
 async function downloadWithTranscodeFallback(gif: Gif, targets: Array<GifDownloadTarget>): Promise<File> {
 	const baseName = sanitizeGifFileBaseName(gif);
 	try {
 		return await downloadFirstAvailableTarget(targets, baseName);
-	} catch {
-		return await downloadFirstAvailableTarget(collectTranscodeTargets(gif), baseName);
-	}
+	} catch {}
+	const transcoded = await transcodeClipToAnimatedGifFile(collectClipTranscodeSources(gif), baseName);
+	if (transcoded) return transcoded;
+	return downloadFirstAvailableTarget(collectTranscodeTargets(gif), baseName);
 }
 
 export async function downloadGifAsImageFile(gif: Gif): Promise<File> {
