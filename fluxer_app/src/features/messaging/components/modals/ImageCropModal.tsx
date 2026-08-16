@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import * as Modal from '@app/features/app/components/dialogs/Modal';
-import {cropAnimatedImageWithWorkerPool} from '@app/features/expressions/workers/AnimatedImageCropWorkerManager';
+import {
+	type CroppedImage,
+	cropAnimatedImageWithWorkerPool,
+} from '@app/features/expressions/workers/AnimatedImageCropWorkerManager';
 import {showMessagingErrorModal} from '@app/features/messaging/components/alerts/MessagingErrorModalUtils';
 import styles from '@app/features/messaging/components/modals/ImageCropModal.module.css';
 import {Logger} from '@app/features/platform/utils/AppLogger';
@@ -61,7 +64,7 @@ async function cropAnimatedImageWithWorker(
 	imageBytes: Uint8Array,
 	format: 'gif' | 'webp' | 'avif' | 'apng',
 	options: AnimatedImageCropOptions,
-): Promise<Uint8Array> {
+): Promise<CroppedImage> {
 	return cropAnimatedImageWithWorkerPool(imageBytes, format, options);
 }
 
@@ -337,8 +340,10 @@ async function exportAnimatedImage(
 		resizeHeight: Math.floor(targetH),
 	};
 	snapCropOptionsToImageBounds(cropOptions, image);
-	const resultBytes = await cropAnimatedImageWithWorker(imageBytes, format, cropOptions);
-	const resultBlob = new Blob([new Uint8Array(resultBytes)], {type: mimeType});
+	const result = await cropAnimatedImageWithWorker(imageBytes, format, cropOptions);
+	// The pipeline answers in whatever container it could encode, which is not always the one
+	// it was handed, so the blob is labelled with what came back.
+	const resultBlob = new Blob([new Uint8Array(result.bytes)], {type: result.contentType});
 	if (resultBlob.size === 0) {
 		throw new Error('Empty animated image blob returned');
 	}
