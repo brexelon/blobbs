@@ -98,12 +98,6 @@
 	);
 }
 
-.guildListBottomSpacer {
-	height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0));
-	width: 100%;
-	flex-shrink: 0;
-}
-
 .guildListTopSection,
 .guildListGuildsSection {
 	display: flex;

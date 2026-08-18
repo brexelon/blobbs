@@ -5,10 +5,6 @@
 	overflow-anchor: none;
 }
 
-.channelListScrollerMobile {
-	scroll-padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0));
-}
-
 .channelListScrollerWrapper {
 	--floating-unread-indicator-bottom-inset: calc(
 		var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0px)) +
@@ -75,10 +71,5 @@
 
 .bottomSpacer {
 	height: calc(var(--layout-user-area-overlay-height, var(--layout-user-area-reserved-height, 0px)) + var(--spacing-2));
-	flex: 0 0 auto;
-}
-
-.bottomSpacerMobile {
-	height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0) + var(--spacing-2));
 	flex: 0 0 auto;
 }
