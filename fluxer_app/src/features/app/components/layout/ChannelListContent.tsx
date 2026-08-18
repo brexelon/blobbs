@@ -293,7 +293,7 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 		>
 			<Scroller
 				ref={scrollerRef}
-				className={clsx(styles.channelListScroller, showMobileBottomNav && styles.channelListScrollerMobile)}
+				className={styles.channelListScroller}
 				contentClassName={showMobileBottomNav ? scrollerStyles.scrollerChildrenContentSized : undefined}
 				onScroll={handleScroll}
 				onResize={handleResize}
@@ -580,10 +580,7 @@ export const ChannelListContent = observer(({guild, scrollY}: {guild: Guild; scr
 							/>
 						</div>
 					)}
-					<div
-						className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
-						data-flx="app.channel-list-content.bottom-spacer"
-					/>
+					<div className={styles.bottomSpacer} data-flx="app.channel-list-content.bottom-spacer" />
 				</div>
 			</Scroller>
 			<ScrollIndicatorOverlay

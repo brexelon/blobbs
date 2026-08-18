@@ -710,10 +710,7 @@ export const FavoritesChannelListContent = observer(() => {
 					data-flx="app.favorites-channel-list-content.region.context-menu"
 				>
 					<ChannelListSkeleton data-flx="app.favorites-channel-list-content.channel-list-skeleton" />
-					<div
-						className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
-						data-flx="app.favorites-channel-list-content.bottom-spacer.empty"
-					/>
+					<div className={styles.bottomSpacer} data-flx="app.favorites-channel-list-content.bottom-spacer.empty" />
 				</div>
 			</Scroller>
 		);
@@ -788,10 +785,7 @@ export const FavoritesChannelListContent = observer(() => {
 						);
 					})}
 				</div>
-				<div
-					className={showMobileBottomNav ? styles.bottomSpacerMobile : styles.bottomSpacer}
-					data-flx="app.favorites-channel-list-content.bottom-spacer"
-				/>
+				<div className={styles.bottomSpacer} data-flx="app.favorites-channel-list-content.bottom-spacer" />
 			</div>
 		</Scroller>
 	);
