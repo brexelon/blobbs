@@ -47,14 +47,15 @@ struct ChannelEntry<'a> {
     threads: Vec<&'a GuildThreadSummary>,
 }
 
-/// One entry in the rendered channel list. Categories become section labels holding
-/// their own members; a channel with no category is a row of its own.
+/// One section of the rendered channel list. Categories become section labels
+/// holding their own members; every channel without a category heading to sit
+/// under is gathered into a single leading `Uncategorized` section.
 enum ChannelSection<'a> {
+    Uncategorized(Vec<ChannelEntry<'a>>),
     Category {
         channel: &'a GuildChannelSummary,
         members: Vec<ChannelEntry<'a>>,
     },
-    Channel(ChannelEntry<'a>),
 }
 
 /// Sibling order: position first, then id, which for snowflakes is creation order.
@@ -65,9 +66,12 @@ fn order_key(channel: &GuildChannelSummary) -> (i32, &str) {
 /// Channel `position` is scoped to the parent, so every category restarts the count
 /// and a flat sort by position alone interleaves categories with each other's
 /// members — which is what filed a category's later channels under the next heading.
-/// This walks the hierarchy the way the app's sidebar does: root entries — categories
-/// and uncategorized channels alike — ordered among themselves, and each category's
-/// members ordered within it.
+/// This walks the hierarchy the way the app's sidebar does: categories ordered among
+/// themselves and each category's members ordered within it.
+///
+/// Channels with no category are collected into an `Uncategorized` section rendered
+/// ahead of every category, which is where the app's sidebar shows them too — listing
+/// them interleaved by position, or trailing after the last category, buried them.
 ///
 /// Mirrors `sortChannelsForOrdering` in `packages/schema`, which is what the app and
 /// the reorder endpoint both order by.
@@ -78,10 +82,16 @@ fn channel_sections<'a>(
     let ids: std::collections::HashSet<&str> = channels.iter().map(|c| c.id.as_str()).collect();
     let mut members_by_category: std::collections::HashMap<&str, Vec<&GuildChannelSummary>> =
         std::collections::HashMap::new();
-    let mut roots: Vec<&GuildChannelSummary> = Vec::new();
+    let mut categories: Vec<&GuildChannelSummary> = Vec::new();
+    // Anything whose parent is missing from the guild's own list, or is a channel
+    // rather than a category, has no heading to sit under, so it belongs with the
+    // uncategorized channels instead of being quietly dropped.
+    let mut uncategorized: Vec<&GuildChannelSummary> = Vec::new();
     for channel in channels {
-        // A parent that is not in the guild's own list cannot be rendered as a
-        // heading, so its children are treated as uncategorized rather than dropped.
+        if channel.channel_type == CHANNEL_TYPE_CATEGORY {
+            categories.push(channel);
+            continue;
+        }
         match channel.parent_id.as_deref() {
             Some(parent_id) if ids.contains(parent_id) => {
                 members_by_category
@@ -89,10 +99,23 @@ fn channel_sections<'a>(
                     .or_default()
                     .push(channel);
             }
-            _ => roots.push(channel),
+            _ => uncategorized.push(channel),
         }
     }
-    roots.sort_by_key(|channel| order_key(channel));
+    // A parent that turned out to be an ordinary channel is not a heading either, so
+    // its children join the uncategorized group rather than dropping out of a list
+    // whose count still includes them.
+    let category_ids: std::collections::HashSet<&str> =
+        categories.iter().map(|c| c.id.as_str()).collect();
+    for (parent_id, members) in std::mem::take(&mut members_by_category) {
+        if category_ids.contains(parent_id) {
+            members_by_category.insert(parent_id, members);
+        } else {
+            uncategorized.extend(members);
+        }
+    }
+    categories.sort_by_key(|channel| order_key(channel));
+    uncategorized.sort_by_key(|channel| order_key(channel));
     for members in members_by_category.values_mut() {
         members.sort_by_key(|channel| order_key(channel));
     }
@@ -104,37 +127,36 @@ fn channel_sections<'a>(
             .cloned()
             .unwrap_or_default(),
     };
-    let mut sections: Vec<ChannelSection<'a>> = roots
-        .into_iter()
-        .map(|channel| {
-            if channel.channel_type == CHANNEL_TYPE_CATEGORY {
-                ChannelSection::Category {
-                    channel,
-                    members: members_by_category
-                        .remove(channel.id.as_str())
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(entry)
-                        .collect(),
-                }
-            } else {
-                ChannelSection::Channel(entry(channel))
-            }
-        })
-        .collect();
 
-    // Anything whose parent exists but is not a category has no heading to sit under.
-    // Listing it at the end keeps the rendered count honest instead of quietly
-    // dropping channels the guild really has.
-    let mut orphans: Vec<&GuildChannelSummary> =
-        members_by_category.into_values().flatten().collect();
-    orphans.sort_by_key(|channel| order_key(channel));
-    sections.extend(
-        orphans
-            .into_iter()
-            .map(|channel| ChannelSection::Channel(entry(channel))),
-    );
+    let mut sections: Vec<ChannelSection<'a>> = Vec::new();
+    if !uncategorized.is_empty() {
+        sections.push(ChannelSection::Uncategorized(
+            uncategorized.into_iter().map(entry).collect(),
+        ));
+    }
+    sections.extend(categories.into_iter().map(|channel| {
+        ChannelSection::Category {
+            channel,
+            members: members_by_category
+                .remove(channel.id.as_str())
+                .unwrap_or_default()
+                .into_iter()
+                .map(entry)
+                .collect(),
+        }
+    }));
     sections
+}
+
+/// Section label above a group of channel rows, shared by the uncategorized group and
+/// the real categories so both read the same way in the list.
+fn channel_section_heading(label: Markup) -> Markup {
+    html! {
+        p class="mt-2 first:mt-0 font-semibold text-neutral-500 text-xs uppercase \
+                 tracking-wide" {
+            (label)
+        }
+    }
 }
 
 fn browse_url(config: &AdminConfig, channel_id: &str, snowflake: &str) -> String {
@@ -411,12 +433,24 @@ pub fn overview_tab(config: &AdminConfig, guild: &GuildDetailInfo, csrf_token: &
                     div class="flex flex-col gap-2" {
                         @for section in &channel_sections {
                             @match section {
+                                ChannelSection::Uncategorized(members) => {
+                                    (channel_section_heading(html! { "UNCATEGORIZED" }))
+                                    @for member in members {
+                                        (channel_entry(
+                                            config,
+                                            guild,
+                                            &channels_by_id,
+                                            member.channel,
+                                            &member.threads,
+                                            &snowflake,
+                                        ))
+                                    }
+                                }
                                 ChannelSection::Category { channel, members } => {
-                                    p class="mt-2 first:mt-0 font-semibold text-neutral-500 text-xs \
-                                             uppercase tracking-wide" {
+                                    (channel_section_heading(html! {
                                         (channel.name.as_deref().unwrap_or("").to_uppercase())
                                         " (" (channel.id) ")"
-                                    }
+                                    }))
                                     @if members.is_empty() {
                                         p class="text-neutral-400 text-xs" { "No channels" }
                                     }
@@ -430,16 +464,6 @@ pub fn overview_tab(config: &AdminConfig, guild: &GuildDetailInfo, csrf_token: &
                                             &snowflake,
                                         ))
                                     }
-                                }
-                                ChannelSection::Channel(entry) => {
-                                    (channel_entry(
-                                        config,
-                                        guild,
-                                        &channels_by_id,
-                                        entry.channel,
-                                        &entry.threads,
-                                        &snowflake,
-                                    ))
                                 }
                             }
                         }
@@ -572,22 +596,21 @@ mod tests {
     }
 
     /// Names of what each section holds, as `("CATEGORY", [members])` for a category
-    /// and `("", [channel])` for a channel standing on its own.
+    /// and `("", [channels])` for the uncategorized group.
     fn layout(sections: &[ChannelSection<'_>]) -> Vec<(String, Vec<String>)> {
+        let names = |members: &[ChannelEntry<'_>]| -> Vec<String> {
+            members
+                .iter()
+                .map(|member| member.channel.name.clone().unwrap_or_default())
+                .collect()
+        };
         sections
             .iter()
             .map(|section| match section {
-                ChannelSection::Category { channel, members } => (
-                    channel.name.clone().unwrap_or_default(),
-                    members
-                        .iter()
-                        .map(|member| member.channel.name.clone().unwrap_or_default())
-                        .collect(),
-                ),
-                ChannelSection::Channel(entry) => (
-                    String::new(),
-                    vec![entry.channel.name.clone().unwrap_or_default()],
-                ),
+                ChannelSection::Category { channel, members } => {
+                    (channel.name.clone().unwrap_or_default(), names(members))
+                }
+                ChannelSection::Uncategorized(members) => (String::new(), names(members)),
             })
             .collect()
     }
@@ -661,6 +684,66 @@ mod tests {
     }
 
     #[test]
+    fn gathers_uncategorized_channels_into_one_section_above_every_category() {
+        // A loose channel positioned after the categories used to be rendered after
+        // them; every uncategorized channel now leads the list in one group.
+        let channels = vec![
+            category("1", "First", 0),
+            channel("2", "inside-first", 0, Some("1")),
+            category("3", "Second", 1),
+            channel("4", "inside-second", 0, Some("3")),
+            channel("5", "loose-late", 9, None),
+            channel("6", "loose-early", 0, None),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![
+                (
+                    String::new(),
+                    vec!["loose-early".to_owned(), "loose-late".to_owned()]
+                ),
+                ("First".to_owned(), vec!["inside-first".to_owned()]),
+                ("Second".to_owned(), vec!["inside-second".to_owned()]),
+            ]
+        );
+    }
+
+    #[test]
+    fn omits_the_uncategorized_section_when_every_channel_has_a_category() {
+        let channels = vec![
+            category("1", "Cat", 0),
+            channel("2", "inside", 0, Some("1")),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![("Cat".to_owned(), vec!["inside".to_owned()])]
+        );
+    }
+
+    #[test]
+    fn files_channels_with_an_unusable_parent_under_uncategorized() {
+        let channels = vec![
+            channel("1", "parent-is-a-text-channel", 0, None),
+            channel("2", "child-of-a-text-channel", 1, Some("1")),
+            channel("3", "parent-not-in-guild", 2, Some("999")),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![(
+                String::new(),
+                vec![
+                    "parent-is-a-text-channel".to_owned(),
+                    "child-of-a-text-channel".to_owned(),
+                    "parent-not-in-guild".to_owned(),
+                ]
+            )]
+        );
+    }
+
+    #[test]
     fn lists_every_channel_even_with_a_parent_that_is_missing_or_not_a_category() {
         let channels = vec![
             channel("1", "parent-is-a-text-channel", 0, None),
@@ -673,7 +756,7 @@ mod tests {
             .iter()
             .map(|section| match section {
                 ChannelSection::Category { members, .. } => members.len() + 1,
-                ChannelSection::Channel(_) => 1,
+                ChannelSection::Uncategorized(members) => members.len(),
             })
             .sum();
         assert_eq!(listed, channels.len());
@@ -698,7 +781,7 @@ mod tests {
                 assert_eq!(members[0].threads.len(), 1);
                 assert_eq!(members[0].threads[0].id, "5");
             }
-            ChannelSection::Channel(_) => panic!("expected a category section"),
+            ChannelSection::Uncategorized(_) => panic!("expected a category section"),
         }
     }
 }
