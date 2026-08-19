@@ -305,6 +305,61 @@ function isPublicIpv6Address(address: string): boolean {
 	return true;
 }
 
+function isInternalIpv4Address(address: string): boolean {
+	const octets = parseIpv4Octets(address);
+	if (!octets) {
+		return false;
+	}
+	const internalRanges: Array<[base: number, prefixLength: number]> = [
+		[0x00000000, 8],
+		[0x0a000000, 8],
+		[0x64400000, 10],
+		[0x7f000000, 8],
+		[0xa9fe0000, 16],
+		[0xac100000, 12],
+		[0xc0a80000, 16],
+	];
+	return internalRanges.some(([base, prefixLength]) => isIpv4InCidr(octets, base, prefixLength));
+}
+
+function isInternalIpv6Address(address: string): boolean {
+	const mappedIpv4 = getIpv4MappedIpv6(address);
+	if (mappedIpv4) {
+		return isInternalIpv4Address(mappedIpv4);
+	}
+	const groups = expandIpv6ToGroups(address);
+	const first = ipv6GroupValue(groups[0]);
+	const last = ipv6GroupValue(groups[7]);
+	if (groups.slice(0, 7).every((group) => group === '0000') && (last === 0 || last === 1)) {
+		return true;
+	}
+	if ((first & 0xffc0) === 0xfe80) {
+		return true;
+	}
+	if ((first & 0xfe00) === 0xfc00) {
+		return true;
+	}
+	return false;
+}
+
+/**
+ * Whether an address belongs to a network that only exists inside a deployment —
+ * loopback, the private and carrier-grade ranges, link-local. Distinct from the
+ * negation of {@link isPublicIpAddress}, which also rejects documentation and
+ * multicast ranges: those are not addresses a proxy in front of a service holds, so
+ * treating them as internal would misread a forwarding chain.
+ */
+export function isInternalIpAddress(ip: string): boolean {
+	const parsed = parseIpAddress(ip);
+	if (!parsed) {
+		return false;
+	}
+	if (parsed.family === 'ipv4') {
+		return isInternalIpv4Address(parsed.normalized);
+	}
+	return isInternalIpv6Address(parsed.normalized);
+}
+
 export function isPublicIpAddress(ip: string): boolean {
 	const parsed = parseIpAddress(ip);
 	if (!parsed) {

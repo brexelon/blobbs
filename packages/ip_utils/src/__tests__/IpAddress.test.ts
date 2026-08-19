@@ -4,6 +4,7 @@ import {
 	getIpNetworkKey,
 	getSameIpDecisionKey,
 	getSubnet,
+	isInternalIpAddress,
 	isPublicIpAddress,
 	isSameIpDecisionMatch,
 	isValidIp,
@@ -212,5 +213,35 @@ describe('isSameIpDecisionMatch', () => {
 	});
 	it('falls back to normalized exact comparison for invalid values', () => {
 		expect(isSameIpDecisionMatch(' not-an-ip ', 'not-an-ip')).toBe(true);
+	});
+});
+
+describe('isInternalIpAddress', () => {
+	it('recognises the ranges a deployment proxies itself on', () => {
+		expect(isInternalIpAddress('172.19.0.23')).toBe(true);
+		expect(isInternalIpAddress('10.0.0.4')).toBe(true);
+		expect(isInternalIpAddress('192.168.1.1')).toBe(true);
+		expect(isInternalIpAddress('127.0.0.1')).toBe(true);
+		expect(isInternalIpAddress('169.254.10.1')).toBe(true);
+		expect(isInternalIpAddress('100.64.0.1')).toBe(true);
+		expect(isInternalIpAddress('::1')).toBe(true);
+		expect(isInternalIpAddress('fd00::1')).toBe(true);
+		expect(isInternalIpAddress('fe80::1')).toBe(true);
+		expect(isInternalIpAddress('::ffff:10.0.0.4')).toBe(true);
+	});
+	it('leaves routable addresses alone', () => {
+		expect(isInternalIpAddress('8.8.8.8')).toBe(false);
+		expect(isInternalIpAddress('172.32.0.1')).toBe(false);
+		expect(isInternalIpAddress('2a01:e0a:d10:95b0::1')).toBe(false);
+	});
+	it('does not treat documentation ranges as deployment infrastructure', () => {
+		// These are reserved rather than public, but no proxy holds one, so a chain
+		// containing one still names a client.
+		expect(isPublicIpAddress('203.0.113.10')).toBe(false);
+		expect(isInternalIpAddress('203.0.113.10')).toBe(false);
+		expect(isInternalIpAddress('2001:db8::1')).toBe(false);
+	});
+	it('returns false for values that are not addresses', () => {
+		expect(isInternalIpAddress('not-an-ip')).toBe(false);
 	});
 });
