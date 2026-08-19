@@ -7,8 +7,10 @@
 -export([init/2, websocket_init/1, websocket_handle/2, websocket_info/2, terminate/3]).
 -export([new_state/0]).
 
+-define(CLOUDFLARE_CLIENT_IP_HEADER, <<"cf-connecting-ip">>).
+
 -ifdef(TEST).
--export([parse_forwarded_for/1, parse_version/1]).
+-export([parse_forwarded_for/1, parse_version/1, is_internal_chain/1, is_internal_ip/1]).
 -endif.
 
 -type state() :: #{
@@ -293,17 +295,88 @@ dispatch_after_rate_limit({rate_limited, RLState}, _OpAtom, _Payload) ->
 -spec extract_client_ip(cowboy_req:req()) -> binary().
 extract_client_ip(Req) ->
     ClientIpHeader = client_ip_header(),
-    case cowboy_req:header(ClientIpHeader, Req) of
-        undefined -> peer_ip_to_binary(cowboy_req:peer(Req));
-        ForwardedFor -> extract_from_forwarded_for(ForwardedFor, Req)
+    ForwardedFor = cowboy_req:header(ClientIpHeader, Req),
+    case use_cloudflare_client_ip(ClientIpHeader, ForwardedFor) of
+        true -> cloudflare_client_ip(ForwardedFor, Req);
+        false -> extract_from_forwarded_for(ForwardedFor, Req)
     end.
 
--spec extract_from_forwarded_for(binary(), cowboy_req:req()) -> binary().
+%% A Cloudflare Tunnel connector does not forward the visitor's address in the
+%% forwarding header, so a chain of nothing but internal addresses is the connector
+%% and the proxies in front of this service talking to each other. Cloudflare puts
+%% the visitor's address in its own header instead. The configured header still wins
+%% whenever it names a client, so this only changes deployments that were recording
+%% their own connector as the client.
+-spec use_cloudflare_client_ip(binary(), binary() | undefined) -> boolean().
+use_cloudflare_client_ip(?CLOUDFLARE_CLIENT_IP_HEADER, _ForwardedFor) ->
+    false;
+use_cloudflare_client_ip(_ClientIpHeader, ForwardedFor) ->
+    is_internal_chain(ForwardedFor).
+
+-spec cloudflare_client_ip(binary() | undefined, cowboy_req:req()) -> binary().
+cloudflare_client_ip(ForwardedFor, Req) ->
+    case normalize_optional_ip(cowboy_req:header(?CLOUDFLARE_CLIENT_IP_HEADER, Req)) of
+        {ok, IP} -> IP;
+        error -> extract_from_forwarded_for(ForwardedFor, Req)
+    end.
+
+-spec normalize_optional_ip(binary() | undefined) -> {ok, binary()} | error.
+normalize_optional_ip(undefined) ->
+    error;
+normalize_optional_ip(Value) ->
+    normalize_forwarded_ip(Value).
+
+-spec extract_from_forwarded_for(binary() | undefined, cowboy_req:req()) -> binary().
+extract_from_forwarded_for(undefined, Req) ->
+    peer_ip_to_binary(cowboy_req:peer(Req));
 extract_from_forwarded_for(ForwardedFor, Req) ->
     case parse_forwarded_for(ForwardedFor) of
         <<>> -> peer_ip_to_binary(cowboy_req:peer(Req));
         IP -> IP
     end.
+
+%% Whether every hop of a forwarding chain is an address that only exists inside a
+%% deployment. Hops that are not addresses at all cannot name a client either.
+-spec is_internal_chain(binary() | undefined) -> boolean().
+is_internal_chain(undefined) ->
+    true;
+is_internal_chain(HeaderValue) ->
+    lists:all(fun is_internal_hop/1, binary:split(HeaderValue, <<",">>, [global])).
+
+-spec is_internal_hop(binary()) -> boolean().
+is_internal_hop(Hop) ->
+    case normalize_forwarded_ip(Hop) of
+        {ok, IP} -> is_internal_ip(IP);
+        error -> true
+    end.
+
+-spec is_internal_ip(binary()) -> boolean().
+is_internal_ip(IP) ->
+    case inet:parse_address(binary_to_list(IP)) of
+        {ok, Parsed} -> is_internal_address(unmap_ipv4(Parsed));
+        {error, _} -> true
+    end.
+
+-spec unmap_ipv4(inet:ip_address()) -> inet:ip_address().
+unmap_ipv4({0, 0, 0, 0, 0, 16#ffff, High, Low}) ->
+    {High bsr 8, High band 16#ff, Low bsr 8, Low band 16#ff};
+unmap_ipv4(Address) ->
+    Address.
+
+-spec is_internal_address(inet:ip_address()) -> boolean().
+is_internal_address({0, _, _, _}) -> true;
+is_internal_address({10, _, _, _}) -> true;
+is_internal_address({127, _, _, _}) -> true;
+is_internal_address({169, 254, _, _}) -> true;
+is_internal_address({192, 168, _, _}) -> true;
+is_internal_address({172, B, _, _}) when B >= 16, B =< 31 -> true;
+is_internal_address({100, B, _, _}) when B >= 64, B =< 127 -> true;
+is_internal_address({_, _, _, _}) -> false;
+is_internal_address({0, 0, 0, 0, 0, 0, 0, 0}) -> true;
+is_internal_address({0, 0, 0, 0, 0, 0, 0, 1}) -> true;
+is_internal_address({First, _, _, _, _, _, _, _}) when First band 16#ffc0 =:= 16#fe80 -> true;
+is_internal_address({First, _, _, _, _, _, _, _}) when First band 16#fe00 =:= 16#fc00 -> true;
+is_internal_address(_) -> false.
 
 -spec peer_ip_to_binary({inet:ip_address(), inet:port_number()}) -> binary().
 peer_ip_to_binary({PeerIP, _Port}) ->

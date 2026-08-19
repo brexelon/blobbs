@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {IpAddressFamily, ParsedIpAddress} from '@fluxer/ip_utils/src/IpAddress';
-import {parseIpAddress} from '@fluxer/ip_utils/src/IpAddress';
+import {isInternalIpAddress, parseIpAddress} from '@fluxer/ip_utils/src/IpAddress';
 
 interface ClientIpExtractionOptions {
 	trustClientIpHeader?: boolean;
 	clientIpHeaderName?: string;
 }
 
-type ClientIpSource = 'client-ip-header';
+type ClientIpSource = 'client-ip-header' | 'cloudflare-header';
 
 interface ExtractedClientIp {
 	ip: string;
@@ -32,6 +32,16 @@ interface HeaderReader {
 }
 
 const DEFAULT_CLIENT_IP_HEADER_NAME = 'x-forwarded-for';
+
+/**
+ * A Cloudflare Tunnel connector does not forward the visitor's address in the
+ * forwarding header, so the chain reaching the origin holds only the addresses the
+ * deployment's own proxies added — the connector's, then each proxy in front of the
+ * service. Cloudflare puts the visitor's address here instead, so this is read as a
+ * fallback rather than the configured header being ignored: the operator's choice of
+ * header still wins whenever it carries a real client.
+ */
+const CLOUDFLARE_HEADER_NAME = 'cf-connecting-ip';
 
 function normalizeHeaderName(headerName: string): string {
 	return headerName.trim().toLowerCase();
@@ -68,6 +78,21 @@ function parseClientIpHeaderValue(value: string | null): ParsedIpAddress | null 
 	return parseSingleIpValue(firstHop);
 }
 
+/**
+ * Whether every hop in a forwarding chain is an address that only exists inside the
+ * deployment. Such a chain was written entirely by the deployment's own proxies and
+ * says nothing about who made the request. An empty or absent chain counts too.
+ */
+function isInternalOnlyChain(value: string | null): boolean {
+	if (value === null) {
+		return true;
+	}
+	return value.split(',').every((hop) => {
+		const address = parseSingleIpValue(hop);
+		return address === null || isInternalIpAddress(address.normalized);
+	});
+}
+
 function createRequestHeaderReader(request: Request): HeaderReader {
 	return {
 		get: (name: string): string | null => {
@@ -98,6 +123,14 @@ function createNodeHeaderReader(headers: HeadersLike): HeaderReader {
 	};
 }
 
+function toExtractedClientIp(address: ParsedIpAddress, source: ClientIpSource): ExtractedClientIp {
+	return {
+		ip: address.normalized,
+		source,
+		ipVersion: address.family,
+	};
+}
+
 function extractClientIpDetailsFromReader(
 	headerReader: HeaderReader,
 	options?: ClientIpExtractionOptions,
@@ -106,13 +139,19 @@ function extractClientIpDetailsFromReader(
 		return null;
 	}
 	const headerName = resolveClientIpHeaderName(options.clientIpHeaderName);
-	const clientIpHeader = parseClientIpHeaderValue(headerReader.get(headerName));
+	const configuredHeader = headerReader.get(headerName);
+	// A chain made up entirely of internal addresses never reached the visitor: it is
+	// the deployment's own proxies talking to each other, which is what a request
+	// arriving through a Cloudflare Tunnel connector looks like.
+	if (headerName !== CLOUDFLARE_HEADER_NAME && isInternalOnlyChain(configuredHeader)) {
+		const cloudflareHop = parseSingleIpValue(headerReader.get(CLOUDFLARE_HEADER_NAME) ?? '');
+		if (cloudflareHop) {
+			return toExtractedClientIp(cloudflareHop, 'cloudflare-header');
+		}
+	}
+	const clientIpHeader = parseClientIpHeaderValue(configuredHeader);
 	if (clientIpHeader) {
-		return {
-			ip: clientIpHeader.normalized,
-			source: 'client-ip-header',
-			ipVersion: clientIpHeader.family,
-		};
+		return toExtractedClientIp(clientIpHeader, 'client-ip-header');
 	}
 	return null;
 }

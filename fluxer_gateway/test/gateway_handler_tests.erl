@@ -163,6 +163,29 @@ parse_forwarded_for_invalid_ipv4_octet_test() ->
     ?assertEqual(<<>>, gateway_handler:parse_forwarded_for(<<"203.0.113.300">>)).
 parse_forwarded_for_unterminated_bracket_test() ->
     ?assertEqual(<<>>, gateway_handler:parse_forwarded_for(<<"[2001:db8::1">>)).
+is_internal_chain_of_connector_hops_test() ->
+    %% What a Cloudflare Tunnel deployment forwards: the connector and the reverse
+    %% proxy in front of the gateway are the only addresses in the chain.
+    ?assertEqual(true, gateway_handler:is_internal_chain(<<"172.19.0.23">>)),
+    ?assertEqual(true, gateway_handler:is_internal_chain(<<"172.19.0.23, 10.0.0.4">>)),
+    ?assertEqual(true, gateway_handler:is_internal_chain(undefined)),
+    ?assertEqual(true, gateway_handler:is_internal_chain(<<"not_an_ip">>)).
+is_internal_chain_naming_a_client_test() ->
+    ?assertEqual(false, gateway_handler:is_internal_chain(<<"203.0.113.7">>)),
+    ?assertEqual(false, gateway_handler:is_internal_chain(<<"203.0.113.7, 172.19.0.23">>)),
+    ?assertEqual(false, gateway_handler:is_internal_chain(<<"[2001:db8::1]:443, 10.0.0.4">>)).
+is_internal_ip_test() ->
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"127.0.0.1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"192.168.1.1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"169.254.10.1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"100.64.0.1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"::1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"fd00::1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"fe80::1">>)),
+    ?assertEqual(true, gateway_handler:is_internal_ip(<<"::ffff:10.0.0.4">>)),
+    ?assertEqual(false, gateway_handler:is_internal_ip(<<"8.8.8.8">>)),
+    ?assertEqual(false, gateway_handler:is_internal_ip(<<"172.32.0.1">>)),
+    ?assertEqual(false, gateway_handler:is_internal_ip(<<"2001:db8::1">>)).
 parse_version_test() ->
     ?assertEqual(1, gateway_handler:parse_version(<<"1">>)),
     ?assertEqual(undefined, gateway_handler:parse_version(<<"2">>)),

@@ -172,3 +172,69 @@ describe('requireClientIp', () => {
 		expect(() => requireClientIp(request, {trustClientIpHeader: true})).toThrow('Client IP header is required');
 	});
 });
+
+describe('cloudflare tunnel fallback', () => {
+	it('uses cf-connecting-ip when the forwarding chain is only internal hops', () => {
+		// What a Cloudflare Tunnel deployment sends: the connector and the reverse proxy
+		// in front of the service are the only addresses in the chain.
+		const request = new Request('http://example.com', {
+			headers: {
+				'X-Forwarded-For': '172.19.0.23',
+				'CF-Connecting-IP': '203.0.113.50',
+			},
+		});
+		expect(extractClientIpDetails(request, {trustClientIpHeader: true})).toEqual({
+			ip: '203.0.113.50',
+			source: 'cloudflare-header',
+			ipVersion: 'ipv4',
+		});
+	});
+	it('keeps the configured header when it carries a routable client', () => {
+		const request = new Request('http://example.com', {
+			headers: {
+				'X-Forwarded-For': '203.0.113.60, 172.19.0.23',
+				'CF-Connecting-IP': '203.0.113.50',
+			},
+		});
+		expect(extractClientIp(request, {trustClientIpHeader: true})).toBe('203.0.113.60');
+	});
+	it('keeps an internal client when there is no cloudflare header to fall back to', () => {
+		const request = new Request('http://example.com', {
+			headers: {'X-Forwarded-For': '192.168.1.1, 172.19.0.23'},
+		});
+		expect(extractClientIp(request, {trustClientIpHeader: true})).toBe('192.168.1.1');
+	});
+	it('does not fall back when cf-connecting-ip is itself the configured header', () => {
+		const request = new Request('http://example.com', {
+			headers: {'CF-Connecting-IP': '172.19.0.23'},
+		});
+		expect(extractClientIp(request, {trustClientIpHeader: true, clientIpHeaderName: 'cf-connecting-ip'})).toBe(
+			'172.19.0.23',
+		);
+	});
+	it('falls back for node-style headers too', () => {
+		const headers = {
+			'x-forwarded-for': '10.0.0.4',
+			'cf-connecting-ip': '2001:db8::1234',
+		};
+		expect(extractClientIpFromHeaders(headers, {trustClientIpHeader: true})).toBe('2001:db8::1234');
+	});
+	it('ignores an unparseable cloudflare header', () => {
+		const request = new Request('http://example.com', {
+			headers: {
+				'X-Forwarded-For': '172.19.0.23',
+				'CF-Connecting-IP': 'not-an-ip',
+			},
+		});
+		expect(extractClientIp(request, {trustClientIpHeader: true})).toBe('172.19.0.23');
+	});
+	it('stays disabled when proxy headers are not trusted', () => {
+		const request = new Request('http://example.com', {
+			headers: {
+				'X-Forwarded-For': '172.19.0.23',
+				'CF-Connecting-IP': '203.0.113.50',
+			},
+		});
+		expect(extractClientIp(request, {trustClientIpHeader: false})).toBeNull();
+	});
+});

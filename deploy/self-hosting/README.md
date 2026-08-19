@@ -196,6 +196,14 @@ docker compose -f docker-compose.yml -f cloudflared.compose.yml up -d cloudflare
 > signaling can work through the tunnel. LiveKit WebRTC media still needs
 > reachable `7881/tcp` and `7882/udp`, or a TURN deployment.
 
+The connector does not put the visitor's address in `X-Forwarded-For`, so requests
+arriving through the tunnel carry a forwarding chain made up only of the connector
+and Caddy. When the whole chain is internal like that, the services read the address
+Cloudflare sends in `CF-Connecting-IP` instead, which is what keeps the visitor's
+real address on their profile in the admin dashboard rather than the connector's
+container address. Nothing needs configuring for this; leave
+`FLUXER_CLIENT_IP_HEADER_NAME` at `x-forwarded-for`.
+
 ## Step 5: Open the firewall
 
 If you are using a direct public server, allow inbound:
