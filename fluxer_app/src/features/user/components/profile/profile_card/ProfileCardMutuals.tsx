@@ -102,12 +102,7 @@ export const ProfileCardMutuals: React.FC<ProfileCardMutualsProps> = observer(({
 	const stackPlaceIcons = placeIconItems.length > 1;
 	const showBothMutuals = hasMutualFriends && hasMutualPlaces;
 	const mutualIconSize = showBothMutuals ? 16 : 20;
-	const iconStackClassName = clsx(
-		styles.iconStack,
-		showBothMutuals && styles.iconStackCompact,
-		stackFriendAvatars && styles.iconStackStacked,
-	);
-	const placeIconStackClassName = clsx(styles.iconStack, stackPlaceIcons && styles.iconStackStacked);
+	const iconStackClassName = clsx(styles.iconStack, showBothMutuals && styles.iconStackCompact);
 	return (
 		<div
 			className={clsx(styles.mutualsRow, showBothMutuals && styles.mutualsRowCompact)}
@@ -129,7 +124,7 @@ export const ProfileCardMutuals: React.FC<ProfileCardMutualsProps> = observer(({
 			)}
 			{showPlaceIcons && (
 				<AvatarStack
-					className={placeIconStackClassName}
+					className={styles.iconStack}
 					size={mutualIconSize}
 					maxVisible={placeIconMaxVisible}
 					overlap={stackPlaceIcons ? undefined : 0}
