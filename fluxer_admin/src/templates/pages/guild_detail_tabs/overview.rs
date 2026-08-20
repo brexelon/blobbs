@@ -27,17 +27,34 @@ fn current_snowflake() -> String {
     snowflake.to_string()
 }
 
+const CHANNEL_TYPE_TEXT: i32 = 0;
+const CHANNEL_TYPE_VOICE: i32 = 2;
 const CHANNEL_TYPE_CATEGORY: i32 = 4;
-const CHANNEL_TYPE_LINK: i32 = 13;
+const CHANNEL_TYPE_THREAD: i32 = 5;
+/// `ChannelTypes.GUILD_LINK` in `packages/constants`, which is what the API sends.
+const CHANNEL_TYPE_LINK: i32 = 998;
 
 fn channel_type_label(channel_type: i32) -> &'static str {
     match channel_type {
-        0 => "Text",
-        2 => "Voice",
+        CHANNEL_TYPE_TEXT => "Text",
+        CHANNEL_TYPE_VOICE => "Voice",
         CHANNEL_TYPE_CATEGORY => "Category",
-        5 => "Thread",
+        CHANNEL_TYPE_THREAD => "Thread",
         CHANNEL_TYPE_LINK => "Link",
         _ => "Unknown",
+    }
+}
+
+/// The app's sidebar buckets a section's channels by kind before position — text
+/// channels (links among them) first, then voice — so a voice channel positioned
+/// among the text ones still sits at the bottom of its category. Anything of a kind
+/// the sidebar does not render trails both, where it cannot be mistaken for a
+/// channel a member sees. Mirrors `organizeChannels` in `fluxer_app`.
+fn kind_rank(channel: &GuildChannelSummary) -> u8 {
+    match channel.channel_type {
+        CHANNEL_TYPE_TEXT | CHANNEL_TYPE_LINK => 0,
+        CHANNEL_TYPE_VOICE => 1,
+        _ => 2,
     }
 }
 
@@ -58,9 +75,14 @@ enum ChannelSection<'a> {
     },
 }
 
-/// Sibling order: position first, then id, which for snowflakes is creation order.
+/// Category order: position first, then id, which for snowflakes is creation order.
 fn order_key(channel: &GuildChannelSummary) -> (i32, &str) {
     (channel.position, channel.id.as_str())
+}
+
+/// Order within a section: kind first, then position and id among that kind.
+fn member_order_key(channel: &GuildChannelSummary) -> (u8, i32, &str) {
+    (kind_rank(channel), channel.position, channel.id.as_str())
 }
 
 /// Channel `position` is scoped to the parent, so every category restarts the count
@@ -72,9 +94,11 @@ fn order_key(channel: &GuildChannelSummary) -> (i32, &str) {
 /// Channels with no category are collected into an `Uncategorized` section rendered
 /// ahead of every category, which is where the app's sidebar shows them too — listing
 /// them interleaved by position, or trailing after the last category, buried them.
+/// Within a section the sidebar's own bucketing by kind applies; see `kind_rank`.
 ///
-/// Mirrors `sortChannelsForOrdering` in `packages/schema`, which is what the app and
-/// the reorder endpoint both order by.
+/// `compareChannelOrdering` in `packages/schema` is the position comparison the app
+/// and the reorder endpoint share; `organizeChannels` in `fluxer_app` is the grouping
+/// laid over it that the sidebar renders.
 fn channel_sections<'a>(
     channels: &'a [GuildChannelSummary],
     threads_by_parent: &std::collections::HashMap<&str, Vec<&'a GuildThreadSummary>>,
@@ -115,9 +139,9 @@ fn channel_sections<'a>(
         }
     }
     categories.sort_by_key(|channel| order_key(channel));
-    uncategorized.sort_by_key(|channel| order_key(channel));
+    uncategorized.sort_by_key(|channel| member_order_key(channel));
     for members in members_by_category.values_mut() {
-        members.sort_by_key(|channel| order_key(channel));
+        members.sort_by_key(|channel| member_order_key(channel));
     }
 
     let entry = |channel: &'a GuildChannelSummary| ChannelEntry {
@@ -595,6 +619,19 @@ mod tests {
         }
     }
 
+    fn typed(
+        id: &str,
+        name: &str,
+        position: i32,
+        parent_id: Option<&str>,
+        channel_type: i32,
+    ) -> GuildChannelSummary {
+        GuildChannelSummary {
+            channel_type,
+            ..channel(id, name, position, parent_id)
+        }
+    }
+
     /// Names of what each section holds, as `("CATEGORY", [members])` for a category
     /// and `("", [channels])` for the uncategorized group.
     fn layout(sections: &[ChannelSection<'_>]) -> Vec<(String, Vec<String>)> {
@@ -707,6 +744,80 @@ mod tests {
                 ("Second".to_owned(), vec!["inside-second".to_owned()]),
             ]
         );
+    }
+
+    #[test]
+    fn lists_a_categorys_voice_channels_below_its_text_channels() {
+        // The sidebar buckets by kind before position, so a voice channel created
+        // between two text channels still sits at the bottom of the category.
+        let channels = vec![
+            category("1", "Cat", 0),
+            typed("2", "general", 0, Some("1"), CHANNEL_TYPE_TEXT),
+            typed("3", "Meeting Room", 1, Some("1"), CHANNEL_TYPE_VOICE),
+            typed("4", "meeting-schedule", 2, Some("1"), CHANNEL_TYPE_TEXT),
+            typed("5", "resources", 3, Some("1"), CHANNEL_TYPE_LINK),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![(
+                "Cat".to_owned(),
+                vec![
+                    "general".to_owned(),
+                    "meeting-schedule".to_owned(),
+                    "resources".to_owned(),
+                    "Meeting Room".to_owned(),
+                ]
+            )]
+        );
+    }
+
+    #[test]
+    fn buckets_the_uncategorized_section_by_kind_too() {
+        let channels = vec![
+            typed("1", "lobby", 0, None, CHANNEL_TYPE_VOICE),
+            typed("2", "welcome", 1, None, CHANNEL_TYPE_TEXT),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![(
+                String::new(),
+                vec!["welcome".to_owned(), "lobby".to_owned()]
+            )]
+        );
+    }
+
+    #[test]
+    fn lists_a_kind_the_sidebar_does_not_render_after_the_voice_channels() {
+        let channels = vec![
+            category("1", "Cat", 0),
+            typed("2", "unknown-kind", 0, Some("1"), 42),
+            typed("3", "Meeting Room", 1, Some("1"), CHANNEL_TYPE_VOICE),
+            typed("4", "general", 2, Some("1"), CHANNEL_TYPE_TEXT),
+        ];
+        let threads = std::collections::HashMap::new();
+        assert_eq!(
+            layout(&channel_sections(&channels, &threads)),
+            vec![(
+                "Cat".to_owned(),
+                vec![
+                    "general".to_owned(),
+                    "Meeting Room".to_owned(),
+                    "unknown-kind".to_owned(),
+                ]
+            )]
+        );
+    }
+
+    #[test]
+    fn labels_a_link_channel_by_the_type_the_api_sends() {
+        assert_eq!(channel_type_label(CHANNEL_TYPE_LINK), "Link");
+        assert_eq!(channel_type_label(CHANNEL_TYPE_TEXT), "Text");
+        assert_eq!(channel_type_label(CHANNEL_TYPE_VOICE), "Voice");
+        assert_eq!(channel_type_label(CHANNEL_TYPE_CATEGORY), "Category");
+        assert_eq!(channel_type_label(CHANNEL_TYPE_THREAD), "Thread");
+        assert_eq!(channel_type_label(13), "Unknown");
     }
 
     #[test]
